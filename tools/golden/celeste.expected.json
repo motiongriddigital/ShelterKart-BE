@@ -1,0 +1,15 @@
+{"name": "Hubtown Celeste, P51900008925", "mustFind": [
+ {"id": 1, "what": "registered promoter", "any": ["Nayan Real Estate Private Limited"]},
+ {"id": 2, "what": "registration and filed completion dates", "all": ["2017", "2029"]},
+ {"id": 3, "what": "members on the filing", "all": ["Hemant", "Vyomesh"]},
+ {"id": 4, "what": "land and sanctioned area", "all": ["494.89", "2,623.62|2623.62"]},
+ {"id": 5, "what": "registered unit mix", "all": ["211", "30.63", "30.78"]},
+ {"id": 6, "what": "area arithmetic flagged", "check": "areaNotReconciled"},
+ {"id": 7, "what": "promoter's own track record", "any": ["Sunmist"]},
+ {"id": 8, "what": "professionals and payment account", "all": ["HDFC0000080", "City Gold|Maya Vaidya"]},
+ {"id": 9, "what": "marketed possession date", "any": ["December 2027|Dec 2027"]},
+ {"id": 10, "what": "conflicting building facts", "check": "floorsConflict"},
+ {"id": 11, "what": "unit labels differ from the registration", "all": ["1 BHK", "2BHK|2 BHK"]},
+ {"id": 12, "what": "the parent's GST search, kept to what was disclosed", "all": ["GST", "Joynest"]},
+ {"id": 13, "what": "the delay-interest basis", "any": ["MCLR"]}
+], "leadsNotFacts": ["50.15", "5714", "CC12602639", "CC12602641"]}

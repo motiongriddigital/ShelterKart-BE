@@ -1,0 +1,32 @@
+{
+  "refInrAmount": 3700,
+  "refPropertyInr": 15200000,
+  "exponent": 0.537,
+  "depth": {
+    "gold": 1.0,
+    "heavy": 0.8,
+    "thin": 0.6
+  },
+  "rungRatio": 1.2,
+  "rungFrom": -3,
+  "rungTo": 10,
+  "capUsd": 235.3,
+  "guardrails": {
+    "marginTarget": 0.55,
+    "aiCostUsd": 3.75,
+    "morFeePct": 0.055,
+    "morFeeFixedUsd": 0.4,
+    "driftBandPct": 0.05,
+    "releaseDriftPct": 0.08,
+    "corridorRatio": 1.1,
+    "maxStepPct": 0.15,
+    "quoteMinutes": 30
+  },
+  "stepExceptions": {
+    "2026-10.2": {
+      "maxStepPct": 0.6,
+      "minRiseShare": 0.4,
+      "reason": "Owner-approved repricing (October 2026): every price at least 40% above the previous book. Clean price points push some up to about 55%. One release only; the 15% step limit applies to every later release."
+    }
+  }
+}

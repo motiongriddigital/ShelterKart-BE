@@ -1,0 +1,168 @@
+{
+ "questions": [
+  {
+   "when": "before booking",
+   "to": "legal team",
+   "question": "Which company is the seller on my sale and purchase agreement for Creek Bay Tower B (Emaar Properties, another Emaar company, or a joint venture with Dubai Holding), and is it the developer registered for DLD project 4198?",
+   "why": "Your rights run against the company on the agreement; sources differ on who is master developer of Dubai Creek Harbour.",
+   "good": "The SPA naming the seller, matching the DLD project record.",
+   "not_accepted": "\"It is an Emaar project.\"",
+   "sources": [
+    "https://realestateclubdubai.com/blog/area-guide/dubai-creek-harbour-master-plan-2026-districts-creek-tower-status",
+    "https://a.land/blog/dubai-creek-harbour-emaar-s-new-city-development-phases-and-investment-timeline",
+    "https://tohidfetrat.com/creek-bay-dubai-creek-harbour-construction-update-june-2026/"
+   ]
+  },
+  {
+   "when": "before booking",
+   "to": "accounts team",
+   "question": "Please give me the escrow account name, bank and number for DLD project 4198, so I can confirm it in the Dubai REST app before paying, and confirm every payment, including the booking amount, goes there.",
+   "why": "Off-plan payments in Dubai must go to the project's escrow account; paying anywhere else removes that protection.",
+   "good": "Account details that match the DLD record.",
+   "not_accepted": "A request to pay a different account or a broker.",
+   "sources": [
+    "https://tohidfetrat.com/creek-bay-dubai-creek-harbour-construction-update-june-2026/",
+    "https://joinoliva.com/en/learn/blog/dubai-creek-harbour-off-plan-investment-guide"
+   ]
+  },
+  {
+   "when": "before booking",
+   "to": "sales team",
+   "question": "Agents describe the payment plan as 80/20 (10% down and seven instalments) and as 10/70/20. Which plan applies to my unit, and is each instalment tied to a date or to certified construction progress?",
+   "why": "Time-based instalments can run ahead of a site that, in June 2026, had 0.62% certified progress.",
+   "good": "The payment schedule annexed to the SPA, with each trigger stated.",
+   "not_accepted": "An agent's summary.",
+   "sources": [
+    "https://providentestate.com/new-projects/creek-bay-emaar-properties-dubai-creek-harbour/",
+    "https://laforet.ae/creek-bay-dubai-creek-harbour-guide/",
+    "https://tohidfetrat.com/creek-bay-dubai-creek-harbour-construction-update-june-2026/"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "The DLD-registered completion date is 30 April 2030. What handover date and grace period does my SPA state, and what compensation, if any, do I receive for each month of delay beyond it?",
+   "why": "Dubai agreements often allow a grace period; your remedy for delay depends on the SPA wording.",
+   "good": "The SPA clauses on completion, grace period and compensation.",
+   "not_accepted": "\"Emaar always delivers on time.\"",
+   "sources": [
+    "https://tohidfetrat.com/creek-bay-dubai-creek-harbour-construction-update-june-2026/",
+    "https://joinoliva.com/en/learn/blog/dubai-creek-harbour-off-plan-investment-guide"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "If I miss an instalment, what happens? Under Dubai Law 19 of 2017, below 60% completion the developer may cancel and keep up to 25% of the price. How much would I lose at each stage of my payment plan, and is there a grace period before default?",
+   "why": "With 10% paid and the project at an early stage, a missed payment could cost up to a quarter of the price.",
+   "good": "The SPA default clause and a worked example for your plan.",
+   "not_accepted": "\"That never happens.\"",
+   "sources": [
+    "https://gulfnews.com/business/property/rules-tightened-for-off-plan-property-buyers-in-dubai-1.2122492",
+    "https://www.khaleejtimes.com/uae/missed-off-plan-payments-dubai-developer-legally-do?amp=1"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Can I sell or assign my unit before completion? What percentage must be paid first, what is the developer's no-objection fee, and what DLD fees apply?",
+   "why": "Many buyers plan to resell before handover; developer rules on assignment decide whether that is possible.",
+   "good": "The assignment clause and the fee schedule.",
+   "not_accepted": "\"You can sell any time.\"",
+   "sources": []
+  },
+  {
+   "when": "before signing",
+   "to": "accounts team",
+   "question": "What is the total cost beyond the price: the DLD Oqood registration fee, administration fees, and the estimated service charge per square foot for Creek Bay?",
+   "why": "Fees and service charges change the real cost and the net rental yield.",
+   "good": "A written cost sheet and the service-charge estimate.",
+   "not_accepted": "\"Service charges are standard.\"",
+   "sources": [
+    "https://trpe.ae/off-plan/creek-rise"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "How is my unit's area measured in the SPA (total or net), and what happens if the built area differs from the contract area, for example by more than 5%?",
+   "why": "Area variation clauses decide whether the price changes or you can withdraw.",
+   "good": "The area definition and the variation clause.",
+   "not_accepted": "A brochure floor plan.",
+   "sources": []
+  },
+  {
+   "when": "before signing",
+   "to": "site and engineering team",
+   "question": "For Tower B specifically: how many floors and units, which floor and view does my unit have, and which planned buildings could block that view?",
+   "why": "Creek Bay is three towers; public pages describe the project as a whole, not Tower B.",
+   "good": "The tower plan, the unit's floor plan and the community master plan around it.",
+   "not_accepted": "Renders of the whole project.",
+   "sources": [
+    "https://providentestate.com/new-projects/creek-bay-emaar-properties-dubai-creek-harbour/"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Which community facilities in the Dubai Creek Harbour master plan near Creek Bay are committed with dates (schools, retail, transport links), and which are still only planned?",
+   "why": "Value and rent at handover depend on what exists around the tower, not what is promised.",
+   "good": "A dated list from the master developer.",
+   "not_accepted": "\"The whole community will be ready.\"",
+   "sources": [
+    "https://realestateclubdubai.com/blog/area-guide/dubai-creek-harbour-master-plan-2026-districts-creek-tower-status",
+    "https://a.land/blog/dubai-creek-harbour-emaar-s-new-city-development-phases-and-investment-timeline"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Please share the current price for my unit and the prices achieved on recent sales in Creek Bay. Launch prices were around AED 1.8 million, and Dubai Creek Harbour apartments averaged about AED 2,600 per sq ft in early 2026.",
+   "why": "Comparing the asking price with recorded transactions shows whether the premium is justified.",
+   "good": "The unit price and DLD transaction records.",
+   "not_accepted": "\"Prices only go up here.\"",
+   "sources": [
+    "https://laforet.ae/creek-bay-dubai-creek-harbour-guide/",
+    "https://realestateclubdubai.com/blog/area-guide/dubai-creek-harbour-master-plan-2026-districts-creek-tower-status"
+   ]
+  },
+  {
+   "when": "before each payment",
+   "to": "site and engineering team",
+   "question": "What percentage of completion has the DLD or the project consultant certified for project 4198, and does it match the instalment you are asking for?",
+   "why": "Escrow releases follow certified progress; your instalments should not run far ahead of it.",
+   "good": "The latest certified progress figure with its date.",
+   "not_accepted": "Marketing photos.",
+   "sources": [
+    "https://tohidfetrat.com/creek-bay-dubai-creek-harbour-construction-update-june-2026/"
+   ]
+  },
+  {
+   "when": "before possession",
+   "to": "legal team",
+   "question": "Has the building completion certificate been issued, and when will the title deed be registered in my name after the final payment?",
+   "why": "Handover without completion certification or title registration leaves you exposed.",
+   "good": "The completion certificate and the title registration timeline.",
+   "not_accepted": "Keys before certificates.",
+   "sources": []
+  },
+  {
+   "when": "before possession",
+   "to": "site and engineering team",
+   "question": "What is the snagging process: when can I inspect, how long do you have to fix defects, and what defect liability applies after handover?",
+   "why": "A clear snagging and defects process protects the finish you paid for.",
+   "good": "The handover and defects clauses with timeframes.",
+   "not_accepted": "\"Our quality is guaranteed.\"",
+   "sources": []
+  },
+  {
+   "when": "before signing",
+   "to": "your own lawyer",
+   "question": "Ask a Dubai property lawyer to review the SPA, confirm the seller against the DLD record for project 4198, and check the escrow, default, assignment and delay clauses.",
+   "why": "These checks settle what public sources cannot.",
+   "good": "The lawyer's written review.",
+   "not_accepted": "The developer's own summary.",
+   "sources": []
+  }
+ ]
+}

@@ -1,0 +1,88 @@
+{
+ "name": "The Kensington, Sutton Garden Square (London)",
+ "mustFind": [
+  {
+   "id": 1,
+   "what": "the planning permission and its date",
+   "all": [
+    "DM2022/01764",
+    "December 2023"
+   ]
+  },
+  {
+   "id": 2,
+   "what": "the variation raising the homes to 1,014",
+   "all": [
+    "DM2024/01476",
+    "1,014"
+   ]
+  },
+  {
+   "id": 3,
+   "what": "the company behind the permission, not just the brand",
+   "all": [
+    "St George",
+    "Berkeley"
+   ]
+  },
+  {
+   "id": 4,
+   "what": "the scheme's other name in council records",
+   "any": [
+    "Chalk Gardens"
+   ]
+  },
+  {
+   "id": 5,
+   "what": "the first phase and its homes",
+   "all": [
+    "159",
+    "The Kensington"
+   ]
+  },
+  {
+   "id": 6,
+   "what": "the developer's completion claim",
+   "any": [
+    "from 2028"
+   ]
+  },
+  {
+   "id": 7,
+   "what": "building heights that bring in the building-safety regime",
+   "all": [
+    "6 to 21 storeys",
+    "Gateway 2"
+   ]
+  },
+  {
+   "id": 8,
+   "what": "construction started",
+   "any": [
+    "16 July 2026"
+   ]
+  },
+  {
+   "id": 9,
+   "what": "the site's history",
+   "any": [
+    "former chalk quarry"
+   ]
+  },
+  {
+   "id": 10,
+   "what": "the council's homes in the scheme",
+   "any": [
+    "217"
+   ]
+  },
+  {
+   "id": 11,
+   "what": "advertised prices",
+   "any": [
+    "\u00a3375,000"
+   ]
+  }
+ ],
+ "leadsNotFacts": []
+}

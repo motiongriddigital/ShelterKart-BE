@@ -1,0 +1,4 @@
+{
+  "note": "One Merchant of Record product per charge currency. Create each in the provider's dashboard as a ONE-TIME product with pay-what-you-want pricing, a small minimum, and tax-INCLUSIVE prices; paste its product id here (or set MOR_PRODUCTS to the same JSON object). A currency with no product here is quoted in USD instead, so USD is the one product that must exist. A currency is only offered if its product exists AND the price book has its ladder.",
+  "products": {}
+}

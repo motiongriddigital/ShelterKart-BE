@@ -1,0 +1,31 @@
+{
+ "asOf": "2026-06-26",
+ "source": "ECB euro reference rates, 26 June 2026; AED, SAR, QAR, BHD, OMR are pegged to the US dollar; CAD and TWD are indicative",
+ "indicative": [
+  "CAD",
+  "TWD"
+ ],
+ "perUsd": {
+  "USD": 1.0,
+  "INR": 94.4,
+  "EUR": 0.8771,
+  "GBP": 0.7565,
+  "AED": 3.6725,
+  "SAR": 3.75,
+  "QAR": 3.64,
+  "BHD": 0.376,
+  "OMR": 0.3845,
+  "SGD": 1.294,
+  "CHF": 0.8085,
+  "CAD": 1.4,
+  "AUD": 1.4488,
+  "NZD": 1.77,
+  "HKD": 7.842,
+  "TWD": 31.0,
+  "SEK": 9.716,
+  "NOK": 9.914,
+  "DKK": 6.556,
+  "PLN": 3.76,
+  "CZK": 21.28
+ }
+}

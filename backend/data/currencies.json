@@ -1,0 +1,86 @@
+{
+ "AED": {
+  "minor": 2,
+  "fine": false
+ },
+ "AUD": {
+  "minor": 2,
+  "fine": false
+ },
+ "BHD": {
+  "minor": 3,
+  "fine": true
+ },
+ "CAD": {
+  "minor": 2,
+  "fine": false
+ },
+ "CHF": {
+  "minor": 2,
+  "fine": false
+ },
+ "CZK": {
+  "minor": 2,
+  "fine": false
+ },
+ "DKK": {
+  "minor": 2,
+  "fine": false
+ },
+ "EUR": {
+  "minor": 2,
+  "fine": false
+ },
+ "GBP": {
+  "minor": 2,
+  "fine": false
+ },
+ "HKD": {
+  "minor": 2,
+  "fine": false
+ },
+ "INR": {
+  "minor": 2,
+  "fine": false
+ },
+ "NOK": {
+  "minor": 2,
+  "fine": false
+ },
+ "NZD": {
+  "minor": 2,
+  "fine": false
+ },
+ "OMR": {
+  "minor": 3,
+  "fine": true
+ },
+ "PLN": {
+  "minor": 2,
+  "fine": false
+ },
+ "QAR": {
+  "minor": 2,
+  "fine": false
+ },
+ "SAR": {
+  "minor": 2,
+  "fine": false
+ },
+ "SEK": {
+  "minor": 2,
+  "fine": false
+ },
+ "SGD": {
+  "minor": 2,
+  "fine": false
+ },
+ "TWD": {
+  "minor": 2,
+  "fine": false
+ },
+ "USD": {
+  "minor": 2,
+  "fine": false
+ }
+}

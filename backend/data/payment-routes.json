@@ -1,0 +1,39 @@
+[
+ {
+  "id": "india-inr",
+  "provider": "razorpay",
+  "countries": [
+   "IN"
+  ],
+  "currencies": [
+   "INR"
+  ],
+  "enabled": true,
+  "note": "India: INR through Razorpay, UPI and cards"
+ },
+ {
+  "id": "mor-international",
+  "provider": "mor",
+  "countries": [
+   "*"
+  ],
+  "currencies": [
+   "*"
+  ],
+  "enabled": true,
+  "note": "A Merchant of Record (Dodo Payments). On in the data, but it serves a country only when DODO_API_KEY and DODO_WEBHOOK_KEY are set and the currency has a product in mor-products.json. Never serves India."
+ },
+ {
+  "id": "razorpay-international",
+  "provider": "razorpay",
+  "countries": [
+   "*"
+  ],
+  "currencies": [
+   "*"
+  ],
+  "enabled": true,
+  "requiresInternational": true,
+  "note": "Foreign countries: cards issued by overseas banks through Razorpay, once international payments are activated"
+ }
+]

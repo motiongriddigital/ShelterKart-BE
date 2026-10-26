@@ -1,0 +1,346 @@
+{
+ "ref": "SK-AE1CREEKBAYB26",
+ "query": "Creek Bay Tower B",
+ "location": "Dubai Creek Harbour, Dubai",
+ "market": "ae",
+ "marketLabel": "Dubai",
+ "depth": "Research",
+ "checkedAt": "2026-09-30T00:00:00",
+ "project": {
+  "name": "Creek Bay Tower B",
+  "location": "Dubai Creek Harbour, Dubai",
+  "developer": "Emaar Properties",
+  "ids": [
+   "4198"
+  ],
+  "price_from": 1800000,
+  "price_to": 1900000,
+  "price_currency": "AED"
+ },
+ "registry": null,
+ "counts": {
+  "confirmed": 0,
+  "reported": 2,
+  "single": 3,
+  "developer": 0,
+  "disputed": 0
+ },
+ "notes": [
+  "Dubai's official registry (Dubai Pulse / DLD) is not yet connected for this market; access is pending approval. DLD data below is as shown on property portals, graded by how many independent sites agree."
+ ],
+ "removed": 0,
+ "findings": [
+  {
+   "mark": "reported",
+   "sites": 2,
+   "claim": "Creek Bay Tower B and Creek Haven Tower B are new residential towers in Dubai Creek Harbour, with one-bedroom apartments from AED 1.9 million.",
+   "sources": [
+    {
+     "url": "https://dubaicreekharboursales.com/2026/02/13/new-tower-launch-dubai-creek-harbour-emaar/",
+     "site": "dubaicreekharboursales.com"
+    },
+    {
+     "url": "https://www.summerfield-properties.ae/blog/emaar-new-developments-dubai-2026",
+     "site": "summerfield-properties.ae"
+    }
+   ],
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "sites": 2,
+   "claim": "Dubai Creek Harbour apartments generally transact around AED 2,600 per sq ft, roughly 14% below comparable Downtown Dubai pricing, per DLD data cited via Property Monitor.",
+   "sources": [
+    {
+     "url": "https://realestateclubdubai.com/blog/area-guide/dubai-creek-harbour-master-plan-2026-districts-creek-tower-status",
+     "site": "realestateclubdubai.com"
+    },
+    {
+     "url": "https://casttio.com/emaar-new-projects-2026-en/",
+     "site": "casttio.com"
+    }
+   ],
+   "topic": "price",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "claim": "An independent Dubai listings aggregator tracking 17 Emaar projects in Dubai Creek Harbour reports that 3 of the 17 are past the handover date their developer published, with units still listed for sale.",
+   "sources": [
+    {
+     "url": "https://ezre.ae/developers/emaar/dubai-creek-harbour",
+     "site": "ezre.ae"
+    }
+   ],
+   "sites": 1,
+   "topic": "track_record",
+   "stance": "negative"
+  },
+  {
+   "mark": "single",
+   "claim": "The wider Dubai Creek Harbour master plan spans roughly 6 square kilometres and is being developed by Emaar Properties in partnership with Dubai Holding.",
+   "sources": [
+    {
+     "url": "https://realestateclubdubai.com/blog/area-guide/dubai-creek-harbour-master-plan-2026-districts-creek-tower-status",
+     "site": "realestateclubdubai.com"
+    }
+   ],
+   "sites": 1,
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "claim": "A property marketing site states that Emaar has never cancelled a project in Dubai and that no buyer has ever lost a deposit.",
+   "sources": [
+    {
+     "url": "https://fcrealestate.ae/emaar-off-plan-projects-in-dubai-2026-top-new-developments/",
+     "site": "fcrealestate.ae"
+    }
+   ],
+   "sites": 1,
+   "topic": "track_record",
+   "stance": "positive",
+   "kind": "developer_claim"
+  },
+  {
+   "mark": "reported",
+   "topic": "registration",
+   "stance": "neutral",
+   "claim": "Dubai Land Department data shown on property portals lists Creek Bay as an active registered project of Dubai Creek Harbour L.L.C., with handover in April 2030.",
+   "sources": [
+    {
+     "url": "https://a1properties.ae/project-details/creek-bay-dubai-creek-harbour/pdf"
+    },
+    {
+     "url": "https://uae.dubizzle.com/property-for-sale/residential/apartment/2026/3/28/prime-waterfront-2br-high-roi-flexible--2-219405/"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "registration",
+   "stance": "positive",
+   "claim": "One portal quoting DLD registry data gives Creek Bay's project number as 4198 and records it as escrow protected.",
+   "sources": [
+    {
+     "url": "https://a1properties.ae/project-details/creek-bay-dubai-creek-harbour/pdf"
+    }
+   ]
+  },
+  {
+   "mark": "reported",
+   "topic": "track_record",
+   "stance": "positive",
+   "claim": "Emaar has completed and handed over homes in Dubai Creek Harbour: it reported thousands of handovers there and across Dubai, and a DLD-based tracker records its Creek Beach Canopy/Moor as completed in November 2025.",
+   "sources": [
+    {
+     "url": "https://meconstructionnews.com/55391/emaar-development-records-highest-ever-property-sales-of-6-31bn-in-first-three-quarters-of-2022"
+    },
+    {
+     "url": "https://realestateclubdubai.com/handover-tracker/creek-beach-canopy-moor"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "financial",
+   "stance": "positive",
+   "claim": "Emaar Development reported record property sales of AED 71.1 billion for 2025.",
+   "sources": [
+    {
+     "url": "https://www.khaleejtimes.com/business/property/emaar-posts-strongest-ever-results-as-revenues-climb-44?amp=1"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "other",
+   "stance": "neutral",
+   "claim": "The master plan's central Creek Tower remains paused.",
+   "sources": [
+    {
+     "url": "https://joinoliva.com/en/learn/blog/dubai-creek-harbour-districts-investor-guide-2026"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "sentiment",
+   "stance": "negative",
+   "claim": "On Trustpilot, Emaar has about 117 reviews averaging 1.5 out of 5; several owners, including in Creek Beach and Dubai Creek Harbour, complain of construction quality and after-sales service. Trustpilot notes Emaar does not invite reviews, so they may not be representative.",
+   "sources": [
+    {
+     "url": "https://www.trustpilot.com/review/emaar.com?page=1"
+    }
+   ]
+  }
+ ],
+ "conflicts": [
+  {
+   "topic": "Handover date",
+   "versions": [
+    {
+     "value": "April 2030 (DLD data shown on the portal)",
+     "url": "https://uae.dubizzle.com/property-for-sale/residential/apartment/2026/3/28/prime-waterfront-2br-high-roi-flexible--2-219405/"
+    },
+    {
+     "value": "Q2 2030",
+     "url": "https://a1properties.ae/project-details/creek-bay-dubai-creek-harbour/pdf"
+    },
+    {
+     "value": "Q2 2029 (in one listing’s own title)",
+     "url": "https://uae.dubizzle.com/property-for-sale/residential/apartment/2026/6/2/spacious-2br-in-creek-bay-q2-2029-for-s-2-393713/"
+    }
+   ]
+  },
+  {
+   "topic": "Starting price of a one-bedroom",
+   "versions": [
+    {
+     "value": "from AED 1.9 million",
+     "url": "https://dubaicreekharboursales.com/2026/02/13/new-tower-launch-dubai-creek-harbour-emaar/"
+    },
+    {
+     "value": "from AED 1.8 million",
+     "url": "https://a1properties.ae/project-details/creek-bay-dubai-creek-harbour/pdf"
+    }
+   ]
+  }
+ ],
+ "reading": [
+  {
+   "observation": "One marketing site states Emaar has never cancelled a project and no buyer has ever lost a deposit. An independent listings aggregator reports that 3 of Emaar's 17 tracked Creek Harbour projects are past their own published handover date, with units still listed. A missed handover date is not a cancellation or a lost deposit, but the absolute claim rests on a single promotional source, and nothing checked here verifies it.",
+   "question": "For this specific tower, has Emaar ever missed a published handover date on a comparable project, and what was the outcome for buyers?"
+  }
+ ],
+ "gaps": [
+  {
+   "topic": "Escrow account and bank",
+   "why": "Not published on any page found."
+  },
+  {
+   "topic": "Construction progress percentage",
+   "why": "Not found in any source checked."
+  },
+  {
+   "topic": "What buyers say, from a second independent source",
+   "why": "Only one review platform was found; one platform is shown but not scored."
+  }
+ ],
+ "questions": [
+  {
+   "when": "Before booking",
+   "who": "Sales team",
+   "question": "Please show me this tower's DLD project registration number and its entry on the Dubai REST app or Dubai Pulse.",
+   "good": "A specific project number that can be looked up independently.",
+   "red_flag": "‘It's registered, don't worry’ with no number given."
+  },
+  {
+   "when": "Before signing",
+   "who": "Legal team",
+   "question": "Has Emaar missed a published handover date on any comparable Dubai Creek Harbour tower, and if so, what happened to buyers' payments?",
+   "good": "A specific, named example with a factual outcome.",
+   "red_flag": "A flat denial with no specific example addressed."
+  },
+  {
+   "when": "Before each payment",
+   "who": "Your bank",
+   "question": "Which escrow account is this payment going into, and can I get RERA's own escrow account confirmation for this specific project?",
+   "good": "A named escrow account with RERA confirmation.",
+   "red_flag": "Any account not confirmed as the project's registered escrow account."
+  },
+  {
+   "when": "Before possession",
+   "who": "Your own snagging inspector",
+   "question": "Can an independent snagging inspection be done before handover, and how long does Emaar commit to fixing what it finds?",
+   "good": "A written snagging process with repair timelines.",
+   "red_flag": "“Any issues can be raised after you move in.”"
+  }
+ ],
+ "searches": 5,
+ "pages": [
+  {
+   "url": "https://dubaicreekharboursales.com/2026/02/13/new-tower-launch-dubai-creek-harbour-emaar/",
+   "title": "New Tower Launch in Dubai Creek Harbour – Creek Bay Tower B & Creek Haven Tower B",
+   "site": "dubaicreekharboursales.com",
+   "cited": true
+  },
+  {
+   "url": "https://ezre.ae/developers/emaar/dubai-creek-harbour",
+   "title": "Emaar Off-Plan Projects in Dubai Creek Harbour | EZRE",
+   "site": "ezre.ae",
+   "cited": true
+  },
+  {
+   "url": "https://realestateclubdubai.com/blog/area-guide/dubai-creek-harbour-master-plan-2026-districts-creek-tower-status",
+   "title": "Dubai Creek Harbour Master Plan 2026",
+   "site": "realestateclubdubai.com",
+   "cited": true
+  },
+  {
+   "url": "https://www.summerfield-properties.ae/blog/emaar-new-developments-dubai-2026",
+   "title": "Emaar New Developments 2026",
+   "site": "summerfield-properties.ae",
+   "cited": true
+  },
+  {
+   "url": "https://casttio.com/emaar-new-projects-2026-en/",
+   "title": "Emaar New Projects 2026: The Complete Guide",
+   "site": "casttio.com",
+   "cited": true
+  },
+  {
+   "url": "https://fcrealestate.ae/emaar-off-plan-projects-in-dubai-2026-top-new-developments/",
+   "title": "Emaar Off-Plan Projects 2026 Dubai: Top New Developments",
+   "site": "fcrealestate.ae",
+   "cited": true
+  },
+  {
+   "url": "https://www.bayut.com/new-projects/dubai/dubai-creek-harbour/",
+   "title": "New Off Plan Projects in Dubai Creek Harbour | Bayut",
+   "site": "bayut.com",
+   "cited": false
+  },
+  {
+   "url": "https://a1properties.ae/project-details/creek-bay-dubai-creek-harbour/pdf",
+   "title": "Creek Bay | A1 Properties (DLD project data)"
+  },
+  {
+   "url": "https://uae.dubizzle.com/property-for-sale/residential/apartment/2026/3/28/prime-waterfront-2br-high-roi-flexible--2-219405/",
+   "title": "Creek Bay Tower B listing | Dubizzle (DLD panel)"
+  },
+  {
+   "url": "https://uae.dubizzle.com/property-for-sale/residential/apartment/2026/6/2/spacious-2br-in-creek-bay-q2-2029-for-s-2-393713/",
+   "title": "Creek Bay listing | Dubizzle"
+  },
+  {
+   "url": "https://meconstructionnews.com/55391/emaar-development-records-highest-ever-property-sales-of-6-31bn-in-first-three-quarters-of-2022",
+   "title": "Emaar Development 9M 2022 results | ME Construction News"
+  },
+  {
+   "url": "https://realestateclubdubai.com/handover-tracker/creek-beach-canopy-moor",
+   "title": "Creek Beach Canopy/Moor handover tracker"
+  },
+  {
+   "url": "https://www.khaleejtimes.com/business/property/emaar-posts-strongest-ever-results-as-revenues-climb-44?amp=1",
+   "title": "Emaar posts strongest-ever results | Khaleej Times"
+  },
+  {
+   "url": "https://joinoliva.com/en/learn/blog/dubai-creek-harbour-districts-investor-guide-2026",
+   "title": "Dubai Creek Harbour investor guide 2026"
+  },
+  {
+   "url": "https://www.trustpilot.com/review/emaar.com?page=1",
+   "title": "Emaar reviews | Trustpilot"
+  }
+ ],
+ "scoreNote": "No score: a score needs confirmation at the regulator across its components.",
+ "responsible": {
+  "name": "Preeyancc",
+  "title": "Founder, ShelterKart",
+  "contact": "corrections@shelterkart.com"
+ },
+ "disclaimer": "Research, not advice. ShelterKart never tells you to buy or not buy, and no developer can pay to change what it shows."
+}

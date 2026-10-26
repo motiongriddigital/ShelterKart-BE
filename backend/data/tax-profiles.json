@@ -1,0 +1,485 @@
+{
+  "IN": {
+    "mode": "we_collect",
+    "name": "GST",
+    "rateBps": 1800,
+    "inclusive": true,
+    "registrationEnv": "GSTIN",
+    "verified": false,
+    "note": "Domestic sales: GST at the standard rate (18% assumed; the CA confirms the rate for this service). Sales to buyers abroad are zero-rated exports only when paid in foreign currency."
+  },
+  "GB": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2000,
+    "inclusive": true,
+    "registrationEnv": "UK_VAT_NO",
+    "verified": true,
+    "source": "GOV.UK Register for VAT: a business based outside the UK that supplies services to the UK must register regardless of turnover"
+  },
+  "FR": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2000,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "DE": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 1900,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "ES": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2100,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "IT": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2200,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "NL": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2100,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "BE": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2100,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "IE": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2300,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "PT": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2300,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "AT": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2000,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "LU": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 1700,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "GR": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2400,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "SK": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2300,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "SI": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2200,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "MT": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 1800,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "CY": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 1900,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "HR": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2500,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "FI": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2550,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "EE": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2400,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "LV": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2100,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "LT": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2100,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "SE": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2500,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "DK": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2500,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "PL": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2300,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "CZ": {
+    "mode": "registration_required",
+    "name": "VAT",
+    "rateBps": 2100,
+    "inclusive": true,
+    "registrationEnv": "EU_OSS_VAT_NO",
+    "verified": false,
+    "source": "Non-Union OSS from the first sale (tax publishers; rate to be confirmed)"
+  },
+  "CH": {
+    "mode": "not_required_yet",
+    "name": "VAT",
+    "rateBps": 810,
+    "inclusive": true,
+    "registrationEnv": "CH_VAT_NO",
+    "thresholds": [
+      {
+        "amount": 100000,
+        "currency": "CHF",
+        "basis": "worldwide"
+      }
+    ],
+    "thresholdMode": "any",
+    "verified": false,
+    "source": "Registration once worldwide turnover reaches CHF 100,000 and Swiss consumers are served; a Swiss tax representative is required (tax publishers citing the Swiss tax authority)"
+  },
+  "CA": {
+    "mode": "not_required_yet",
+    "name": "GST/HST",
+    "rateBps": 500,
+    "inclusive": false,
+    "registrationEnv": "CA_GST_NO",
+    "thresholds": [
+      {
+        "amount": 10000,
+        "currency": "CAD",
+        "basis": "country"
+      }
+    ],
+    "thresholdMode": "any",
+    "verified": false,
+    "source": "Federal threshold CAD 30,000; British Columbia and Manitoba CAD 10,000. The lowest is used so the alert fires early (tax publishers)"
+  },
+  "SG": {
+    "mode": "not_required_yet",
+    "name": "GST",
+    "rateBps": 900,
+    "inclusive": true,
+    "registrationEnv": "SG_GST_NO",
+    "thresholds": [
+      {
+        "amount": 1000000,
+        "currency": "SGD",
+        "basis": "worldwide"
+      },
+      {
+        "amount": 100000,
+        "currency": "SGD",
+        "basis": "country"
+      }
+    ],
+    "thresholdMode": "all",
+    "verified": false,
+    "source": "SGD 1 million worldwide of which at least SGD 100,000 to non-registered Singapore customers (tax publishers)"
+  },
+  "AU": {
+    "mode": "not_required_yet",
+    "name": "GST",
+    "rateBps": 1000,
+    "inclusive": true,
+    "registrationEnv": "AU_GST_NO",
+    "thresholds": [
+      {
+        "amount": 75000,
+        "currency": "AUD",
+        "basis": "country"
+      }
+    ],
+    "thresholdMode": "any",
+    "verified": false,
+    "source": "AUD 75,000 (tax publishers)"
+  },
+  "NZ": {
+    "mode": "not_required_yet",
+    "name": "GST",
+    "rateBps": 1500,
+    "inclusive": true,
+    "registrationEnv": "NZ_GST_NO",
+    "thresholds": [
+      {
+        "amount": 60000,
+        "currency": "NZD",
+        "basis": "country"
+      }
+    ],
+    "thresholdMode": "any",
+    "verified": false,
+    "source": "NZD 60,000 (tax publishers)"
+  },
+  "NO": {
+    "mode": "not_required_yet",
+    "name": "VAT",
+    "rateBps": 2500,
+    "inclusive": true,
+    "registrationEnv": "NO_VOEC_NO",
+    "thresholds": [
+      {
+        "amount": 50000,
+        "currency": "NOK",
+        "basis": "country"
+      }
+    ],
+    "thresholdMode": "any",
+    "verified": false,
+    "source": "NOK 50,000; simplified VOEC scheme (tax publishers)"
+  },
+  "US": {
+    "mode": "not_required_yet",
+    "name": "Sales tax",
+    "rateBps": 0,
+    "inclusive": false,
+    "registrationEnv": "US_SALES_TAX_NO",
+    "thresholds": [
+      {
+        "amount": 100000,
+        "currency": "USD",
+        "basis": "country"
+      }
+    ],
+    "thresholdMode": "any",
+    "verified": false,
+    "source": "State economic-nexus thresholds, often USD 100,000 or 200 transactions; whether this report is taxable varies by state (tax publishers)"
+  },
+  "HK": {
+    "mode": "no_tax",
+    "name": "No tax",
+    "rateBps": 0,
+    "inclusive": true,
+    "verified": false,
+    "source": "Hong Kong has no VAT or GST; confirm with the tax adviser"
+  },
+  "AE": {
+    "mode": "unverified",
+    "name": "UAE VAT",
+    "rateBps": 500,
+    "inclusive": true,
+    "registrationEnv": "AE_VAT_NO",
+    "verified": false,
+    "source": "Not verified: the rule for a non-resident seller of an electronic service was not found; confirm with the tax adviser"
+  },
+  "SA": {
+    "mode": "unverified",
+    "name": "VAT",
+    "rateBps": 1500,
+    "inclusive": true,
+    "registrationEnv": "SA_VAT_NO",
+    "verified": false,
+    "source": "Not verified: the rule for a non-resident seller of an electronic service was not found; confirm with the tax adviser"
+  },
+  "QA": {
+    "mode": "unverified",
+    "name": "VAT",
+    "rateBps": 0,
+    "inclusive": true,
+    "registrationEnv": "QA_VAT_NO",
+    "verified": false,
+    "source": "Not verified: the rule for a non-resident seller of an electronic service was not found; confirm with the tax adviser"
+  },
+  "BH": {
+    "mode": "unverified",
+    "name": "VAT",
+    "rateBps": 1000,
+    "inclusive": true,
+    "registrationEnv": "BH_VAT_NO",
+    "verified": false,
+    "source": "Not verified: the rule for a non-resident seller of an electronic service was not found; confirm with the tax adviser"
+  },
+  "OM": {
+    "mode": "unverified",
+    "name": "VAT",
+    "rateBps": 500,
+    "inclusive": true,
+    "registrationEnv": "OM_VAT_NO",
+    "verified": false,
+    "source": "Not verified: the rule for a non-resident seller of an electronic service was not found; confirm with the tax adviser"
+  },
+  "TW": {
+    "mode": "unverified",
+    "name": "VAT",
+    "rateBps": 500,
+    "inclusive": true,
+    "registrationEnv": "TW_VAT_NO",
+    "verified": false,
+    "source": "Not verified: the rule for a non-resident seller of an electronic service was not found; confirm with the tax adviser"
+  },
+  "MY": {
+    "mode": "unverified",
+    "name": "Tax",
+    "rateBps": 0,
+    "inclusive": true,
+    "registrationEnv": "MY_TAX_NO",
+    "verified": false,
+    "source": "Not verified: no ShelterKart tax rule has been confirmed for this country. It is sold through the Merchant of Record, which calculates and collects any tax; until that route is live the market stays closed."
+  },
+  "ZA": {
+    "mode": "unverified",
+    "name": "Tax",
+    "rateBps": 0,
+    "inclusive": true,
+    "registrationEnv": "ZA_TAX_NO",
+    "verified": false,
+    "source": "Not verified: no ShelterKart tax rule has been confirmed for this country. It is sold through the Merchant of Record, which calculates and collects any tax; until that route is live the market stays closed."
+  },
+  "BR": {
+    "mode": "unverified",
+    "name": "Tax",
+    "rateBps": 0,
+    "inclusive": true,
+    "registrationEnv": "BR_TAX_NO",
+    "verified": false,
+    "source": "Not verified: no ShelterKart tax rule has been confirmed for this country. It is sold through the Merchant of Record, which calculates and collects any tax; until that route is live the market stays closed."
+  },
+  "MX": {
+    "mode": "unverified",
+    "name": "Tax",
+    "rateBps": 0,
+    "inclusive": true,
+    "registrationEnv": "MX_TAX_NO",
+    "verified": false,
+    "source": "Not verified: no ShelterKart tax rule has been confirmed for this country. It is sold through the Merchant of Record, which calculates and collects any tax; until that route is live the market stays closed."
+  },
+  "JP": {
+    "mode": "unverified",
+    "name": "Tax",
+    "rateBps": 0,
+    "inclusive": true,
+    "registrationEnv": "JP_TAX_NO",
+    "verified": false,
+    "source": "Not verified: no ShelterKart tax rule has been confirmed for this country. It is sold through the Merchant of Record, which calculates and collects any tax; until that route is live the market stays closed."
+  },
+  "TH": {
+    "mode": "unverified",
+    "name": "Tax",
+    "rateBps": 0,
+    "inclusive": true,
+    "registrationEnv": "TH_TAX_NO",
+    "verified": false,
+    "source": "Not verified: no ShelterKart tax rule has been confirmed for this country. It is sold through the Merchant of Record, which calculates and collects any tax; until that route is live the market stays closed."
+  },
+  "PH": {
+    "mode": "unverified",
+    "name": "Tax",
+    "rateBps": 0,
+    "inclusive": true,
+    "registrationEnv": "PH_TAX_NO",
+    "verified": false,
+    "source": "Not verified: no ShelterKart tax rule has been confirmed for this country. It is sold through the Merchant of Record, which calculates and collects any tax; until that route is live the market stays closed."
+  }
+}

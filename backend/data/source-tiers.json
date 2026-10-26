@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "note": "Which sites count as official, and which as social or forum. The grounding code reads this file. A change here changes how findings are marked, so it is a method change: reviewed, dated and published with its reason.",
+  "official": {
+    "suffixPattern": "(\\.gov|\\.gov\\.[a-z]{2}|\\.gouv\\.fr|\\.govt\\.nz|\\.gc\\.ca|\\.go\\.jp|\\.go\\.kr|\\.gob\\.[a-z]{2}|\\.nic\\.in|\\.europa\\.eu)$",
+    "hosts": [
+      "nseindia.com",
+      "bseindia.com",
+      "links.sgx.com",
+      "dfm.ae",
+      "londonstockexchange.com",
+      "asx.com.au",
+      "company-information.service.gov.uk",
+      "thegazette.co.uk",
+      "dubaipulse.gov.ae",
+      "data.gov.sg",
+      "brreg.no",
+      "data.brreg.no",
+      "api.gouv.fr",
+      "data.gouv.fr",
+      "opendata.cro.ie",
+      "propertypriceregister.ie",
+      "ares.gov.cz",
+      "ur.gov.lv",
+      "registrucentras.lt",
+      "boe.es",
+      "avoindata.prh.fi",
+      "ariregister.rik.ee"
+    ],
+    "reason": "Government registers and statutory disclosure sites. Stock-exchange disclosure hosts count as official because a listed company's filings there are statutory disclosures."
+  },
+  "social": {
+    "pattern": "(^|\\.)(youtube\\.com|youtu\\.be|instagram\\.com|tiktok\\.com|facebook\\.com|reddit\\.com|quora\\.com|x\\.com|twitter\\.com|threads\\.net)$",
+    "reason": "Platforms where individual views are posted. A finding sourced only here is marked as what people say, never as a fact."
+  }
+}

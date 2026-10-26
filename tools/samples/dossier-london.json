@@ -1,0 +1,1133 @@
+{
+ "kind": "shelterkart-dossier",
+ "version": 1,
+ "ref": "SK-THE-KENSINGTON-SUTTON-GA-20261013",
+ "glance": [
+  {
+   "label": "Sold as",
+   "values": [
+    "Berkeley"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Planning permission",
+   "values": [
+    "DM2022/01764, granted December 2023"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Homes in the scheme",
+   "values": [
+    "1,014, raised from 970 by variation DM2024/01476"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Developer named by the council",
+   "values": [
+    "St George (Berkeley Group)"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Name in council records",
+   "values": [
+    "Chalk Gardens"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Site",
+   "values": [
+    "5.6 acres, a former chalk quarry"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Council homes in the scheme",
+   "values": [
+    "217"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "First phase",
+   "values": [
+    "The Kensington: 159 apartments"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "First homes complete, as marketed",
+   "values": [
+    "from 2028 (developer); Q4 2028 to Q1 2029 (an agent)"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Construction started",
+   "values": [
+    "piling from 16 July 2026"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Advertised prices",
+   "values": [
+    "from £375,000 (1 bed), £442,000 (2 bed), £645,000 (3 bed)"
+   ],
+   "conflict": false
+  }
+ ],
+ "promises": [],
+ "query": "The Kensington, Sutton Garden Square",
+ "location": "Sutton Court Road, Sutton SM1, London",
+ "market": "United Kingdom, London Borough of Sutton",
+ "asOf": "2026-10-13",
+ "project": {
+  "ids": [],
+  "name": "The Kensington, Sutton Garden Square",
+  "location": "Sutton Court Road, Sutton SM1, London",
+  "country": "United Kingdom",
+  "brand": "Berkeley",
+  "developer_site": "berkeleygroup.co.uk"
+ },
+ "entities": [],
+ "counts": {
+  "facts": 17,
+  "verified": 7,
+  "reported": 9,
+  "conflicts": 0,
+  "inferences": 2,
+  "questions": 20,
+  "sources": 14
+ },
+ "inferences": [
+  {
+   "kind": "building safety",
+   "strength": "possible",
+   "text": "At least some buildings at Sutton Garden Square are likely to be higher-risk buildings (the scheme ranges from 6 to 21 storeys). If The Kensington's building is one, its timeline depends on two approvals from the Building Safety Regulator, before work and before occupation, which developers in England have reported as a common source of delay.",
+   "steps": [
+    {
+     "text": "The permission covers eight buildings of 6 to 21 storeys",
+     "sources": [
+      {
+       "url": "https://www.sutton.gov.uk/w/plans-for-new-homes-at-key-town-centre-site-approved"
+      }
+     ]
+    },
+    {
+     "text": "Buildings of 18 metres or seven storeys need Gateway 2 approval before work and a Gateway 3 certificate before occupation",
+     "sources": [
+      {
+       "url": "https://gov.uk/government/publications/building-safety-bill-factsheets/building-control-regime-for-higher-risk-buildings-gateways-2-and-3-factsheet"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "identity",
+   "strength": "possible",
+   "text": "The company behind the permission (St George, per the council) and the brand on sale (Berkeley) differ, and the scheme has two names. A buyer should confirm the contracting company and search both names.",
+   "steps": [
+    {
+     "text": "Council: permission granted to St George (Berkeley Group)",
+     "sources": [
+      {
+       "url": "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre"
+      }
+     ]
+    },
+    {
+     "text": "Marketing: Berkeley launches Sutton Garden Square",
+     "sources": [
+      {
+       "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton"
+      }
+     ]
+    },
+    {
+     "text": "Council and residents' groups: \"Chalk Gardens\"",
+     "sources": [
+      {
+       "url": "https://www.ssna.co.uk/chalk-gardens"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "conflicts": [],
+ "checks": {
+  "area": null,
+  "gaps": [],
+  "delay": null,
+  "prices": [],
+  "priceRange": {
+   "from": 375000,
+   "to": 645000,
+   "currency": "GBP"
+  }
+ },
+ "sections": [
+  {
+   "key": "identity",
+   "title": "Who you are paying",
+   "facts": [
+    {
+     "area": "identity",
+     "field": "developer named by the council",
+     "label": "developer named by the council",
+     "value": "St George (Berkeley Group)",
+     "claim": "The council names St George, part of the Berkeley Group, as the developer that obtained the permission; the homes are now marketed under the Berkeley brand.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.ssna.co.uk/chalk-gardens",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F3",
+     "status": "verified",
+     "inConflict": false
+    },
+    {
+     "area": "identity",
+     "field": "name in council records",
+     "label": "name in council records",
+     "value": "Chalk Gardens",
+     "claim": "The council and residents' groups call the scheme \"Chalk Gardens\" with a public park, \"Chalk Park\"; it is marketed as Sutton Garden Square.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.ssna.co.uk/chalk-gardens",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F4",
+     "status": "verified",
+     "inConflict": false
+    },
+    {
+     "area": "identity",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "The sales and marketing suite is at 27 Sutton Court Road, Sutton SM1 4GR.",
+     "kind": "developer_claim",
+     "sources": [
+      {
+       "url": "https://www.berkeleygroup.co.uk/developments/london/sutton/sutton-garden-square",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F15",
+     "status": "claim",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "record",
+   "title": "The registration record",
+   "facts": [
+    {
+     "area": "record",
+     "field": "planning permission",
+     "label": "planning permission",
+     "value": "DM2022/01764, granted December 2023",
+     "claim": "Sutton Council granted planning permission DM2022/01764 in December 2023 for up to 970 homes and commercial space in eight buildings of 6 to 21 storeys on the former B&Q site.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.sutton.gov.uk/w/plans-for-new-homes-at-key-town-centre-site-approved",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://planning.org.uk/app/210/SLPQHXKCFO800",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F1",
+     "status": "verified",
+     "inConflict": false
+    },
+    {
+     "area": "record",
+     "field": "homes in the scheme",
+     "label": "homes in the scheme",
+     "value": "1,014, raised from 970 by variation DM2024/01476",
+     "claim": "A later application, DM2024/01476, varied conditions on approved drawings, storey heights, number of homes, cycle spaces, car parking and play space; the council and the Greater London Authority approved raising the homes from 970 to 1,014.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://planning.org.uk/app/210/SLPQHXKCFO800",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.ssna.co.uk/chalk-gardens",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F2",
+     "status": "verified",
+     "inConflict": false
+    },
+    {
+     "area": "record",
+     "field": "site",
+     "label": "site",
+     "value": "5.6 acres, a former chalk quarry",
+     "claim": "The 5.6-acre site is a former chalk quarry, most recently a B&Q store and car park that closed in 2024; the scheme includes over 8,500 sq ft of commercial space and 1.1 acres of public green space.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.estatesgazette.co.uk/news/berkeley-sets-out-plans-for-1000-home-sutton-garden-square-scheme/",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F5",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "record",
+     "field": "council homes in the scheme",
+     "label": "council homes in the scheme",
+     "value": "217",
+     "claim": "The London Borough of Sutton has acquired 217 of the homes from the Berkeley Group, funded partly from Right to Buy receipts; the scheme provides 35% affordable homes by habitable room, and the council expects its first homes complete in 2029.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.getsurrey.co.uk/news/surrey-news/major-21-storey-tower-project-33731970",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F6",
+     "status": "verified",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "units",
+   "title": "Units and areas",
+   "facts": [
+    {
+     "area": "units",
+     "field": "first phase",
+     "label": "first phase",
+     "value": "The Kensington: 159 apartments",
+     "claim": "The Kensington, the first collection, has 159 one-, two- and three-bedroom apartments.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.timeout.com/london/news/neighbourhood-development-south-london-sutton-1000-homes-071126",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F7",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "timeline",
+   "title": "Dates and delivery",
+   "facts": [
+    {
+     "area": "timeline",
+     "field": "first homes complete as marketed",
+     "label": "first homes complete, as marketed",
+     "value": "from 2028 (developer); Q4 2028 to Q1 2029 (an agent)",
+     "claim": "Berkeley says construction of The Kensington begins in 2026, with the first homes completing from 2028.",
+     "kind": "developer_claim",
+     "sources": [
+      {
+       "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.timeout.com/london/news/neighbourhood-development-south-london-sutton-1000-homes-071126",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F8",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "timeline",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "An estate agent gives an estimated completion for The Kensington of Q4 2028 to Q1 2029.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://londraestate.co.uk/sutton-garden-square/",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F9",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "timeline",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Later phases are expected to complete towards 2030.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.getsurrey.co.uk/news/surrey-news/major-21-storey-tower-project-33731970",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F10",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "construction",
+   "title": "Construction progress",
+   "facts": [
+    {
+     "area": "construction",
+     "field": "construction started",
+     "label": "construction started",
+     "value": "piling from 16 July 2026",
+     "claim": "Local councillors reported piling for the first phase beginning on 16 July 2026 at the end nearest Langley Park Road, with regular resident meetings promised.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://suttonsouth.mycouncillor.org.uk/2026/07/16/progress-on-sutton-garden-square/",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F11",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "construction",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Demolition began on the site in 2024 after the permission was granted.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.getsurrey.co.uk/news/surrey-news/major-21-storey-tower-project-33731970",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F12",
+     "status": "verified",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "legal",
+   "title": "Court cases and legal matters",
+   "facts": [
+    {
+     "area": "legal",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Residential buildings in England of at least 18 metres or seven storeys are higher-risk buildings: work cannot start until the Building Safety Regulator approves building control (Gateway 2), and nobody may move in until it issues a completion certificate (Gateway 3).",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://gov.uk/government/publications/building-safety-bill-factsheets/building-control-regime-for-higher-risk-buildings-gateways-2-and-3-factsheet",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://cms.law/en/gbr/legal-updates/new-high-risk-buildings-approval-regime-comes-into-force-on-1-october-2023",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F16",
+     "status": "verified",
+     "inConflict": false
+    },
+    {
+     "area": "legal",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Building control approval for a higher-risk building lapses if work has not commenced within three years of approval, and the client must give the regulator five working days' notice before starting.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://cms.law/en/gbr/legal-updates/new-high-risk-buildings-approval-regime-comes-into-force-on-1-october-2023",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F17",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "price",
+   "title": "Prices",
+   "facts": [
+    {
+     "area": "price",
+     "field": "advertised prices",
+     "label": "advertised prices",
+     "value": "from £375,000 (1 bed), £442,000 (2 bed), £645,000 (3 bed)",
+     "claim": "An agent lists one-bedroom apartments from £375,000, two-bedroom from £442,000 and three-bedroom from £645,000.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://londraestate.co.uk/sutton-garden-square/",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F14",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "buyers",
+   "title": "What buyers say",
+   "facts": [
+    {
+     "area": "buyers",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "The planning application drew hundreds of objections from residents.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.getsurrey.co.uk/news/surrey-news/major-21-storey-tower-project-33731970",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F13",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "when": "before booking",
+   "to": "legal team",
+   "question": "Sutton Council names St George as the developer behind the permission, while the homes are sold as Berkeley. Which company signs my contract and holds the freehold, and what is its Companies House number?",
+   "why": "Your contract is enforceable against the company that signs it, not the brand.",
+   "good": "The company named in the draft contract with its number, matching the land registry title.",
+   "not_accepted": "\"It is all Berkeley Group.\"",
+   "sources": [
+    {
+     "url": "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre"
+    },
+    {
+     "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton"
+    }
+   ],
+   "notAccepted": "\"It is all Berkeley Group.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q1"
+  },
+  {
+   "when": "before booking",
+   "to": "site and engineering team",
+   "question": "The scheme has eight buildings of 6 to 21 storeys. Is The Kensington's building a higher-risk building (18 metres or seven storeys), and if so, has the Building Safety Regulator approved Gateway 2 for it? Please share the approval notice and its date.",
+   "why": "For a higher-risk building, construction may not start before Gateway 2 approval and nobody may move in before a Gateway 3 completion certificate. Delays at either gateway move your completion date.",
+   "good": "The regulator's approval notice, or a statement that the building is below the threshold with its height.",
+   "not_accepted": "\"Building control is in hand.\"",
+   "sources": [
+    {
+     "url": "https://gov.uk/government/publications/building-safety-bill-factsheets/building-control-regime-for-higher-risk-buildings-gateways-2-and-3-factsheet"
+    },
+    {
+     "url": "https://www.sutton.gov.uk/w/plans-for-new-homes-at-key-town-centre-site-approved"
+    }
+   ],
+   "notAccepted": "\"Building control is in hand.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q2"
+  },
+  {
+   "when": "before booking",
+   "to": "site and engineering team",
+   "question": "Piling began on 16 July 2026. Was that work covered by an approved building control application, or was the work split into stages with separate approvals?",
+   "why": "Starting higher-risk building work without approval is an offence, and enforcement can halt the site.",
+   "good": "The approval or the staged approvals that cover the piling.",
+   "not_accepted": "An answer that does not name the approval.",
+   "sources": [
+    {
+     "url": "https://suttonsouth.mycouncillor.org.uk/2026/07/16/progress-on-sutton-garden-square/"
+    },
+    {
+     "url": "https://cms.law/en/gbr/legal-updates/new-high-risk-buildings-approval-regime-comes-into-force-on-1-october-2023"
+    }
+   ],
+   "notAccepted": "An answer that does not name the approval.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q3"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Berkeley says the first homes complete from 2028; an agent says Q4 2028 to Q1 2029. What completion date, long-stop date and right to rescind will my contract contain?",
+   "why": "Off-plan contracts in England usually give the developer a long-stop date; until then you may have no remedy for delay.",
+   "good": "The contract clause with the long-stop date and your right to withdraw and recover your deposit.",
+   "not_accepted": "An estimated date in a brochure.",
+   "sources": [
+    {
+     "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton"
+    },
+    {
+     "url": "https://londraestate.co.uk/sutton-garden-square/"
+    }
+   ],
+   "notAccepted": "An estimated date in a brochure.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q4"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Where will my deposit be held: by your solicitors as stakeholder, or released to the developer? Is it protected if the developer cannot complete?",
+   "why": "A deposit released to the developer before completion is at risk if the company fails.",
+   "good": "The contract clause and, if released, the insurance or guarantee that protects it.",
+   "not_accepted": "\"Deposits are always safe with Berkeley.\"",
+   "sources": [],
+   "notAccepted": "\"Deposits are always safe with Berkeley.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q5"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Which new-home warranty covers my apartment (for example NHBC or Premier), for how long, and from what date? Please share the provider and the policy summary.",
+   "why": "A ten-year structural warranty is what most lenders require and what protects you from defects after the first years.",
+   "good": "The provider's name and the cover note for your plot.",
+   "not_accepted": "A promise to provide it at completion.",
+   "sources": [],
+   "notAccepted": "A promise to provide it at completion.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q6"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "What are the lease terms: length, ground rent, service charge budget for the first year, reserve fund, and any estate charge for the 1.1-acre park and public realm? Who is the management company?",
+   "why": "Service and estate charges on large mixed schemes can rise sharply; the first-year budget and how costs are shared with 1,014 homes matter.",
+   "good": "The draft lease, the first-year budget and the apportionment method.",
+   "not_accepted": "A \"typical\" service charge figure.",
+   "sources": [
+    {
+     "url": "https://www.estatesgazette.co.uk/news/berkeley-sets-out-plans-for-1000-home-sutton-garden-square-scheme/"
+    },
+    {
+     "url": "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes"
+    }
+   ],
+   "notAccepted": "A \"typical\" service charge figure.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q7"
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "How is the apartment heated: by its own system or a shared heat network? If shared, what are the standing charges, who supplies the heat, and is the network covered by heat network regulation?",
+   "why": "Heat network customers cannot switch supplier, so the terms decide what you pay for years.",
+   "good": "The heat supply agreement and an estimate of annual costs.",
+   "not_accepted": "\"Underfloor heating is included.\"",
+   "sources": [
+    {
+     "url": "https://www.timeout.com/london/news/neighbourhood-development-south-london-sutton-1000-homes-071126"
+    }
+   ],
+   "notAccepted": "\"Underfloor heating is included.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q8"
+  },
+  {
+   "when": "before signing",
+   "to": "site and engineering team",
+   "question": "The site is a former chalk quarry. Please share the ground investigation report and the piling and foundation design approval, and say how chalk solution features and settlement were assessed.",
+   "why": "Chalk ground can hide voids; the foundation design should address them before buyers commit.",
+   "good": "The ground investigation summary and the engineer's design approval.",
+   "not_accepted": "\"Piling tests showed minimal vibration.\"",
+   "sources": [
+    {
+     "url": "https://www.estatesgazette.co.uk/news/berkeley-sets-out-plans-for-1000-home-sutton-garden-square-scheme/"
+    },
+    {
+     "url": "https://suttonsouth.mycouncillor.org.uk/2026/07/16/progress-on-sutton-garden-square/"
+    }
+   ],
+   "notAccepted": "\"Piling tests showed minimal vibration.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q9"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "The scheme is called \"Chalk Gardens\" in council records and \"Sutton Garden Square\" in marketing. Please confirm the planning references (DM2022/01764 and DM2024/01476) and the conditions that apply to my building, including those discharged and outstanding.",
+   "why": "Searches and records may use either name; outstanding pre-occupation conditions can delay completion.",
+   "good": "A list of conditions with discharge status for your building.",
+   "not_accepted": "\"All conditions are in hand.\"",
+   "sources": [
+    {
+     "url": "https://planning.org.uk/app/210/SLPQHXKCFO800"
+    },
+    {
+     "url": "https://www.ssna.co.uk/chalk-gardens"
+    },
+    {
+     "url": "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre"
+    }
+   ],
+   "notAccepted": "\"All conditions are in hand.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q10"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "The 2024 variation changed storey heights, numbers of homes, car parking and play space. What changed for The Kensington's building, and does my apartment's floor, outlook or parking depend on it?",
+   "why": "A plan that changed after launch may not match the brochure you were shown.",
+   "good": "The approved drawings for your building and floor.",
+   "not_accepted": "Marketing floor plans.",
+   "sources": [
+    {
+     "url": "https://planning.org.uk/app/210/SLPQHXKCFO800"
+    }
+   ],
+   "notAccepted": "Marketing floor plans.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q11"
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Is a parking space included or available for my apartment, at what price, and with an electric-vehicle charger? How many spaces does the varied permission allow for the whole scheme?",
+   "why": "The permission's parking conditions were varied; spaces may be limited.",
+   "good": "The allocation in the contract and the approved parking numbers.",
+   "not_accepted": "\"Subject to availability.\"",
+   "sources": [
+    {
+     "url": "https://planning.org.uk/app/210/SLPQHXKCFO800"
+    }
+   ],
+   "notAccepted": "\"Subject to availability.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q12"
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Are the 217 council homes in the same buildings as private homes? Will all residents share the amenities (gym, roof terrace, concierge), and how are their costs shared?",
+   "why": "Shared or separate access and costs affect service charges and day-to-day living.",
+   "good": "A building-by-building tenure plan and the amenity access rules.",
+   "not_accepted": "\"Everyone will love it here.\"",
+   "sources": [
+    {
+     "url": "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes"
+    }
+   ],
+   "notAccepted": "\"Everyone will love it here.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q13"
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Later phases run towards 2030. What is the construction programme for buildings near mine, the working hours, and the measures for noise, dust and access while I live there?",
+   "why": "Moving in during a multi-year build affects comfort, resale and rental value.",
+   "good": "The construction management plan and phase programme.",
+   "not_accepted": "\"There will be minimal disruption.\"",
+   "sources": [
+    {
+     "url": "https://www.getsurrey.co.uk/news/surrey-news/major-21-storey-tower-project-33731970"
+    },
+    {
+     "url": "https://suttonsouth.mycouncillor.org.uk/2026/07/16/progress-on-sutton-garden-square/"
+    }
+   ],
+   "notAccepted": "\"There will be minimal disruption.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q14"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Is the developer registered with the New Homes Quality Board, so that the New Homes Ombudsman can hear a complaint about my home?",
+   "why": "Registration gives you a free route to complain about defects and service after you buy.",
+   "good": "Confirmation of registration and the complaint procedure.",
+   "not_accepted": "No answer.",
+   "sources": [],
+   "notAccepted": "No answer.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q15"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Is the Berkeley Group a member of the government's Responsible Actors Scheme for building-safety remediation? Please confirm for the company that signs my contract.",
+   "why": "Members are committed to fixing life-critical defects in buildings they developed; non-members face restrictions.",
+   "good": "Confirmation with a link to the government list.",
+   "not_accepted": "A general statement on safety.",
+   "sources": [],
+   "notAccepted": "A general statement on safety.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q16"
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Please share the current price list for The Kensington with any incentives, and the prices achieved on recent sales. One-bedroom homes are listed from £375,000.",
+   "why": "Incentives and achieved prices show the real market for the homes you are comparing.",
+   "good": "A dated price list with incentives stated.",
+   "not_accepted": "\"Prices are rising fast.\"",
+   "sources": [
+    {
+     "url": "https://londraestate.co.uk/sutton-garden-square/"
+    }
+   ],
+   "notAccepted": "\"Prices are rising fast.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q17"
+  },
+  {
+   "when": "before each payment",
+   "to": "site and engineering team",
+   "question": "What stage has my building reached, as certified, and when will the warranty provider and the regulator inspect it next?",
+   "why": "Payments in England are usually deposit then completion, but staged reservations or upgrades should follow certified progress.",
+   "good": "The latest stage certificate or inspection record.",
+   "not_accepted": "Photos alone.",
+   "sources": [],
+   "notAccepted": "Photos alone.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q18"
+  },
+  {
+   "when": "before possession",
+   "to": "legal team",
+   "question": "Has the Building Safety Regulator issued the Gateway 3 completion certificate and registered the building, and has the warranty provider issued its final certificate for my apartment?",
+   "why": "Nobody may occupy a higher-risk building before Gateway 3, and lenders need the warranty certificate.",
+   "good": "Both certificates, dated, for your building.",
+   "not_accepted": "Completion offered \"with certificates to follow\".",
+   "sources": [
+    {
+     "url": "https://gov.uk/government/publications/building-safety-bill-factsheets/building-control-regime-for-higher-risk-buildings-gateways-2-and-3-factsheet"
+    }
+   ],
+   "notAccepted": "Completion offered \"with certificates to follow\".",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q19"
+  },
+  {
+   "when": "before possession",
+   "to": "your own lawyer",
+   "question": "Ask your solicitor to check the title and the lease against the draft contract, and to raise pre-contract enquiries on building safety, the heat network, the estate charge and the section 106 obligations.",
+   "why": "These searches and enquiries settle what public sources cannot.",
+   "good": "Your solicitor's written report on title.",
+   "not_accepted": "The developer's own summary.",
+   "sources": [],
+   "notAccepted": "The developer's own summary.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q20"
+  }
+ ],
+ "sources": [
+  {
+   "url": "https://www.sutton.gov.uk/w/plans-for-new-homes-at-key-town-centre-site-approved",
+   "title": "",
+   "host": "sutton.gov.uk",
+   "status": "verified",
+   "seen": true
+  },
+  {
+   "url": "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes",
+   "title": "",
+   "host": "sutton.gov.uk",
+   "status": "verified",
+   "seen": true
+  },
+  {
+   "url": "https://planning.org.uk/app/210/SLPQHXKCFO800",
+   "title": "",
+   "host": "planning.org.uk",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre",
+   "title": "",
+   "host": "sutton.gov.uk",
+   "status": "verified",
+   "seen": true
+  },
+  {
+   "url": "https://www.ssna.co.uk/chalk-gardens",
+   "title": "",
+   "host": "ssna.co.uk",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton",
+   "title": "",
+   "host": "berkeleygroup.co.uk",
+   "status": "claim",
+   "seen": true
+  },
+  {
+   "url": "https://www.estatesgazette.co.uk/news/berkeley-sets-out-plans-for-1000-home-sutton-garden-square-scheme/",
+   "title": "",
+   "host": "estatesgazette.co.uk",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.getsurrey.co.uk/news/surrey-news/major-21-storey-tower-project-33731970",
+   "title": "",
+   "host": "getsurrey.co.uk",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.timeout.com/london/news/neighbourhood-development-south-london-sutton-1000-homes-071126",
+   "title": "",
+   "host": "timeout.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://londraestate.co.uk/sutton-garden-square/",
+   "title": "",
+   "host": "londraestate.co.uk",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://suttonsouth.mycouncillor.org.uk/2026/07/16/progress-on-sutton-garden-square/",
+   "title": "",
+   "host": "suttonsouth.mycouncillor.org.uk",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.berkeleygroup.co.uk/developments/london/sutton/sutton-garden-square",
+   "title": "",
+   "host": "berkeleygroup.co.uk",
+   "status": "claim",
+   "seen": true
+  },
+  {
+   "url": "https://gov.uk/government/publications/building-safety-bill-factsheets/building-control-regime-for-higher-risk-buildings-gateways-2-and-3-factsheet",
+   "title": "",
+   "host": "gov.uk",
+   "status": "verified",
+   "seen": true
+  },
+  {
+   "url": "https://cms.law/en/gbr/legal-updates/new-high-risk-buildings-approval-regime-comes-into-force-on-1-october-2023",
+   "title": "",
+   "host": "cms.law",
+   "status": "reported",
+   "seen": true
+  }
+ ],
+ "leads": [],
+ "unreachable": [
+  {
+   "what": "The selling company: its name, Companies House number and directors",
+   "why": "The council names St George; the marketing names Berkeley. The contracting company was not confirmed in public sources",
+   "how_to_get_it": "Ask for the draft contract and search the named company on Companies House (free)"
+  },
+  {
+   "what": "The Building Safety Regulator's Gateway 2 decision for The Kensington",
+   "why": "Gateway decisions are not published in a searchable public register we could reach",
+   "how_to_get_it": "Ask the developer for the building control approval notice, or ask your solicitor to raise it in pre-contract enquiries"
+  },
+  {
+   "what": "The full planning conditions and the section 106 agreement",
+   "why": "The planning portal pages were not readable by our tools",
+   "how_to_get_it": "Sutton Council planning search for DM2022/01764 and DM2024/01476"
+  }
+ ],
+ "panel": {
+  "engines": [],
+  "failed": [],
+  "rounds": 0
+ },
+ "notice": "Research, not advice. This report states what public sources show and what to ask. It does not tell you whether to buy."
+}

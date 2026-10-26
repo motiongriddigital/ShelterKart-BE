@@ -1,0 +1,2468 @@
+{
+ "kind": "shelterkart-dossier",
+ "version": 1,
+ "ref": "SK-P51900008925-20261013",
+ "glance": [
+  {
+   "label": "Sold as",
+   "values": [
+    "Hubtown"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Registered promoter",
+   "values": [
+    "Nayan Real Estate Private Limited"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Registration number",
+   "values": [
+    "P51900008925"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Registered on",
+   "values": [
+    "19 Aug 2017"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Filed completion date",
+   "values": [
+    "31 Jul 2029"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Marketed possession",
+   "values": [
+    "December 2027",
+    "March 2027"
+   ],
+   "conflict": true
+  },
+  {
+   "label": "Registered units",
+   "values": [
+    "211 units, 6,481.23 sq m of carpet area in total"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Sanctioned built-up area",
+   "values": [
+    "2,623.62 sq m"
+   ],
+   "conflict": false
+  },
+  {
+   "label": "Land area",
+   "values": [
+    "494.89",
+    "0.75 acre",
+    "1.000 acre"
+   ],
+   "conflict": true
+  },
+  {
+   "label": "Floors described",
+   "values": [
+    "G+38",
+    "G+22",
+    "17",
+    "18"
+   ],
+   "conflict": true
+  }
+ ],
+ "promises": [
+  {
+   "label": "Who sells it",
+   "promise": "Sold as Hubtown",
+   "record": "Registered to Nayan Real Estate Private Limited",
+   "note": "The company that signs your agreement is the one you can enforce against."
+  },
+  {
+   "label": "When you get it",
+   "promise": "Marketed: December 2027",
+   "record": "Filed with the regulator: 31 Jul 2029",
+   "note": "19 months later than the marketed date.",
+   "sources": [
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    }
+   ]
+  },
+  {
+   "label": "What is registered",
+   "promise": "211 units registered",
+   "record": "6,481.23 sq m of carpet area against 2,623.62 sq m sanctioned",
+   "note": "Carpet area cannot exceed the built-up area. Ask for the approved area statement."
+  }
+ ],
+ "query": "Hubtown Celeste",
+ "location": "B G Kher Marg, Worli, Mumbai 400018",
+ "market": "India, Maharashtra",
+ "asOf": "2026-10-13",
+ "project": {
+  "ids": [
+   "P51900008925"
+  ],
+  "name": "Hubtown Celeste",
+  "location": "B G Kher Marg, Worli, Mumbai 400018",
+  "country": "India",
+  "brand": "Hubtown",
+  "promoter_legal_name": "Nayan Real Estate Private Limited",
+  "developer_site": "hubtown.co.in"
+ },
+ "entities": [
+  {
+   "name": "Nayan Real Estate Private Limited",
+   "role": "promoter",
+   "ids": [],
+   "people": [
+    {
+     "name": "Vyomesh M Shah",
+     "role": "Managing Director",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+      }
+     ]
+    },
+    {
+     "name": "Hemant M Shah",
+     "role": "Chairperson",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+      }
+     ]
+    },
+    {
+     "name": "Shailesh Ghinsulal Hingrah",
+     "role": "Director",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+      }
+     ]
+    }
+   ],
+   "domains": [
+    "hubtown.co.in"
+   ],
+   "brand": "Hubtown",
+   "foundBy": [
+    "analyst"
+   ]
+  },
+  {
+   "name": "Hubtown Limited",
+   "role": "parent",
+   "ids": [
+    "L45200MH1989PLC050688"
+   ],
+   "people": [
+    {
+     "name": "Hemant Mahipatray Shah",
+     "role": "Director",
+     "sources": [
+      {
+       "url": "https://www.tofler.in/hubtown-limited/company/L45200MH1989PLC050688"
+      },
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+      }
+     ]
+    },
+    {
+     "name": "Vyomesh Shah",
+     "role": "Managing Director and Co-Founder",
+     "sources": [
+      {
+       "url": "https://www.tofler.in/hubtown-limited/company/L45200MH1989PLC050688"
+      },
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+      }
+     ]
+    }
+   ],
+   "domains": [
+    "hubtown.co.in"
+   ],
+   "brand": "Hubtown",
+   "foundBy": [
+    "analyst"
+   ]
+  }
+ ],
+ "counts": {
+  "facts": 43,
+  "verified": 6,
+  "reported": 37,
+  "conflicts": 2,
+  "inferences": 8,
+  "questions": 30,
+  "sources": 28
+ },
+ "inferences": [
+  {
+   "kind": "common control",
+   "text": "Nayan Real Estate Private Limited and Hubtown Limited appear to be under common control (4 links). Control is not the same as legal liability: whether Hubtown Limited will stand behind Nayan Real Estate Private Limited's obligations is a question for the developer.",
+   "steps": [
+    {
+     "text": "Vyomesh M Shah (Managing Director) on Nayan Real Estate Private Limited matches Vyomesh Shah (Managing Director and Co-Founder) on Hubtown Limited",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+      },
+      {
+       "url": "https://www.tofler.in/hubtown-limited/company/L45200MH1989PLC050688"
+      },
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+      }
+     ]
+    },
+    {
+     "text": "Hemant M Shah (Chairperson) on Nayan Real Estate Private Limited matches Hemant Mahipatray Shah (Director) on Hubtown Limited",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+      },
+      {
+       "url": "https://www.tofler.in/hubtown-limited/company/L45200MH1989PLC050688"
+      },
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+      }
+     ]
+    },
+    {
+     "text": "Both use the hubtown.co.in e-mail domain",
+     "sources": []
+    },
+    {
+     "text": "Both are presented under the Hubtown brand",
+     "sources": []
+    }
+   ],
+   "strength": "strong"
+  },
+  {
+   "kind": "area",
+   "text": "The 211 registered units total 6,481.23 sq m of carpet area, 2.47 times the sanctioned built-up area of 2,623.62 sq m. Carpet area cannot exceed built-up area, so the record does not reconcile as shown.",
+   "steps": [
+    {
+     "text": "211 units, 6481.23 sq m carpet in total"
+    },
+    {
+     "text": "Sanctioned built-up area 2623.62 sq m"
+    }
+   ]
+  },
+  {
+   "kind": "dates",
+   "text": "Marketed date \"December 2027\" is 19 months earlier than the filed completion date (31 Jul 2029).",
+   "steps": [],
+   "sources": [
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    }
+   ]
+  },
+  {
+   "kind": "dates",
+   "text": "Marketed date \"March 2027\" is 28 months earlier than the filed completion date (31 Jul 2029).",
+   "steps": [],
+   "sources": [
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    }
+   ]
+  },
+  {
+   "kind": "redevelopment link",
+   "strength": "possible",
+   "text": "Celeste appears to be connected to a rehabilitation or redevelopment scheme: the registered land adjoins \"Rehab 3 Building\" and the promoter's address is in that rehab building. If so, the sale building's completion may depend on the rehab obligations.",
+   "steps": [
+    {
+     "text": "The record's western boundary is \"Adjoining Rehab 3 Building\"",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+      }
+     ]
+    },
+    {
+     "text": "The promoter's communication address is the Ground Floor, 3 Rehab Building, B G Kher Marg, Worli",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "group structure",
+   "strength": "possible",
+   "text": "Nayan Real Estate looks like one of a pair of Hubtown promoter companies incorporated together, of which only the other is being merged into the listed company. That would leave Celeste's seller outside Hubtown's balance sheet.",
+   "steps": [
+    {
+     "text": "Nitant Real Estate Private Limited, named by Hubtown as a merging promoter entity, holds CIN U70102MH2010PTC205729",
+     "sources": [
+      {
+       "url": "https://www.zaubacorp.com/company/NITANT-REAL-ESTATE-PRIVATE-LIMITED/U70102MH2010PTC205729"
+      },
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+      }
+     ]
+    },
+    {
+     "text": "Unverified online reports give Nayan Real Estate's CIN as U70102MH2010PTC205728, the adjacent number (not confirmed by us)",
+     "sources": []
+    },
+    {
+     "text": "Nayan Real Estate is not named among the merging entities in the part of the FY26 release seen",
+     "sources": [
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "group delivery record",
+   "strength": "possible",
+   "text": "A company that Hubtown's own release associates with a 72.22% figure, Rare Townships, was ordered by MahaRERA in February 2026 to pay delay interest on a Mumbai project that had no occupation certificate years after its date.",
+   "steps": [
+    {
+     "text": "MahaRERA partly allowed complaints against Rare Townships Private Limited over a Ghatkopar project due by 31 Dec 2022 with the Covid extension",
+     "sources": [
+      {
+       "url": "https://www.freepressjournal.in/amp/mumbai/mumbai-real-estate-dispute-maharera-sets-aside-flat-termination-in-ghatkopar-project-orders-interest-for-possession-delay"
+      }
+     ]
+    },
+    {
+     "text": "Hubtown's FY26 results release refers to 72.22% of Rare Townships Private Limited",
+     "sources": [
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "price",
+   "strength": "possible",
+   "text": "Registered sale values average about ₹1.5 crore per unit, roughly a quarter below the lowest 1 BHK asking price seen (₹1.99 crore). The registered sales may differ in size or timing, so the buyer should ask for the price history.",
+   "steps": [
+    {
+     "text": "4 transactions registered July 2025 to June 2026 totalling about ₹6 crore",
+     "sources": [
+      {
+       "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project"
+      }
+     ]
+    },
+    {
+     "text": "1 BHK of 330 sq ft asked at ₹1.99 crore",
+     "sources": [
+      {
+       "url": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "conflicts": [
+  {
+   "field": "land area",
+   "label": "land area",
+   "area": "record",
+   "versions": [
+    {
+     "value": "494.89",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://cityair.in/hubtown_-_celeste_project_in_mumbai_ppc.html",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ]
+    },
+    {
+     "value": "0.75 acre",
+     "sources": [
+      {
+       "url": "https://housiey.com/projects/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ]
+    },
+    {
+     "value": "1.000 acre",
+     "sources": [
+      {
+       "url": "https://www.jllhomes.co.in/apartments-new/mumbai/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ]
+    }
+   ]
+  },
+  {
+   "field": "number of floors",
+   "label": "number of floors",
+   "area": "construction",
+   "versions": [
+    {
+     "value": "G+38",
+     "sources": [
+      {
+       "url": "https://hubtown-celeste.in/",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ]
+    },
+    {
+     "value": "G+22",
+     "sources": [
+      {
+       "url": "https://housiey.com/projects/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ]
+    },
+    {
+     "value": "17",
+     "sources": [
+      {
+       "url": "https://www.homebazaar.com/hubtown-celeste-worli-3737",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ]
+    },
+    {
+     "value": "18",
+     "sources": [
+      {
+       "url": "https://www.jllhomes.co.in/apartments-new/mumbai/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ]
+    }
+   ]
+  }
+ ],
+ "checks": {
+  "area": {
+   "count": 211,
+   "carpet": 6481.23,
+   "sanctioned": 2623.62,
+   "unit": "sq m",
+   "ratio": 2.47,
+   "reconciles": false,
+   "text": "The 211 registered units total 6,481.23 sq m of carpet area, 2.47 times the sanctioned built-up area of 2,623.62 sq m. Carpet area cannot exceed built-up area, so the record does not reconcile as shown."
+  },
+  "gaps": [
+   {
+    "value": "December 2027",
+    "sources": [
+     {
+      "url": "https://housiey.com/projects/hubtown-celeste"
+     }
+    ],
+    "months": 19,
+    "filed": "31 Jul 2029"
+   },
+   {
+    "value": "March 2027",
+    "sources": [
+     {
+      "url": "https://housiey.com/projects/hubtown-celeste"
+     }
+    ],
+    "months": 28,
+    "filed": "31 Jul 2029"
+   }
+  ],
+  "delay": {
+   "annualRatePct": 11.1,
+   "perAmount": 10000000,
+   "monthly": 92500,
+   "total": 92500,
+   "months": 1,
+   "basis": "the rate a September 2024 MahaRERA order applied: SBI highest MCLR of 9.10% plus 2%"
+  },
+  "prices": [
+   {
+    "label": "1 BHK, 330 sq ft",
+    "price": 19900000,
+    "area": 330,
+    "currency": "INR",
+    "source": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026",
+    "perSqft": 60303
+   },
+   {
+    "label": "2 BHK, 660 sq ft",
+    "price": 41000000,
+    "area": 660,
+    "currency": "INR",
+    "source": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026",
+    "perSqft": 62121
+   },
+   {
+    "label": "1 BHK all-inclusive from",
+    "price": 21400000,
+    "area": 330,
+    "currency": "INR",
+    "source": "https://housiey.com/projects/hubtown-celeste",
+    "perSqft": 64848
+   },
+   {
+    "label": "2 BHK, 1,162 sq ft carpet",
+    "price": 59600000,
+    "area": 1162,
+    "currency": "INR",
+    "source": "https://www.propertypistol.com/projects/hubtown-celeste-worli-pid-18946",
+    "perSqft": 51291
+   }
+  ],
+  "priceRange": {
+   "from": 19900000,
+   "to": 59600000,
+   "currency": "INR"
+  }
+ },
+ "sections": [
+  {
+   "key": "identity",
+   "title": "Who you are paying",
+   "facts": [
+    {
+     "area": "identity",
+     "field": "registered promoter",
+     "label": "registered promoter",
+     "value": "Nayan Real Estate Private Limited",
+     "claim": "The project record for P51900008925 names Nayan Real Estate Private Limited as promoter (promoter type \"Others\"), not Hubtown Limited.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://cityair.in/hubtown_-_celeste_project_in_mumbai_ppc.html",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F1",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "identity",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "The promoter's members on the record are Vyomesh M Shah (Managing Director), Hemant M Shah (Chairperson) and Shailesh Ghinsulal Hingrah (Director); the contact e-mail is on the hubtown.co.in domain; the communication address is the Ground Floor, 3 Rehab Building, B G Kher Marg, Worli.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F2",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "identity",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Agent and portal pages describe the project as developed by Hubtown Limited.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://hubtown-celeste.in/",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.propertypistol.com/projects/hubtown-celeste-worli-pid-18946",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F3",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "identity",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Hubtown Limited is a listed company, CIN L45200MH1989PLC050688, with paid-up capital of about ₹138.14 crore; its directors include Hemant Mahipatray Shah.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.tofler.in/hubtown-limited/company/L45200MH1989PLC050688",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F4",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "identity",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Hubtown's FY26 results release names Vyomesh Shah as Managing Director and Co-Founder, and lists Distinctive Realty, Amazia Developers and Nitant Real Estate Private Limited as merging promoter entities; Nayan Real Estate is not named in the part of the release seen.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F5",
+     "status": "verified",
+     "inConflict": false
+    },
+    {
+     "area": "identity",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Nitant Real Estate Private Limited, a Hubtown promoter entity, holds CIN U70102MH2010PTC205729.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.zaubacorp.com/company/NITANT-REAL-ESTATE-PRIVATE-LIMITED/U70102MH2010PTC205729",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F6",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "record",
+   "title": "The registration record",
+   "facts": [
+    {
+     "area": "record",
+     "field": "registration date",
+     "label": "registration date",
+     "value": "19 Aug 2017",
+     "claim": "Registered on 19 Aug 2017 (acknowledgement REA51900017961); status \"Certificate Signed\"; residential / group housing.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F7",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "record",
+     "field": "land area",
+     "label": "land area",
+     "value": "494.89",
+     "claim": "Land area 494.89 (square metres per a second page) on final plot 32 Pt 38 Pt; boundaries include \"Adjoining Rehab 3 Building\" to the west and the Campa Cola compound to the south.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://cityair.in/hubtown_-_celeste_project_in_mumbai_ppc.html",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F10",
+     "status": "reported",
+     "inConflict": true
+    },
+    {
+     "area": "record",
+     "field": "land area",
+     "label": "land area",
+     "value": "0.75 acre",
+     "claim": "An agent page describes a 0.75-acre land parcel.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://housiey.com/projects/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F11",
+     "status": "reported",
+     "inConflict": true
+    },
+    {
+     "area": "record",
+     "field": "land area",
+     "label": "land area",
+     "value": "1.000 acre",
+     "claim": "Another portal lists the total land area as 1.000 acre.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.jllhomes.co.in/apartments-new/mumbai/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F12",
+     "status": "reported",
+     "inConflict": true
+    },
+    {
+     "area": "record",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Permissible FSI and sanctioned built-up area are both 2,623.62; aggregate area 778.05.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F13",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "record",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "The project account is at HDFC Bank, R G Thadani Marg, Worli (IFSC HDFC0000080).",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F14",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "record",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Professionals on the record: architect City Gold Management Services (Mrs Maya Vaidya); engineers Devendra Mishra and Rajivan Paramban; chartered accountants KMVR & Company.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F15",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "units",
+   "title": "Units and areas",
+   "facts": [
+    {
+     "area": "units",
+     "field": "registered units",
+     "label": "registered units",
+     "value": "211",
+     "claim": "211 apartments are registered: 89 with 30.63 sq m carpet and 122 with 30.78 sq m, all typed 2BHK (about 330 sq ft each).",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://cityair.in/hubtown_-_celeste_project_in_mumbai_ppc.html",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F17",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "units",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "A RERA-data page reports 19.43% of the 211 apartments as booked.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://cityair.in/hubtown_-_celeste_project_in_mumbai_ppc.html",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F18",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "units",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Agents sell the 330 sq ft unit as a 1 BHK and the 660 sq ft combination as a 2 BHK \"Jodi\"; other pages list 2 BHK and 3 BHK, and one lists a 2 BHK of 860 sq ft.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://housiey.com/projects/hubtown-celeste",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.jllhomes.co.in/apartments-new/mumbai/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F19",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "timeline",
+   "title": "Dates and delivery",
+   "facts": [
+    {
+     "area": "timeline",
+     "field": "filed completion date",
+     "label": "filed completion date",
+     "value": "31 Jul 2029",
+     "claim": "The proposed completion date on the record is 31 Jul 2029.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.propertypistol.com/projects/hubtown-celeste-worli-pid-18946",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F8",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "timeline",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Agent pages advertise December 2027 as the RERA possession date, with a \"target\" of March 2027.",
+     "kind": "developer_claim",
+     "sources": [
+      {
+       "url": "https://housiey.com/projects/hubtown-celeste",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.propertycrow.com/mumbai/propertyview_hubtown-celeste-worli_1202.html",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F9",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "construction",
+   "title": "Construction progress",
+   "facts": [
+    {
+     "area": "construction",
+     "field": "number of floors",
+     "label": "number of floors",
+     "value": "G+38",
+     "claim": "An agent site describes a tower of ground plus 38 storeys.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://hubtown-celeste.in/",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F20",
+     "status": "reported",
+     "inConflict": true
+    },
+    {
+     "area": "construction",
+     "field": "number of floors",
+     "label": "number of floors",
+     "value": "G+22",
+     "claim": "An agent page describes one tower of ground plus 22 floors.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://housiey.com/projects/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F21",
+     "status": "reported",
+     "inConflict": true
+    },
+    {
+     "area": "construction",
+     "field": "number of floors",
+     "label": "number of floors",
+     "value": "17",
+     "claim": "A portal describes 17 storeys.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.homebazaar.com/hubtown-celeste-worli-3737",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F22",
+     "status": "reported",
+     "inConflict": true
+    },
+    {
+     "area": "construction",
+     "field": "number of floors",
+     "label": "number of floors",
+     "value": "18",
+     "claim": "A portal lists 18 floors.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.jllhomes.co.in/apartments-new/mumbai/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F23",
+     "status": "reported",
+     "inConflict": true
+    },
+    {
+     "area": "construction",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "The structure stood to the 27th floor as of late April 2026, according to a review site.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F24",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "construction",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "A portal (June 2026) reports internal finishing at 3% (2% elsewhere on the same page) and MEP services, including lifts and staircases, at 27%.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F25",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "construction",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Agent pages say a full Commencement Certificate has been issued.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://housiey.com/projects/hubtown-celeste",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.propertycrow.com/mumbai/propertyview_hubtown-celeste-worli_1202.html",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F26",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "money",
+   "title": "Money, debt and the group",
+   "facts": [
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "FY26 proforma pre-sales were ₹4,382 crore and collections ₹1,910 crore (Hubtown results release, 14 May 2026).",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F29",
+     "status": "verified",
+     "inConflict": false
+    },
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Hubtown's FY26 consolidated profit after tax was reported at ₹168 crore, up 205%; the auditors qualified their opinion for non-provision of ₹1,751.85 lakh of interest on inter-corporate deposits.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://scanx.trade/stock-news/hubtown-ltd",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F30",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "For the December 2025 quarter the auditors' review noted ₹1,905.33 lakh (quarter) and ₹5,695.27 lakh (nine months) of unprovided interest on inter-corporate deposits; the company said it was seeking a waiver and had substantially repaid the principal.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://scanx.trade/stock-market-news/stocks/hubtown-limited-undergoes-gst-inspection-operation-by-mumbai-tax-department/32621036",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F31",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Proforma group debt was reported at ₹5,328 crore on 31 Mar 2026, down 37% from ₹8,421 crore.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://scanx.trade/stock-market-news/companies/hubtown-limited-schedules-investor-and-analyst-meeting-on-may-20-2026/40694211",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F32",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "On 27 Mar 2026 Edelweiss Investment Advisors invoked a pledge on 1,711,170 Hubtown shares held by a promoter-group HUF; 472,354 shares were released after part payment; the promoter group holds 32.84% with 5.28% of share capital still encumbered.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://scanx.trade/stock-market-news/companies/hubtown-ltd-pledge-invoked-472-354-shares-released-to-promoter/44091541",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F33",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Hubtown gave a corporate guarantee for up to ₹300 crore of debentures issued by its subsidiary Joynest Premises (31 Dec 2025) and an earlier ₹96 crore guarantee for a subsidiary (August 2025).",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://nsearchives.nseindia.com/corporate/HUBTOWN_31122025191659_HTLCGJoynest31122025.pdf",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://scanx.trade/stock-market-news/earnings/hubtown-limited-reports-strong-q2-and-h1-fy26-performance-with-significant-revenue-growth/24508064",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F34",
+     "status": "verified",
+     "inConflict": false
+    },
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "The GST department searched the registered offices of Hubtown Limited and its subsidiary Joynest Premises from 9 to 13 Feb 2026 under Section 67 of the Maharashtra GST Act, examining tax payment, input tax credit, corporate-guarantee services and deemed tax on real estate; the company reported no material impact. The disclosure does not name Celeste or Nayan Real Estate.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://scanx.trade/stock-market-news/stocks/hubtown-limited-undergoes-gst-inspection-operation-by-mumbai-tax-department/32621036",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F35",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "In December 2025 Hubtown announced a ₹500 crore preferential issue, earmarking ₹150 crore to repay secured loans, then withdrew a ₹500.59 crore preferential issue; it later sought approval for a $150 million FCCB.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://scanx.trade/stock-market-news/stocks/hubtown-limited-undergoes-gst-inspection-operation-by-mumbai-tax-department/32621036",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://scanx.trade/stock-news/hubtown-ltd",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F36",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "money",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Shareholders and creditors approved the merger of Saicharan Consultancy and 25 West Realty into Hubtown (June 2026); the results release refers to NCLT approval for the 25 West amalgamation.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://scanx.trade/stock-market-news/companies/hubtown-ltd-pledge-invoked-472-354-shares-released-to-promoter/44091541",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F37",
+     "status": "verified",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "legal",
+   "title": "Court cases and legal matters",
+   "facts": [
+    {
+     "area": "legal",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Delay interest under RERA Section 18 in Maharashtra is the State Bank of India's highest MCLR plus 2% (Rule 18); a September 2024 order applied 11.10%. The Bombay High Court held in June 2026 that accepting delayed possession does not waive this interest.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://thelawsuits.in/maharera-grants-relief-to-homebuyer-for-delay-in-possession/",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://rawlaw.in/bombay-high-court-upholds-homebuyers-right-to-delay-interest-despite-accepting-possession-in-delayed-housing-project/",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F42",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "legal",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "MahaRERA has held that extending a project timeline without the allottees' consent breaches its Circular 28/2021, and that a regulator's extension does not dilute a buyer's agreed possession date.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://thelawsuits.in/?p=3169",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.livelawbiz.com/consumer-cases/homebuyers-can-claim-interest-for-delayed-possession-despite-project-deadline-extension-maharera-516517",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F43",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "complaints",
+   "title": "Regulator complaints and orders",
+   "facts": [
+    {
+     "area": "complaints",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "MahaRERA publishes a promoter-wise complaint list and complaint search for registered projects.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://maharera.maharashtra.gov.in/promoter-complaint-report",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://maharera.maharashtra.gov.in/complaints-search-result",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F41",
+     "status": "verified",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "track_record",
+   "title": "Delivery record",
+   "facts": [
+    {
+     "area": "track_record",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "The promoter's past experience on the record lists one project: Hubtown Sunmist B wing, Andheri East, completed.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F16",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "track_record",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "A broker lists 33 Hubtown projects in Mumbai: 26 delivered and 7 under construction or newly launched.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.mumbaipropertyexchange.com/builders-developers/hubtown-limited/497",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F38",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "track_record",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "In February 2026 MahaRERA partly allowed homebuyers' complaints against Rare Townships Private Limited over a Ghatkopar project due by 31 Dec 2021 (31 Dec 2022 with the Covid extension), with no occupation certificate, and ordered interest for the delay.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.freepressjournal.in/amp/mumbai/mumbai-real-estate-dispute-maharera-sets-aside-flat-termination-in-ghatkopar-project-orders-interest-for-possession-delay",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F39",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "track_record",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Hubtown's FY26 results release refers to 72.22% of Rare Townships Private Limited.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F40",
+     "status": "verified",
+     "inConflict": false
+    }
+   ]
+  },
+  {
+   "key": "price",
+   "title": "Prices",
+   "facts": [
+    {
+     "area": "price",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "4 sale transactions were registered between July 2025 and June 2026, totalling about ₹6 crore (an average of about ₹1.5 crore each); 3 marketplace listings show a median of ₹41.6K per sq ft.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F27",
+     "status": "reported",
+     "inConflict": false
+    },
+    {
+     "area": "price",
+     "field": "",
+     "label": "",
+     "value": "",
+     "claim": "Asking prices seen: 1 BHK (330 sq ft) ₹1.99 crore, 2 BHK (660 sq ft) ₹4.10 crore and 3 BHK sea view ₹6.10 crore at ₹60,000–62,000 per sq ft; elsewhere from ₹2.10 crore or ₹2.14 crore all-inclusive.",
+     "kind": "fact",
+     "sources": [
+      {
+       "url": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189",
+       "title": "",
+       "seen": true
+      },
+      {
+       "url": "https://housiey.com/projects/hubtown-celeste",
+       "title": "",
+       "seen": true
+      }
+     ],
+     "foundBy": [
+      "analyst"
+     ],
+     "round": 0,
+     "id": "F28",
+     "status": "reported",
+     "inConflict": false
+    }
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "when": "before booking",
+   "to": "legal team",
+   "question": "The registration names Nayan Real Estate Private Limited as promoter, while the project is sold as Hubtown. Which company signs my agreement for sale, issues my receipts and holds the title? Please give its CIN and registered office in writing.",
+   "why": "You can only enforce your agreement against the company that signs it. A brand creates no obligation.",
+   "good": "A signed letter naming one company with its CIN, matching the RERA certificate and the draft agreement.",
+   "not_accepted": "\"It is all Hubtown\" or a group chart in a brochure.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    }
+   ],
+   "notAccepted": "\"It is all Hubtown\" or a group chart in a brochure.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q1"
+  },
+  {
+   "when": "before booking",
+   "to": "promoters",
+   "question": "Hubtown's Managing Director and a Hubtown director appear on Nayan Real Estate's filing. Will Hubtown Limited sign an enforceable guarantee of completion and of Nayan's obligations under my agreement, including refunds and delay interest?",
+   "why": "Common control is not legal liability. Without a signed guarantee the listed parent owes you nothing if the project company fails.",
+   "good": "A guarantee or undertaking executed by Hubtown Limited and annexed to the agreement, reviewed by your lawyer.",
+   "not_accepted": "A verbal assurance or a press release.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    },
+    {
+     "url": "https://www.tofler.in/hubtown-limited/company/L45200MH1989PLC050688"
+    },
+    {
+     "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+    }
+   ],
+   "notAccepted": "A verbal assurance or a press release.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q2"
+  },
+  {
+   "when": "before booking",
+   "to": "legal team",
+   "question": "The project was registered in August 2017 and its filed completion date is 31 July 2029. What was the original completion date, how many times has it been extended, and did the existing allottees consent to each extension as MahaRERA requires?",
+   "why": "Twelve years from registration to completion is long. Each extension, and whether buyers consented, shows how the project has been run and what your date is worth.",
+   "good": "The original certificate, every extension order and the allottee-consent records.",
+   "not_accepted": "\"Covid delays\" without the orders.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    },
+    {
+     "url": "https://thelawsuits.in/?p=3169"
+    }
+   ],
+   "notAccepted": "\"Covid delays\" without the orders.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q3"
+  },
+  {
+   "when": "before booking",
+   "to": "sales team",
+   "question": "Your agents advertise December 2027 as the RERA possession date and March 2027 as a target, but the record shows 31 July 2029. Please confirm in writing which date my agreement will carry.",
+   "why": "Only the date in your registered agreement gives you a remedy; an advertised date gives none.",
+   "good": "One date, in writing, matching the agreement and the registration.",
+   "not_accepted": "An earlier date promised outside the agreement.",
+   "sources": [
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    }
+   ],
+   "notAccepted": "An earlier date promised outside the agreement.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q4"
+  },
+  {
+   "when": "before booking",
+   "to": "sales team",
+   "question": "Four sales were registered between July 2025 and June 2026 for about ₹6 crore in total, roughly ₹1.5 crore each, while 1 BHK asking prices start at ₹1.99–2.14 crore. What explains the difference, and what discounts, payment schemes or bulk deals have been offered?",
+   "why": "Registered prices are the market's real evidence; a wide gap to the asking price is leverage in your negotiation, or a sign of special deals you should know about.",
+   "good": "A price history and the current price list for the exact unit, with every scheme disclosed.",
+   "not_accepted": "\"Prices have gone up\" without the list.",
+   "sources": [
+    {
+     "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project"
+    },
+    {
+     "url": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026"
+    }
+   ],
+   "notAccepted": "\"Prices have gone up\" without the list.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q5"
+  },
+  {
+   "when": "before booking",
+   "to": "sales team",
+   "question": "A RERA-data page reports 19.43% of 211 units booked. How many are sold today, how many to related parties or investors in bulk, and how many remain?",
+   "why": "Slow sales mean less buyer money for construction; bulk sales to insiders can depress resale and voting in the society.",
+   "good": "The current inventory sheet reconciled to the latest quarterly filing.",
+   "not_accepted": "\"Almost sold out.\"",
+   "sources": [
+    {
+     "url": "https://cityair.in/hubtown_-_celeste_project_in_mumbai_ppc.html"
+    }
+   ],
+   "notAccepted": "\"Almost sold out.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q6"
+  },
+  {
+   "when": "before booking",
+   "to": "promoters",
+   "question": "The promoter's filing lists one past project, Hubtown Sunmist B wing. Which projects has Nayan Real Estate itself delivered, and which projects run by the same promoters were delivered after their RERA dates?",
+   "why": "The selling company's own delivery record matters more than the brand's.",
+   "good": "A list with RERA numbers, promised and actual completion dates and occupation certificates.",
+   "not_accepted": "A brochure of the group's landmarks.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    },
+    {
+     "url": "https://www.mumbaipropertyexchange.com/builders-developers/hubtown-limited/497"
+    }
+   ],
+   "notAccepted": "A brochure of the group's landmarks.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q7"
+  },
+  {
+   "when": "before booking",
+   "to": "promoters",
+   "question": "In February 2026 MahaRERA ordered Rare Townships Private Limited to pay delay interest on a Ghatkopar project with no occupation certificate, and Hubtown's results release refers to 72.22% of Rare Townships. What is Hubtown's relationship to that company, and has the order been complied with?",
+   "why": "How the group treats delayed buyers elsewhere is the best evidence of how it would treat you.",
+   "good": "The relationship stated in writing and proof of payment under the order.",
+   "not_accepted": "\"That is a different company.\"",
+   "sources": [
+    {
+     "url": "https://www.freepressjournal.in/amp/mumbai/mumbai-real-estate-dispute-maharera-sets-aside-flat-termination-in-ghatkopar-project-orders-interest-for-possession-delay"
+    },
+    {
+     "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+    }
+   ],
+   "notAccepted": "\"That is a different company.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q8"
+  },
+  {
+   "when": "before booking",
+   "to": "accounts team",
+   "question": "Is the HDFC Bank account at R G Thadani Marg, Worli (IFSC HDFC0000080) the designated RERA account into which 70% of my payments must go? Please give its account name and a recent stamped statement.",
+   "why": "Paying into any other account loses the protection of the separate project account.",
+   "good": "The account in the promoter's name, matching the registration, with a stamped statement.",
+   "not_accepted": "A request to pay a different account or an individual.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    }
+   ],
+   "notAccepted": "A request to pay a different account or an individual.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q9"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "The record registers every unit as a 2BHK of about 330 sq ft, while you sell it as a 1 BHK with a convertible kitchen. Which approved plan covers my unit, what does the agreement call it, and is the kitchen conversion permitted by the sanction?",
+   "why": "What you are legally buying is the approved plan and carpet area in the agreement, not the marketing label.",
+   "good": "The approved floor plan for the exact unit and the agreement wording that matches it.",
+   "not_accepted": "A marketing floor plan.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    },
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    }
+   ],
+   "notAccepted": "A marketing floor plan.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q10"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "For a 660 sq ft \"Jodi\", am I buying two registered units or one combined unit? How is it registered, what is the stamp duty basis, how many parking spaces and society votes does it carry, and is the combination in the sanctioned plan?",
+   "why": "Two units sold as one can mean two registrations, two maintenance bills and a combination that needs separate approval.",
+   "good": "The registration structure in the agreement and the approval for the combination.",
+   "not_accepted": "\"We will combine it later.\"",
+   "sources": [
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    }
+   ],
+   "notAccepted": "\"We will combine it later.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q11"
+  },
+  {
+   "when": "before signing",
+   "to": "site and engineering team",
+   "question": "Pages describe the tower as G+38, G+22, 17 and 18 storeys. How many floors are sanctioned, does the Commencement Certificate cover my floor, and is any floor awaiting further approval?",
+   "why": "A floor beyond the sanctioned height or the CC may not receive an occupation certificate.",
+   "good": "The sanctioned plans and the current CC showing your floor.",
+   "not_accepted": "\"CC is full\" without the document.",
+   "sources": [
+    {
+     "url": "https://hubtown-celeste.in/"
+    },
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "url": "https://www.homebazaar.com/hubtown-celeste-worli-3737"
+    },
+    {
+     "url": "https://www.jllhomes.co.in/apartments-new/mumbai/hubtown-celeste"
+    }
+   ],
+   "notAccepted": "\"CC is full\" without the document.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q12"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "The registration shows a land area of 494.89 sq m, while agents describe 0.75 acre or 1 acre. Which land does this registration cover, who owns it, and what development or redevelopment agreements give Nayan the right to build and sell?",
+   "why": "A 6–8 times difference in land area changes what is being developed and who has rights over it.",
+   "good": "The title report, the development agreement and a land map matching the registration.",
+   "not_accepted": "A brochure site plan.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    },
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "url": "https://www.jllhomes.co.in/apartments-new/mumbai/hubtown-celeste"
+    },
+    {
+     "url": "https://cityair.in/hubtown_-_celeste_project_in_mumbai_ppc.html",
+     "title": "",
+     "seen": true
+    }
+   ],
+   "notAccepted": "A brochure site plan.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q13"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "The record places the project beside \"Rehab 3 Building\" and gives the promoter's address in a rehab building. Is Celeste the sale component of a slum-rehabilitation or redevelopment scheme? If so, are all rehab obligations complete, and is the occupation certificate for the sale building linked to them?",
+   "why": "In such schemes the sale building's completion can depend on the rehab obligations being met first.",
+   "good": "The scheme approval, the rehab completion and OC status, and the authority's conditions on the sale building.",
+   "not_accepted": "\"Rehab is done\" without the occupation certificate for it.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    }
+   ],
+   "notAccepted": "\"Rehab is done\" without the occupation certificate for it.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q14"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Please share the approved area statement. The 211 registered units total about 6,481 sq m of carpet area, while the record shows a sanctioned built-up area of 2,623.62 sq m. What additional FSI, TDR or premium area explains the difference, and is all of it approved?",
+   "why": "Built-up area that is not sanctioned can block the occupation certificate and your title.",
+   "good": "Approved plans and an architect-signed area statement that reconcile.",
+   "not_accepted": "\"It includes fungible FSI\" without the approval.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    }
+   ],
+   "notAccepted": "\"It includes fungible FSI\" without the approval.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q15"
+  },
+  {
+   "when": "before signing",
+   "to": "accounts team",
+   "question": "Unverified online reports mention about ₹50 crore of open charges against Nayan Real Estate. Which lenders hold charges over the land, the project or its receivables, and will they release my unit? Please give the charge register and each lender's no-objection.",
+   "why": "A charge on the land or receivables can affect your title and where your money goes.",
+   "good": "The MCA index of charges, the charge documents and a lender NOC for the sale of your unit.",
+   "not_accepted": "\"The loan is for another project.\"",
+   "sources": [],
+   "notAccepted": "\"The loan is for another project.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q16"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "An unverified online report mentions a Small Causes Court suit, M.A.S. No. 5714 of 2015, connected with this project. What is it about, who are the parties, what is its status, and does it touch the land, the approvals or possession?",
+   "why": "A pending suit on the land or approvals can stop work or affect title.",
+   "good": "Certified copies of the plaint and latest order, and your lawyer's view.",
+   "not_accepted": "\"It is old and irrelevant\" without the record.",
+   "sources": [],
+   "notAccepted": "\"It is old and irrelevant\" without the record.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q17"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Unverified online reports mention two MahaRERA complaints against this project, CC12602639 and CC12602641, with a hearing on 7 May 2026. What do they allege and what was ordered? Please also share the promoter-wise complaint list for Nayan Real Estate.",
+   "why": "What other buyers have complained about is what you are most likely to face.",
+   "good": "The complaints, the replies and the orders.",
+   "not_accepted": "\"Settled\" without the order.",
+   "sources": [
+    {
+     "url": "https://maharera.maharashtra.gov.in/promoter-complaint-report"
+    }
+   ],
+   "notAccepted": "\"Settled\" without the order.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q18"
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Will my agreement state the possession date, interest for every month of delay at the State Bank of India's highest MCLR plus 2% under Rule 18, my right to withdraw with a full refund and interest, and a defect liability period of five years from possession?",
+   "why": "These are your statutory rights; the agreement should not dilute them.",
+   "good": "Agreement clauses that state them in full, without waivers.",
+   "not_accepted": "Force-majeure wording that excuses any delay.",
+   "sources": [
+    {
+     "url": "https://thelawsuits.in/maharera-grants-relief-to-homebuyer-for-delay-in-possession/"
+    },
+    {
+     "url": "https://rawlaw.in/bombay-high-court-upholds-homebuyers-right-to-delay-interest-despite-accepting-possession-in-delayed-housing-project/"
+    }
+   ],
+   "notAccepted": "Force-majeure wording that excuses any delay.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q19"
+  },
+  {
+   "when": "before signing",
+   "to": "accounts team",
+   "question": "What is the full cost of my exact unit: base price, GST, stamp duty, registration, parking, maintenance deposit, society and legal charges, floor rise, and any charge payable at possession?",
+   "why": "\"All-inclusive\" prices differ between agents; only the cost sheet binds.",
+   "good": "A signed, dated cost sheet for the exact unit.",
+   "not_accepted": "A per-square-foot rate quoted verbally.",
+   "sources": [
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189"
+    }
+   ],
+   "notAccepted": "A per-square-foot rate quoted verbally.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q20"
+  },
+  {
+   "when": "before signing",
+   "to": "accounts team",
+   "question": "The GST department searched Hubtown Limited and its subsidiary Joynest Premises in February 2026. Has Nayan Real Estate or this project received any GST notice or demand, and could any demand attach to the project account?",
+   "why": "A tax demand against the seller can freeze funds needed to finish your building.",
+   "good": "A written confirmation from the company's chartered accountant.",
+   "not_accepted": "Silence on whether Nayan has been served.",
+   "sources": [
+    {
+     "url": "https://scanx.trade/stock-market-news/stocks/hubtown-limited-undergoes-gst-inspection-operation-by-mumbai-tax-department/32621036"
+    }
+   ],
+   "notAccepted": "Silence on whether Nayan has been served.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q21"
+  },
+  {
+   "when": "before signing",
+   "to": "accounts team",
+   "question": "Hubtown's auditors qualified the FY26 accounts for ₹1,751.85 lakh of unprovided interest on inter-corporate deposits. Does Nayan Real Estate lend to or borrow from group companies, and is any Celeste money used for other projects?",
+   "why": "Money lent across a group is money not available to finish your building.",
+   "good": "Nayan's latest audited accounts showing related-party balances, and the CA's Form 3 certificates.",
+   "not_accepted": "The group's consolidated results alone.",
+   "sources": [
+    {
+     "url": "https://scanx.trade/stock-news/hubtown-ltd"
+    }
+   ],
+   "notAccepted": "The group's consolidated results alone.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q22"
+  },
+  {
+   "when": "before signing",
+   "to": "promoters",
+   "question": "In March 2026 a lender invoked a pledge on 1.71 million promoter-group shares, and 5.28% of Hubtown's capital is still encumbered. Has any lender taken security over Nayan Real Estate's shares, the Celeste land or its receivables?",
+   "why": "Promoter-level debt can lead lenders to the project's assets.",
+   "good": "A written disclosure of every pledge and security touching Nayan or Celeste.",
+   "not_accepted": "\"That is a personal matter of the promoters.\"",
+   "sources": [
+    {
+     "url": "https://scanx.trade/stock-market-news/companies/hubtown-ltd-pledge-invoked-472-354-shares-released-to-promoter/44091541"
+    }
+   ],
+   "notAccepted": "\"That is a personal matter of the promoters.\"",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q23"
+  },
+  {
+   "when": "before signing",
+   "to": "promoters",
+   "question": "Hubtown is merging named promoter entities into the listed company, and Nayan Real Estate is not among those named. Will Nayan be merged or sold? If its ownership changes, how will my agreement transfer, and will I be asked for consent?",
+   "why": "A change of ownership can change who stands behind your contract.",
+   "good": "A novation clause and a written statement of plans for Nayan.",
+   "not_accepted": "\"No plans\" with no clause protecting you.",
+   "sources": [
+    {
+     "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+    }
+   ],
+   "notAccepted": "\"No plans\" with no clause protecting you.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q24"
+  },
+  {
+   "when": "before signing",
+   "to": "accounts team",
+   "question": "What will it cost to finish the building, and how is it funded: balance in the project account, sales still to come, and any loan? Please share the latest Form 3 certificate from the chartered accountant.",
+   "why": "Finishing is the most expensive stage, and your building needs it funded.",
+   "good": "A cost-to-complete statement and the latest Form 3.",
+   "not_accepted": "Group pre-sales figures.",
+   "sources": [
+    {
+     "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf"
+    }
+   ],
+   "notAccepted": "Group pre-sales figures.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q25"
+  },
+  {
+   "when": "before signing",
+   "to": "your own lawyer",
+   "question": "Ask your lawyer to run a 30-year title search and an IGR encumbrance search on plot 32 Pt 38 Pt, an MCA charge search on Nayan Real Estate, and litigation searches under both Nayan Real Estate and Hubtown Limited.",
+   "why": "These searches settle what no public website can.",
+   "good": "A written title report and search results.",
+   "not_accepted": "The developer's own title certificate alone.",
+   "sources": [
+    {
+     "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925"
+    }
+   ],
+   "notAccepted": "The developer's own title certificate alone.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q26"
+  },
+  {
+   "when": "before each payment",
+   "to": "site and engineering team",
+   "question": "A portal reported internal finishing at 2–3% and services at 27% in June 2026, with the structure at the 27th floor in April. What do the latest architect's (Form 1) and engineer's (Form 2) certificates and the quarterly progress report show, and does the stage I am billed for match them?",
+   "why": "Under a construction-linked plan you should pay only for work certified as done.",
+   "good": "The latest certificates and QPR, dated, matching the demand.",
+   "not_accepted": "A demand letter without certificates.",
+   "sources": [
+    {
+     "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project"
+    },
+    {
+     "url": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026"
+    }
+   ],
+   "notAccepted": "A demand letter without certificates.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q27"
+  },
+  {
+   "when": "before each payment",
+   "to": "accounts team",
+   "question": "Before any payment above 10% of the price: has my agreement for sale been registered, as Section 13 of RERA requires?",
+   "why": "The law caps advances before a registered agreement at 10%.",
+   "good": "The registered agreement with its registration number.",
+   "not_accepted": "A request for more than 10% on an allotment letter.",
+   "sources": [],
+   "notAccepted": "A request for more than 10% on an allotment letter.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q28"
+  },
+  {
+   "when": "before possession",
+   "to": "legal team",
+   "question": "Has the occupation certificate been issued for my building and floor, with fire, lift and water clearances, and is it a full or a part occupation certificate?",
+   "why": "Taking possession without an occupation certificate can leave you without utilities or legal occupation.",
+   "good": "The OC and clearances covering your floor.",
+   "not_accepted": "Possession offered \"with OC to follow\".",
+   "sources": [],
+   "notAccepted": "Possession offered \"with OC to follow\".",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q29"
+  },
+  {
+   "when": "before possession",
+   "to": "legal team",
+   "question": "When will the society be formed and the conveyance executed, and what maintenance and corpus will be handed over to it?",
+   "why": "Without conveyance the society does not own the building or land.",
+   "good": "A timeline in the agreement and the handover statement.",
+   "not_accepted": "An open-ended promise.",
+   "sources": [],
+   "notAccepted": "An open-ended promise.",
+   "basis": "panel",
+   "engine": "analyst",
+   "id": "Q30"
+  }
+ ],
+ "sources": [
+  {
+   "url": "https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925",
+   "title": "",
+   "host": "aurumproptech.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://cityair.in/hubtown_-_celeste_project_in_mumbai_ppc.html",
+   "title": "",
+   "host": "cityair.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189",
+   "title": "",
+   "host": "mumbaipropertyexchange.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://hubtown-celeste.in/",
+   "title": "",
+   "host": "hubtown-celeste.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.propertypistol.com/projects/hubtown-celeste-worli-pid-18946",
+   "title": "",
+   "host": "propertypistol.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.tofler.in/hubtown-limited/company/L45200MH1989PLC050688",
+   "title": "",
+   "host": "tofler.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf",
+   "title": "",
+   "host": "bseindia.com",
+   "status": "verified",
+   "seen": true
+  },
+  {
+   "url": "https://www.zaubacorp.com/company/NITANT-REAL-ESTATE-PRIVATE-LIMITED/U70102MH2010PTC205729",
+   "title": "",
+   "host": "zaubacorp.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project",
+   "title": "",
+   "host": "squareyards.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://housiey.com/projects/hubtown-celeste",
+   "title": "",
+   "host": "housiey.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.propertycrow.com/mumbai/propertyview_hubtown-celeste-worli_1202.html",
+   "title": "",
+   "host": "propertycrow.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.jllhomes.co.in/apartments-new/mumbai/hubtown-celeste",
+   "title": "",
+   "host": "jllhomes.co.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.homebazaar.com/hubtown-celeste-worli-3737",
+   "title": "",
+   "host": "homebazaar.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026",
+   "title": "",
+   "host": "propertybutler.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://scanx.trade/stock-news/hubtown-ltd",
+   "title": "",
+   "host": "scanx.trade",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://scanx.trade/stock-market-news/stocks/hubtown-limited-undergoes-gst-inspection-operation-by-mumbai-tax-department/32621036",
+   "title": "",
+   "host": "scanx.trade",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://scanx.trade/stock-market-news/companies/hubtown-limited-schedules-investor-and-analyst-meeting-on-may-20-2026/40694211",
+   "title": "",
+   "host": "scanx.trade",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://scanx.trade/stock-market-news/companies/hubtown-ltd-pledge-invoked-472-354-shares-released-to-promoter/44091541",
+   "title": "",
+   "host": "scanx.trade",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://nsearchives.nseindia.com/corporate/HUBTOWN_31122025191659_HTLCGJoynest31122025.pdf",
+   "title": "",
+   "host": "nsearchives.nseindia.com",
+   "status": "verified",
+   "seen": true
+  },
+  {
+   "url": "https://scanx.trade/stock-market-news/earnings/hubtown-limited-reports-strong-q2-and-h1-fy26-performance-with-significant-revenue-growth/24508064",
+   "title": "",
+   "host": "scanx.trade",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.mumbaipropertyexchange.com/builders-developers/hubtown-limited/497",
+   "title": "",
+   "host": "mumbaipropertyexchange.com",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.freepressjournal.in/amp/mumbai/mumbai-real-estate-dispute-maharera-sets-aside-flat-termination-in-ghatkopar-project-orders-interest-for-possession-delay",
+   "title": "",
+   "host": "freepressjournal.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://maharera.maharashtra.gov.in/promoter-complaint-report",
+   "title": "",
+   "host": "maharera.maharashtra.gov.in",
+   "status": "verified",
+   "seen": true
+  },
+  {
+   "url": "https://maharera.maharashtra.gov.in/complaints-search-result",
+   "title": "",
+   "host": "maharera.maharashtra.gov.in",
+   "status": "verified",
+   "seen": true
+  },
+  {
+   "url": "https://thelawsuits.in/maharera-grants-relief-to-homebuyer-for-delay-in-possession/",
+   "title": "",
+   "host": "thelawsuits.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://rawlaw.in/bombay-high-court-upholds-homebuyers-right-to-delay-interest-despite-accepting-possession-in-delayed-housing-project/",
+   "title": "",
+   "host": "rawlaw.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://thelawsuits.in/?p=3169",
+   "title": "",
+   "host": "thelawsuits.in",
+   "status": "reported",
+   "seen": true
+  },
+  {
+   "url": "https://www.livelawbiz.com/consumer-cases/homebuyers-can-claim-interest-for-delayed-possession-despite-project-deadline-extension-maharera-516517",
+   "title": "",
+   "host": "livelawbiz.com",
+   "status": "reported",
+   "seen": true
+  }
+ ],
+ "leads": [],
+ "unreachable": [
+  {
+   "what": "The selling company's own records: CIN, directors, charges, latest accounts",
+   "why": "Not found in the sources we searched. Unverified online reports mention CIN U70102MH2010PTC205728 and about ₹50.15 crore of open charges",
+   "how_to_get_it": "MCA21 company master data and index of charges (mca.gov.in), or ask your lawyer for a ROC search"
+  },
+  {
+   "what": "The live MahaRERA project page, quarterly progress reports and extension orders",
+   "why": "The regulator's pages are not readable by our tools",
+   "how_to_get_it": "Search P51900008925 on maharera.maharashtra.gov.in, or ask the promoter for certified copies"
+  },
+  {
+   "what": "Small Causes Court suit M.A.S. No. 5714 of 2015",
+   "why": "Mentioned in unverified online reports; court files are not online",
+   "how_to_get_it": "A certified copy from the Small Causes Court, Mumbai, through your lawyer, or ask the promoter"
+  },
+  {
+   "what": "MahaRERA complaints CC12602639 and CC12602641",
+   "why": "Mentioned in unverified online reports; not found in our searches",
+   "how_to_get_it": "MahaRERA complaint search, or the promoter-wise complaint list for Nayan Real Estate"
+  },
+  {
+   "what": "Registered sale deeds (Index II) for the 4 reported transactions",
+   "why": "Registration records sit behind the IGR Maharashtra e-search",
+   "how_to_get_it": "IGR Maharashtra e-search (paid), through your lawyer"
+  }
+ ],
+ "panel": {
+  "engines": [],
+  "failed": [],
+  "rounds": 0
+ },
+ "notice": "Research, not advice. This report states what public sources show and what to ask. It does not tell you whether to buy."
+}

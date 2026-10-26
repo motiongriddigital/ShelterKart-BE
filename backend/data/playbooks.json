@@ -1,0 +1,437 @@
+{
+ "_note": "Country knowledge for the investigator: where to look, which buyer protections apply and what to check. These are LEADS to verify, not facts to state; every claim in a report still needs its own source. Keyed by ISO country code. October 2026.",
+ "IN": {
+  "name": "India",
+  "languages": [
+   "English",
+   "Hindi",
+   "and the state's language (for example Marathi, Tamil, Kannada)"
+  ],
+  "sources": [
+   "The state RERA portal: registration certificate, promoter, filed completion date and extensions, quarterly progress, complaints and orders (Maharashtra: MahaRERA)",
+   "MCA21: the promoter company's master data, directors, charges and filing history",
+   "IBBI: insolvency proceedings against the promoter or its group",
+   "eCourts and Indian Kanoon: civil suits, consumer cases and orders naming the promoter or project",
+   "BSE and NSE filings when the group is listed: results, auditor qualifications, pledges, guarantees, tax actions",
+   "The state registration department (IGR): registered sale transactions and encumbrances"
+  ],
+  "protections": [
+   "RERA section 13: no more than 10% advance before a registered agreement for sale",
+   "RERA section 18: interest for delayed possession, or withdrawal with refund and interest",
+   "RERA section 14(3): five years' liability for structural and workmanship defects after handover",
+   "RERA section 4(2)(l)(D): 70% of buyer money kept in a separate project account"
+  ],
+  "checks": [
+   "The registered promoter versus the brand it is sold under",
+   "Every extension of the completion date and whether allottees consented",
+   "Commencement and occupation certificates for the buyer's building and floor",
+   "Charges on the land or receivables and lender consent to sell",
+   "A 30-year title search"
+  ]
+ },
+ "GB": {
+  "name": "United Kingdom",
+  "languages": [
+   "English"
+  ],
+  "sources": [
+   "Companies House: the selling company, its officers, charges and filing history",
+   "HM Land Registry: title, charges and price paid for nearby new homes",
+   "The local planning authority's portal: permissions, conditions and section 106 obligations",
+   "The Building Safety Regulator: gateway approvals for higher-risk buildings (18 metres or seven storeys)",
+   "The Gazette: insolvency notices",
+   "The New Homes Quality Board register and the government's Responsible Actors Scheme list"
+  ],
+  "protections": [
+   "The New Homes Quality Code and the New Homes Ombudsman, where the developer is registered",
+   "A ten-year structural warranty (for example NHBC or Premier)",
+   "The Leasehold Reform (Ground Rent) Act 2022: ground rent on new long leases limited to a peppercorn",
+   "The Building Safety Act 2022 gateways before work and before occupation"
+  ],
+  "checks": [
+   "The company that signs the contract versus the brand",
+   "The long-stop date and the right to rescind",
+   "Where the deposit is held",
+   "Service charges, estate charges and any heat network",
+   "Outstanding planning conditions for the buyer's building"
+  ]
+ },
+ "AE": {
+  "name": "United Arab Emirates (Dubai)",
+  "languages": [
+   "English",
+   "Arabic"
+  ],
+  "sources": [
+   "The Dubai Land Department (DLD) and its Dubai REST app: project registration, escrow account, completion percentage",
+   "The Real Estate Regulatory Agency (RERA): project status and the service-charge index",
+   "Oqood: off-plan sale registration",
+   "Dubai Pulse open data: transactions",
+   "Dubai Financial Market disclosures when the developer is listed"
+  ],
+  "protections": [
+   "Law 8 of 2007: buyer payments go into the project's escrow account",
+   "Law 13 of 2008 as amended by Law 19 of 2017: what a developer may keep if a buyer defaults, by percentage of completion"
+  ],
+  "checks": [
+   "The seller on the sale and purchase agreement versus the brand or master developer",
+   "The escrow account against the DLD record",
+   "Whether instalments follow certified progress or dates",
+   "Default, assignment and delay clauses",
+   "Service charges"
+  ]
+ },
+ "CA": {
+  "name": "Canada",
+  "languages": [
+   "English",
+   "French"
+  ],
+  "sources": [
+   "Ontario: the HCRA Ontario Builder Directory for the builder's and vendor's licence, conditions, convictions and charges",
+   "Ontario: Tarion for warranty coverage, claims and conciliation history",
+   "Ontario: the land registry (OnLand) and the Ontario Business Registry",
+   "British Columbia: BC Housing's licensed residential builder registry and the developer's disclosure statement",
+   "Municipal building permits and court records (CanLII)"
+  ],
+  "protections": [
+   "Ontario: Tarion's new home warranty, deposit protection and compensation for delayed closing or occupancy",
+   "Ontario condominiums: a ten-day cooling-off period after signing or receiving the disclosure statement (Condominium Act, 1998)",
+   "British Columbia: the disclosure statement and rescission period under the Real Estate Development Marketing Act"
+  ],
+  "checks": [
+   "The vendor's and builder's licences and any conditions or convictions",
+   "Tentative and firm closing dates and the delay compensation",
+   "How deposits are held and insured",
+   "Interim occupancy fees, development-charge caps and termination (sunset) clauses",
+   "HST and any rebate assignment"
+  ]
+ },
+ "MY": {
+  "name": "Malaysia",
+  "languages": [
+   "English",
+   "Malay",
+   "Chinese"
+  ],
+  "sources": [
+   "The housing ministry's (KPKT) TEDUH portal: the developer's licence and the project's advertising and sales permit",
+   "SSM (Companies Commission): the developer company's profile, directors and charges",
+   "KPKT's list of delayed, sick and abandoned private housing projects",
+   "The local authority: the certificate of completion and compliance (CCC)",
+   "The land office or the state's land department: title, strata title status and encumbrances",
+   "Bursa Malaysia disclosures when the developer is listed"
+  ],
+  "protections": [
+   "The Housing Development (Control and Licensing) Act 1966: licensed developers and statutory sale agreements (Schedule G for landed, Schedule H for strata homes)",
+   "Liquidated damages for late delivery under the statutory agreements",
+   "The Housing Development Account: buyer payments held for the project",
+   "The Tribunal for Homebuyer Claims for disputes with the developer"
+  ],
+  "checks": [
+   "The licence and the advertising and sales permit are valid for this project",
+   "The developer's record on KPKT's delayed and abandoned list",
+   "Delivery of vacant possession and the liquidated damages clause",
+   "Strata title status and the timeline to transfer",
+   "Maintenance charges and the sinking fund"
+  ]
+ },
+ "US": {
+  "name": "United States (pilot: Florida and New York)",
+  "languages": [
+   "English",
+   "Spanish"
+  ],
+  "sources": [
+   "SEC EDGAR: filings by listed builders, including risk factors and litigation",
+   "Federal court dockets (PACER, CourtListener) and state court records",
+   "Florida: Sunbiz for the selling company, the Division of Florida Condominiums filings, county official records and the property appraiser",
+   "New York: the Attorney General's offering-plan filings for condominiums, ACRIS recorded documents and NYC Department of Buildings permits and violations",
+   "County and city building permits and code violations"
+  ],
+  "protections": [
+   "Florida condominiums: the buyer's cancellation right after signing a developer sale contract, and deposits held in escrow (Florida Statutes chapter 718)",
+   "Florida condominiums: milestone structural inspections and structural integrity reserve studies",
+   "New York: the offering plan and its amendments, and deposits held in escrow"
+  ],
+  "checks": [
+   "The selling entity (often a single-purpose LLC) and who stands behind it",
+   "The offering plan or prospectus and every amendment",
+   "The escrow agent and the outside completion date",
+   "Association budget, reserves and any special assessments",
+   "Construction-defect litigation against the builder"
+  ]
+ },
+ "DE": {
+  "name": "Germany",
+  "languages": [
+   "German",
+   "English"
+  ],
+  "sources": [
+   "The common register portal (Handelsregister): the developer company (Bauträger), its directors and filings",
+   "Official insolvency notices (insolvenzbekanntmachungen.de)",
+   "Published annual accounts (Unternehmensregister and Bundesanzeiger)",
+   "The local building authority: the building permit (Baugenehmigung)",
+   "The land register (Grundbuch): access needs a legitimate interest, usually through the notary"
+  ],
+  "protections": [
+   "The Makler- und Bauträgerverordnung (MaBV): payments only as construction stages are completed, or against a bank guarantee",
+   "A developer contract (Bauträgervertrag) must be notarised",
+   "A priority notice (Auflassungsvormerkung) in the land register before any payment",
+   "Five years' liability for construction defects under the Civil Code"
+  ],
+  "checks": [
+   "The developer's trade licence under section 34c of the Trade Regulation Act",
+   "The priority notice and the financing bank's release letter (Freistellungserklärung)",
+   "The payment schedule against the MaBV stages",
+   "The handover and acceptance (Abnahme) terms",
+   "Insolvency notices for the developer and its group"
+  ]
+ },
+ "NL": {
+  "name": "Netherlands",
+  "languages": [
+   "Dutch",
+   "English"
+  ],
+  "sources": [
+   "The KvK company register: the developer, its directors and filings",
+   "The central insolvency register",
+   "Woningborg and SWK: whether the home is covered by a new-home guarantee and warranty",
+   "The municipality: the environmental and building permit",
+   "The Kadaster land registry: title and mortgages (paid extracts)"
+  ],
+  "protections": [
+   "A Woningborg or SWK guarantee covering completion if the builder fails, and a warranty after handover",
+   "Payments in instalments tied to construction stages",
+   "A retention of part of the price at handover until snags are resolved",
+   "Transfer by notarial deed"
+  ],
+  "checks": [
+   "The guarantee certificate for this home",
+   "The instalment schedule and the expected handover date",
+   "The owners' association (VvE) budget and reserve",
+   "Ground lease (erfpacht) terms, if any",
+   "Insolvency notices for the builder"
+  ]
+ },
+ "PT": {
+  "name": "Portugal",
+  "languages": [
+   "Portuguese",
+   "English"
+  ],
+  "sources": [
+   "The commercial register: the developer company and its officers",
+   "Citius: insolvency and court proceedings",
+   "The municipality (Câmara Municipal): building licence and licence of use",
+   "The land registry (registo predial) and the tax register (caderneta predial): owner and encumbrances",
+   "The housing technical file (ficha técnica da habitação)"
+  ],
+  "protections": [
+   "A promissory contract (CPCV) with a deposit: by law, if the seller defaults the buyer may claim double the deposit",
+   "A deed needs a valid licence of use for the home"
+  ],
+  "checks": [
+   "The building licence and the licence of use",
+   "Encumbrances in the land registry",
+   "The deposit and default terms of the promissory contract",
+   "The condominium title and its charges",
+   "Court and insolvency records for the developer"
+  ]
+ },
+ "IT": {
+  "name": "Italy",
+  "languages": [
+   "Italian",
+   "English"
+  ],
+  "sources": [
+   "The company register (Registro Imprese): the developer, its officers and filings",
+   "Court records: insolvency and disputes",
+   "The municipality: the building permit (permesso di costruire) and certificate of habitability",
+   "The land and mortgage registers (Catasto, Conservatoria): paid extracts"
+  ],
+  "protections": [
+   "Legislative Decree 122/2005: off-plan buyers receive a bank or insurance guarantee (fideiussione) for sums paid, and a ten-year building insurance policy",
+   "The preliminary contract for a home under construction must be made before a notary"
+  ],
+  "checks": [
+   "The guarantee (fideiussione) covering every payment",
+   "The ten-year insurance policy",
+   "The building permit and habitability certificate",
+   "Mortgages and liens on the land",
+   "The developer's insolvency and court record"
+  ]
+ },
+ "SA": {
+  "name": "Saudi Arabia",
+  "languages": [
+   "Arabic",
+   "English"
+  ],
+  "sources": [
+   "The Wafi off-plan sales programme: whether the project is licensed and its escrow account",
+   "The Real Estate General Authority (REGA)",
+   "The Ministry of Commerce: the developer's commercial registration",
+   "Najiz (Ministry of Justice): property deeds and court services",
+   "Tadawul disclosures when the developer is listed"
+  ],
+  "protections": [
+   "Off-plan sales must be licensed under Wafi, with buyer payments into an escrow account"
+  ],
+  "checks": [
+   "The Wafi licence number and its scope",
+   "The escrow account and how payments are released",
+   "The commercial registration of the seller",
+   "The completion date and delay terms",
+   "The title deed on handover"
+  ]
+ },
+ "ZA": {
+  "name": "South Africa",
+  "languages": [
+   "English",
+   "Afrikaans"
+  ],
+  "sources": [
+   "The NHBRC: whether the builder is registered and the home is enrolled",
+   "The companies register (CIPC): the developer, its directors and status",
+   "The Deeds Office: title and bonds",
+   "The municipality: approved building plans and the occupancy certificate"
+  ],
+  "protections": [
+   "The Housing Consumers Protection Measures Act: builders must be NHBRC-registered and enrol each new home",
+   "The NHBRC warranty for major structural defects",
+   "Sectional title schemes: levies and the body corporate's finances"
+  ],
+  "checks": [
+   "The NHBRC registration and enrolment certificate",
+   "How the deposit is held (in trust) and when it is released",
+   "Occupation and transfer dates",
+   "Levies and the reserve fund",
+   "The developer's company status"
+  ]
+ },
+ "BR": {
+  "name": "Brazil",
+  "languages": [
+   "Portuguese"
+  ],
+  "sources": [
+   "The property registry (Registro de Imóveis): the registered incorporation (memorial de incorporação) and liens",
+   "The company register (CNPJ, Receita Federal)",
+   "State courts (TJ) and Jusbrasil: disputes involving the developer",
+   "The municipality: building permit and occupancy certificate (habite-se)"
+  ],
+  "protections": [
+   "Law 4.591/1964: a development must be registered before units are sold",
+   "Ring-fencing of the project's assets (patrimônio de afetação) where the developer has elected it",
+   "Law 13.786/2018: rules for cancelling a purchase and a 180-day tolerance on delivery"
+  ],
+  "checks": [
+   "The registered incorporation for this project",
+   "Whether the project is ring-fenced",
+   "The delivery date and the tolerance clause",
+   "Cancellation (distrato) terms",
+   "Lawsuits against the developer"
+  ]
+ },
+ "MX": {
+  "name": "Mexico",
+  "languages": [
+   "Spanish",
+   "English"
+  ],
+  "sources": [
+   "The public property registry of the state: title and liens",
+   "The municipality: construction licence and land-use permits",
+   "PROFECO: the developer's registered sales contract",
+   "The company register (Registro Público de Comercio)"
+  ],
+  "protections": [
+   "NOM-247-SE-2021: information and contract rules for selling new homes",
+   "Foreigners in the restricted zone near coasts and borders buy through a bank trust (fideicomiso)"
+  ],
+  "checks": [
+   "Clear title and permits for the land",
+   "The bank trust, for a foreign buyer in the restricted zone",
+   "How deposits are held and the delivery date",
+   "The condominium regime and fees",
+   "The developer's track record and lawsuits"
+  ]
+ },
+ "JP": {
+  "name": "Japan",
+  "languages": [
+   "Japanese",
+   "English"
+  ],
+  "sources": [
+   "The national search of licensed real estate businesses and construction businesses: the seller's licence and any administrative actions",
+   "The legal affairs bureau's property and company registers (paid extracts)",
+   "The municipality: building confirmation and completion inspection"
+  ],
+  "protections": [
+   "The Building Lots and Buildings Transaction Business Act: protection of deposits on off-plan sales, and the important-matters explanation before contract",
+   "The Housing Quality Assurance Act: ten years' liability for structural defects, backed by insurance or a deposit"
+  ],
+  "checks": [
+   "The licence number and any administrative actions",
+   "The deposit protection for this sale",
+   "The building confirmation and completion inspection",
+   "Management fees and the repair reserve",
+   "Earthquake-resistance standards met"
+  ]
+ },
+ "TH": {
+  "name": "Thailand",
+  "languages": [
+   "Thai",
+   "English"
+  ],
+  "sources": [
+   "The Department of Business Development (DBD): the developer company",
+   "The Land Department: title deed and encumbrances",
+   "Condominium registration",
+   "The environmental impact assessment approval for larger projects",
+   "Stock Exchange of Thailand disclosures when the developer is listed"
+  ],
+  "protections": [
+   "The Condominium Act: the foreign ownership quota for each building",
+   "Standard terms for condominium sale contracts"
+  ],
+  "checks": [
+   "Whether the foreign quota allows the purchase",
+   "The EIA approval and building permit",
+   "The title deed and any mortgage over the project",
+   "Juristic person fees and the sinking fund",
+   "Transfer fees and who pays them"
+  ]
+ },
+ "PH": {
+  "name": "Philippines",
+  "languages": [
+   "English",
+   "Filipino"
+  ],
+  "sources": [
+   "DHSUD: the project's certificate of registration and licence to sell",
+   "The SEC: the developer company",
+   "The Registry of Deeds: title and encumbrances",
+   "Court records"
+  ],
+  "protections": [
+   "Presidential Decree 957: projects must be registered and licensed before units are sold",
+   "The Maceda Law (Republic Act 6552): refund rights for buyers paying in instalments who cancel"
+  ],
+  "checks": [
+   "The licence to sell for this project and phase",
+   "Title and encumbrances on the land",
+   "The completion date and the developer's obligations",
+   "Refund terms on cancellation",
+   "Association dues"
+  ]
+ }
+}

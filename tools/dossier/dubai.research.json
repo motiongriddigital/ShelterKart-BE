@@ -1,0 +1,180 @@
+{
+ "meta": {
+  "market": "United Arab Emirates, Dubai",
+  "asOf": "2026-10-13",
+  "country": "AE",
+  "priceFrom": 1800000,
+  "priceTo": 1800000,
+  "priceCurrency": "AED"
+ },
+ "project": {
+  "name": "Creek Bay Tower B",
+  "location": "Dubai Creek Harbour, Dubai",
+  "country": "United Arab Emirates",
+  "brand": "Emaar",
+  "promoter_legal_name": "",
+  "registration_ids": [
+   "DLD project 4198"
+  ],
+  "developer_site": "emaar.com"
+ },
+ "entities": [],
+ "facts": [
+  {
+   "area": "record",
+   "field": "DLD project number",
+   "value": "4198",
+   "claim": "Creek Bay is registered with the Dubai Land Department as project 4198, with buyer payments going to that project's registered escrow account.",
+   "sources": [
+    "https://tohidfetrat.com/creek-bay-dubai-creek-harbour-construction-update-june-2026/"
+   ]
+  },
+  {
+   "area": "timeline",
+   "field": "registered completion date",
+   "value": "30 April 2030",
+   "claim": "The DLD-registered completion date is 30 April 2030.",
+   "sources": [
+    "https://tohidfetrat.com/creek-bay-dubai-creek-harbour-construction-update-june-2026/"
+   ]
+  },
+  {
+   "area": "timeline",
+   "claim": "Agents and portals describe completion in Q2 2030 or April 2030, and one says \"handover in 2030\".",
+   "sources": [
+    "https://laforet.ae/creek-bay-dubai-creek-harbour-guide/",
+    "https://www.valley-dubai-sales.com/emaar-creek-bay-at-dubai-creek-harbour/",
+    "https://providentestate.com/new-projects/creek-bay-emaar-properties-dubai-creek-harbour/",
+    "https://buydubaioffplan.com/project/creek-bay/"
+   ]
+  },
+  {
+   "area": "construction",
+   "claim": "A June 2026 update reports certified progress of 0.62%, with enabling works under way.",
+   "sources": [
+    "https://tohidfetrat.com/creek-bay-dubai-creek-harbour-construction-update-june-2026/"
+   ],
+   "field": "certified progress",
+   "value": "0.62% (June 2026)"
+  },
+  {
+   "area": "units",
+   "claim": "Creek Bay is a three-tower waterfront complex of one- to three-bedroom apartments by Emaar Properties.",
+   "sources": [
+    "https://providentestate.com/new-projects/creek-bay-emaar-properties-dubai-creek-harbour/",
+    "https://www.valley-dubai-sales.com/emaar-creek-bay-at-dubai-creek-harbour/"
+   ],
+   "field": "project",
+   "value": "three towers of 1 to 3 bedroom apartments"
+  },
+  {
+   "area": "price",
+   "claim": "Launch prices are described as starting around AED 1.8 million; resale prices may differ from launch prices.",
+   "sources": [
+    "https://laforet.ae/creek-bay-dubai-creek-harbour-guide/",
+    "https://buydubaioffplan.com/project/creek-bay/"
+   ],
+   "field": "launch price",
+   "value": "from about AED 1.8 million"
+  },
+  {
+   "area": "price",
+   "claim": "Apartments in Dubai Creek Harbour transacted at around AED 2,600 per sq ft in January to June 2026, against AED 3,011 in Downtown Dubai, according to DLD data reported by a property site.",
+   "sources": [
+    "https://realestateclubdubai.com/blog/area-guide/dubai-creek-harbour-master-plan-2026-districts-creek-tower-status"
+   ]
+  },
+  {
+   "area": "money",
+   "field": "payment plan",
+   "value": "80/20",
+   "claim": "One agent describes an 80/20 plan: 10% down payment and seven equal instalments to completion.",
+   "sources": [
+    "https://providentestate.com/new-projects/creek-bay-emaar-properties-dubai-creek-harbour/",
+    "https://www.valley-dubai-sales.com/emaar-creek-bay-at-dubai-creek-harbour/"
+   ]
+  },
+  {
+   "area": "money",
+   "field": "payment plan",
+   "value": "10/70/20",
+   "claim": "Another agent describes a 10/70/20 plan: 10% at launch, 70% during construction and 20% at handover.",
+   "sources": [
+    "https://laforet.ae/creek-bay-dubai-creek-harbour-guide/"
+   ]
+  },
+  {
+   "area": "identity",
+   "field": "master developer of Dubai Creek Harbour",
+   "value": "Emaar Properties and Dubai Holding",
+   "claim": "One source describes Dubai Creek Harbour as a master plan by Emaar Properties and Dubai Holding.",
+   "sources": [
+    "https://realestateclubdubai.com/blog/area-guide/dubai-creek-harbour-master-plan-2026-districts-creek-tower-status"
+   ]
+  },
+  {
+   "area": "identity",
+   "field": "master developer of Dubai Creek Harbour",
+   "value": "Emaar, sole master developer",
+   "claim": "Another describes Emaar as the sole master developer.",
+   "sources": [
+    "https://a.land/blog/dubai-creek-harbour-emaar-s-new-city-development-phases-and-investment-timeline"
+   ]
+  },
+  {
+   "area": "track_record",
+   "claim": "A competitor's guide says Emaar has never cancelled a Dubai Creek Harbour project and typically delivers within six months of the stated date.",
+   "sources": [
+    "https://joinoliva.com/en/learn/blog/dubai-creek-harbour-off-plan-investment-guide"
+   ]
+  },
+  {
+   "area": "legal",
+   "claim": "Off-plan sales in Dubai are registered on the DLD's Oqood system, which makes the purchase an official record; a registration fee is payable to the DLD.",
+   "sources": [
+    "https://trpe.ae/off-plan/creek-rise"
+   ]
+  },
+  {
+   "area": "legal",
+   "claim": "Under Dubai Law 19 of 2017, if a buyer defaults and the unit is less than 60% complete, the developer may cancel the contract and keep up to 25% of the price, returning the rest within a year or within 60 days of resale; between 60% and 80%, up to 40%; above 80%, it may also hold the buyer to the contract or seek an auction.",
+   "sources": [
+    "https://gulfnews.com/business/property/rules-tightened-for-off-plan-property-buyers-in-dubai-1.2122492",
+    "https://www.hfw.com/insights/new-procedures-for-enforcing-property-developers-rights-in-dubai-february-2018/",
+    "https://www.khaleejtimes.com/uae/missed-off-plan-payments-dubai-developer-legally-do?amp=1"
+   ]
+  },
+  {
+   "area": "legal",
+   "claim": "Before acting on a default, the developer must notify the DLD, which gives the buyer 30 days and then certifies the percentage of completion; buyers may still go to court or arbitration if the developer abuses these powers.",
+   "sources": [
+    "https://www.khaleejtimes.com/uae/missed-off-plan-payments-dubai-developer-legally-do?amp=1"
+   ]
+  }
+ ],
+ "unreachable": [
+  {
+   "what": "The selling company named on the sale and purchase agreement",
+   "why": "Public pages say \"Emaar\"; the specific company and any joint venture with Dubai Holding were not confirmed",
+   "how_to_get_it": "The draft SPA and the DLD project record for project 4198"
+  },
+  {
+   "what": "The escrow account details and the RERA project status",
+   "why": "The DLD apps and RERA project pages were not readable by our tools",
+   "how_to_get_it": "The Dubai REST app or DLD website: search project 4198"
+  },
+  {
+   "what": "Tower B's own floors, unit count and completion within the three towers",
+   "why": "Public pages describe Creek Bay as a whole",
+   "how_to_get_it": "The project's DLD registration and the developer's tower-by-tower schedule"
+  }
+ ],
+ "listings": [
+  {
+   "label": "Launch price, from",
+   "price": 1800000,
+   "currency": "AED",
+   "source": "https://laforet.ae/creek-bay-dubai-creek-harbour-guide/"
+  }
+ ]
+}

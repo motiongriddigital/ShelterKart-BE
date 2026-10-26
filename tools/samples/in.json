@@ -1,0 +1,403 @@
+{
+ "ref": "SK-IN1CASAMIA2026",
+ "query": "Casagrand Casamia",
+ "location": "Pallavaram, Chennai",
+ "market": "in",
+ "marketLabel": "India — Tamil Nadu",
+ "depth": "Research",
+ "checkedAt": "2026-09-30T00:00:00",
+ "project": {
+  "name": "Casagrand Casamia",
+  "location": "Pallavaram, Chennai, Tamil Nadu",
+  "developer": "Casagrand Builder Private Limited",
+  "ids": [
+   "TN/35/Building/0097/2025"
+  ],
+  "developer_site": "casagrand.co.in"
+ },
+ "registry": null,
+ "counts": {
+  "confirmed": 0,
+  "reported": 2,
+  "single": 1,
+  "developer": 0,
+  "disputed": 1
+ },
+ "removed": 0,
+ "notes": [
+  "TNRERA's own registered-projects listing page currently disallows automated access under its robots.txt, so this registration number is reported by multiple independent sites, not confirmed directly at the regulator. The regulator's own homepage remains readable."
+ ],
+ "findings": [
+  {
+   "mark": "reported",
+   "sites": 3,
+   "claim": "Registered with TNRERA as TN/35/Building/0097/2025, dated 2 April 2025.",
+   "sources": [
+    {
+     "url": "https://www.nobroker.in/casagrand-casamia-pallavaram_chennai-prjt-8a9f8a84962945b10196297ac878167c",
+     "site": "nobroker.in"
+    },
+    {
+     "url": "https://www.roofandfloor.com/chennai/project/casagrand-casamia-in-pallavaram/6291",
+     "site": "roofandfloor.com"
+    },
+    {
+     "url": "https://www.commonfloor.com/casagrand-casamia-chennai/povp-05xz7b",
+     "site": "commonfloor.com"
+    }
+   ],
+   "topic": "registration",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "sites": 3,
+   "claim": "The project totals 1,314 units across 21.87 acres.",
+   "sources": [
+    {
+     "url": "https://www.roofandfloor.com/chennai/project/casagrand-casamia-in-pallavaram/6291",
+     "site": "roofandfloor.com"
+    },
+    {
+     "url": "https://chennaigatedcommunity.in/projects/casagrand-casamia",
+     "site": "chennaigatedcommunity.in"
+    },
+    {
+     "url": "https://www.chennaiproperties.com/projects/casagrand-casamia-in-pallavaram/6486",
+     "site": "chennaiproperties.com"
+    }
+   ],
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "claim": "The developer is Casagrand Premier Builder Limited. Its company number matches Casagrand Builder Private Limited's (U70101TN2003PTC051989) except for the private/public marker — one company, later converted to a public company.",
+   "sources": [
+    {
+     "url": "https://lei.bloomberg.com/leis/view/894500FZ8CLH62S2GI27",
+     "site": "bloomberg.com"
+    },
+    {
+     "url": "https://en.wikipedia.org/wiki/Casagrand"
+    }
+   ],
+   "sites": 1,
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "topic": "dates",
+   "stance": "neutral",
+   "claim": "Three listing sites give possession as August 2028.",
+   "sources": [
+    {
+     "url": "https://www.roofandfloor.com/chennai/project/casagrand-casamia-in-pallavaram/6291"
+    },
+    {
+     "url": "https://www.commonfloor.com/casagrand-casamia-chennai/povp-05xz7b"
+    },
+    {
+     "url": "https://findbhk.com/projects/casagrand-casamia-phase-II-pallavaram"
+    }
+   ]
+  },
+  {
+   "mark": "developer",
+   "kind": "developer_claim",
+   "topic": "track_record",
+   "stance": "positive",
+   "claim": "Promotional pages say Casagrand completes over 90% of its projects on time. This is marketing, not independent evidence, and does not move the score.",
+   "sources": [
+    {
+     "url": "https://nitinsoorma.alboompro.com/post/best-casagrand-residential-projects-in-chennai-upcoming-developments-to-know"
+    },
+    {
+     "url": "https://www.connectionpoint.in/residential-project-casagrand-casamia"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "track_record",
+   "stance": "positive",
+   "claim": "A construction contractor's portfolio lists several Casagrand apartment projects in Chennai, including Crescendo and Zenith, as completed.",
+   "sources": [
+    {
+     "url": "https://www.scribd.com/document/849037544/Vision"
+    }
+   ]
+  },
+  {
+   "mark": "reported",
+   "topic": "legal",
+   "stance": "negative",
+   "claim": "Tamil Nadu's regulator and its appellate tribunal have penalised Casagrand Builder Private Limited for misrepresentation more than once: in 2020 it cancelled the Bloom project's registration with a ₹30 lakh fine (the developer denied the charges); in 2022 the tribunal raised a penalty over Casagrand Crescendo's advertising to ₹25 lakh, noting earlier similar violations.",
+   "sources": [
+    {
+     "url": "https://constrofacilitator.com/tnrera-cancels-registration-of-casagrand-builders-chennai-project/"
+    },
+    {
+     "url": "https://www.dtnext.in/tamilnadu/2022/09/04/tnreat-imposes-penalty-for-misrepresentation"
+    }
+   ]
+  },
+  {
+   "mark": "developer",
+   "kind": "developer_claim",
+   "topic": "registration",
+   "stance": "neutral",
+   "claim": "Casagrand's own website still lists Bloom with its regulator registration numbers in 2026. Whether the 2020 cancellation was later overturned on appeal was not found in any source checked.",
+   "sources": [
+    {
+     "url": "https://www.casagrand.co.in/residential/ready-to-move-projects-chennai-thirumudivakkam/casagrand-bloom-villas/"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "track_record",
+   "stance": "negative",
+   "claim": "In September 2026 Tamil Nadu's regulator ordered delay interest on a villa in Casagrand Divinity (developer entity Casa Grande Smart Values Homes): a December 2023 handover promised by email was missed until April 2026.",
+   "sources": [
+    {
+     "url": "https://www.livelawbiz.com/rera/rera/tnrera-builders-email-promising-march-2024-handover-overrides-contractual-2027-deadline-casa-grande-directed-to-pay-delay-interest-550281"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "track_record",
+   "stance": "negative",
+   "claim": "In a 2025 petition to the regulator, buyers in Casagrand Utopia say handover is years past its May 2023 deadline despite extensions.",
+   "sources": [
+    {
+     "url": "https://www.change.org/p/appeal-to-tamil-nadu-rera"
+    }
+   ]
+  }
+ ],
+ "conflicts": [
+  {
+   "topic": "Possession date — a five-year spread for the same RERA-numbered project",
+   "versions": [
+    {
+     "value": "March 2027",
+     "url": "https://upcomingprop.com/casagrand/chennai/casagrand-casamia/",
+     "site": "upcomingprop.com"
+    },
+    {
+     "value": "August 2028",
+     "url": "https://www.roofandfloor.com/chennai/project/casagrand-casamia-in-pallavaram/6291",
+     "site": "roofandfloor.com"
+    },
+    {
+     "value": "December 2028",
+     "url": "https://casagrandchennaiprojects.co.in/casagrand-casamia/",
+     "site": "casagrandchennaiprojects.co.in"
+    },
+    {
+     "value": "June 2029",
+     "url": "https://chennaigatedcommunity.in/projects/casagrand-casamia",
+     "site": "chennaigatedcommunity.in"
+    },
+    {
+     "value": "October 2029",
+     "url": "https://www.chennaiproperties.com/projects/casagrand-casamia-in-pallavaram/6486",
+     "site": "chennaiproperties.com"
+    },
+    {
+     "value": "March 2032",
+     "url": "https://www.nobroker.in/casagrand-casamia-pallavaram_chennai-prjt-8a9f8a84962945b10196297ac878167c",
+     "site": "nobroker.in"
+    },
+    {
+     "value": "August 2028",
+     "url": "https://findbhk.com/projects/casagrand-casamia-phase-II-pallavaram"
+    }
+   ]
+  }
+ ],
+ "reading": [
+  {
+   "observation": "Six independent listing sites give six different possession dates — March 2027 to March 2032 — for the exact same RERA-numbered project. No source explains the spread; each states its own date as fact.",
+   "question": "Which possession date is actually printed on the TNRERA registration certificate itself?"
+  },
+  {
+   "observation": "The two company names in listings — Casagrand Builder Private Limited and Casagrand Premier Builder Limited — share one company number apart from the private/public marker: the same company, converted to a public company. That resolves the question; the name on your agreement should be the current one.",
+   "question": "Is the seller on my agreement Casagrand Premier Builder Limited, CIN U70101TN2003PLC051989?"
+  },
+  {
+   "observation": "Two independent publications report regulator penalties against Casamia's developer for misrepresentation in earlier projects, including one cancelled registration. The developer denied the charges in that case, and whether it was overturned on appeal is not known. It concerns other projects, but it is the same company.",
+   "question": "Is Casamia's registration TN/35/Building/0097/2025 active on rera.tn.gov.in today, and is any order about this project or its promoter still under appeal?"
+  }
+ ],
+ "gaps": [
+  {
+   "topic": "TNRERA's own project record",
+   "why": "The registered-projects search page is currently robots.txt-blocked; only secondary listing sites could be checked."
+  },
+  {
+   "topic": "Escrow account details",
+   "why": "Not published on any page found."
+  },
+  {
+   "topic": "Commencement certificate and current construction progress",
+   "why": "Not found in any source checked."
+  },
+  {
+   "topic": "IBBI insolvency check",
+   "why": "The live report checks IBBI's insolvency claims register against the CIN found above. It was not run for this sample."
+  },
+  {
+   "topic": "Independent evidence of Casagrand's delivery record",
+   "why": "Only promotional claims and one contractor's portfolio were found."
+  },
+  {
+   "topic": "What buyers say",
+   "why": "No independent buyer reviews or videos were found."
+  }
+ ],
+ "questions": [
+  {
+   "when": "Before booking",
+   "who": "Sales team",
+   "question": "Please show me the TNRERA registration certificate for TN/35/Building/0097/2025 — which possession date does it show?",
+   "good": "A certificate document with a specific date printed on it.",
+   "red_flag": "A verbal date with no certificate shown."
+  },
+  {
+   "when": "Before each payment",
+   "who": "CRM team",
+   "question": "Which bank holds the project's RERA escrow account, and can I see a stamped statement from the last 90 days?",
+   "good": "A named bank and a dated, stamped statement.",
+   "red_flag": "Any account in a name other than the registered promoter."
+  },
+  {
+   "when": "Before booking",
+   "who": "Legal team",
+   "question": "Please confirm in writing that no Tamil Nadu RERA or tribunal order concerning Casamia or its promoter is outstanding or under appeal.",
+   "good": "A written confirmation, or the orders with their current status.",
+   "red_flag": "“That was a different project” with no documents."
+  }
+ ],
+ "searches": 5,
+ "pages": [
+  {
+   "url": "https://www.nobroker.in/casagrand-casamia-pallavaram_chennai-prjt-8a9f8a84962945b10196297ac878167c",
+   "title": "Casagrand Casamia Pallavaram: Price, Photos & Floor Plans",
+   "site": "nobroker.in",
+   "cited": true
+  },
+  {
+   "url": "https://www.roofandfloor.com/chennai/project/casagrand-casamia-in-pallavaram/6291",
+   "title": "Casagrand Casamia - 2,3 & 4 BHK Apartments in Pallavaram",
+   "site": "roofandfloor.com",
+   "cited": true
+  },
+  {
+   "url": "https://chennaigatedcommunity.in/projects/casagrand-casamia",
+   "title": "Casagrand Casamia, Residential Apartments at Pallavaram",
+   "site": "chennaigatedcommunity.in",
+   "cited": true
+  },
+  {
+   "url": "https://casagrandchennaiprojects.co.in/casagrand-casamia/",
+   "title": "Casagrand Casamia Pallavaram, Chennai",
+   "site": "casagrandchennaiprojects.co.in",
+   "cited": true
+  },
+  {
+   "url": "https://www.upcomingpropertyhub.com/casagrand-casamia-premium-apartments-from-%E2%82%B961l-chennai/",
+   "title": "Casagrand Casamia | Premium Apartments from ₹61L Chennai",
+   "site": "upcomingpropertyhub.com",
+   "cited": false
+  },
+  {
+   "url": "https://www.chennaiproperties.com/projects/casagrand-casamia-in-pallavaram/6486",
+   "title": "Casagrand Casamia in Pallavaram, Chennai",
+   "site": "chennaiproperties.com",
+   "cited": true
+  },
+  {
+   "url": "https://www.commonfloor.com/casagrand-casamia-chennai/povp-05xz7b",
+   "title": "Casagrand Casamia in Pallavaram, Chennai",
+   "site": "commonfloor.com",
+   "cited": true
+  },
+  {
+   "url": "https://upcomingprop.com/casagrand/chennai/casagrand-casamia/",
+   "title": "Casagrand Casamia | Luxury Residential Development",
+   "site": "upcomingprop.com",
+   "cited": true
+  },
+  {
+   "url": "https://lei.bloomberg.com/leis/view/894500FZ8CLH62S2GI27",
+   "title": "Legal Entity Identifier (LEI) — CASAGRAND PREMIER BUILDER LIMITED",
+   "site": "lei.bloomberg.com",
+   "cited": true
+  },
+  {
+   "url": "https://rera.tn.gov.in/",
+   "title": "TNRERA homepage",
+   "site": "rera.tn.gov.in",
+   "cited": false
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Casagrand",
+   "title": "Casagrand — Wikipedia"
+  },
+  {
+   "url": "https://findbhk.com/projects/casagrand-casamia-phase-II-pallavaram",
+   "title": "Casagrand Casamia | Findbhk"
+  },
+  {
+   "url": "https://nitinsoorma.alboompro.com/post/best-casagrand-residential-projects-in-chennai-upcoming-developments-to-know",
+   "title": "Best Casagrand projects (promotional blog)"
+  },
+  {
+   "url": "https://www.connectionpoint.in/residential-project-casagrand-casamia",
+   "title": "Casagrand Casamia | Connection Point (agent)"
+  },
+  {
+   "url": "https://www.scribd.com/document/849037544/Vision",
+   "title": "Contractor portfolio (Scribd)"
+  },
+  {
+   "url": "https://gulfnews.com/gn-focus/casagrand-hermina-breaks-ground-on-dh420-million-dubai-islands-project-1.500454856",
+   "title": "Casagrand Hermina (Gulf News partner content)"
+  },
+  {
+   "url": "https://constrofacilitator.com/tnrera-cancels-registration-of-casagrand-builders-chennai-project/",
+   "title": "TNRERA cancels registration of Casagrand Builder’s Chennai project | Constro Facilitator"
+  },
+  {
+   "url": "https://www.dtnext.in/tamilnadu/2022/09/04/tnreat-imposes-penalty-for-misrepresentation",
+   "title": "TNREAT imposes penalty for misrepresentation | DT Next"
+  },
+  {
+   "url": "https://www.casagrand.co.in/residential/ready-to-move-projects-chennai-thirumudivakkam/casagrand-bloom-villas/",
+   "title": "Casagrand Bloom | Casagrand (developer site)"
+  },
+  {
+   "url": "https://www.livelawbiz.com/rera/rera/tnrera-builders-email-promising-march-2024-handover-overrides-contractual-2027-deadline-casa-grande-directed-to-pay-delay-interest-550281",
+   "title": "TNRERA directs delay interest, Casagrand Divinity | LiveLaw Biz"
+  },
+  {
+   "url": "https://www.change.org/p/appeal-to-tamil-nadu-rera",
+   "title": "Appeal to Tamil Nadu RERA (Casagrand Utopia buyers) | Change.org"
+  },
+  {
+   "url": "https://verified.realestate/rera/cases/tnrera/orders?page=2",
+   "title": "TNRERA final orders listing | Verified.RealEstate"
+  }
+ ],
+ "scoreNote": "No score: a score needs confirmation at the regulator across its components.",
+ "responsible": {
+  "name": "Preeyancc",
+  "title": "Founder, ShelterKart",
+  "contact": "corrections@shelterkart.com"
+ },
+ "disclaimer": "Research, not advice. ShelterKart never tells you to buy or not buy, and no developer can pay to change what it shows."
+}

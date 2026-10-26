@@ -1,0 +1,226 @@
+[
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: 1; new: -)",
+  "en": "1 buyer protection for {label}, each cited to the law",
+  "tr": "حماية واحدة للمشتري في {label}، موثّقة بالنص القانوني"
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: 1; new: -)",
+  "en": "1 claim was removed because the page cited never came back in the search.",
+  "tr": "تمت إزالة ادّعاء واحد لأن الصفحة المُشار إليها لم تظهر في البحث."
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: 1; new: -)",
+  "en": "1 more finding with sources",
+  "tr": "نتيجة إضافية واحدة مع مصادرها"
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: 1; new: -)",
+  "en": "1 more question to ask",
+  "tr": "سؤال إضافي واحد لطرحه"
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: 1; new: -)",
+  "en": "1 page",
+  "tr": "صفحة واحدة"
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: 1; new: -)",
+  "en": "1 pattern read between the lines",
+  "tr": "نمط واحد مستخلص من بين السطور"
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: 1; new: -)",
+  "en": "1 search",
+  "tr": "عملية بحث واحدة"
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "Could not reach ShelterKart. Check your connection and try again.",
+  "tr": "تعذّر الوصول إلى ShelterKart. تحقّق من اتصالك وحاول مجدداً."
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "The purchase could not be started.",
+  "tr": "تعذّر بدء عملية الشراء."
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "This report could not be opened.",
+  "tr": "تعذّر فتح هذا التقرير."
+ },
+ {
+  "lang": "ar",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "This report could not be translated just now, so it is shown in English.",
+  "tr": "تعذّرت ترجمة هذا التقرير الآن، لذلك يُعرض بالإنجليزية."
+ },
+ {
+  "lang": "fr",
+  "where": "interface",
+  "kind": "identical to English",
+  "en": "{n} pages",
+  "tr": "{n} pages"
+ },
+ {
+  "lang": "fr",
+  "where": "interface",
+  "kind": "identical to English",
+  "en": "1 page",
+  "tr": "1 page"
+ },
+ {
+  "lang": "fr",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "a typical purchase, as no listed price was found",
+  "tr": "un achat type, faute de prix affiché"
+ },
+ {
+  "lang": "fr",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "Could not compare",
+  "tr": "Comparaison impossible"
+ },
+ {
+  "lang": "fr",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "Could not reach ShelterKart. Check your connection and try again.",
+  "tr": "Impossible de joindre ShelterKart. Vérifiez votre connexion et réessayez."
+ },
+ {
+  "lang": "fr",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "Not in your document",
+  "tr": "Absent de votre document"
+ },
+ {
+  "lang": "fr",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "Translated with AI. Some parts are shown in English because they could not be translated reliably. The English original governs.",
+  "tr": "Traduit par IA. Certaines parties restent en anglais, faute de pouvoir être traduites de façon fiable. L’original anglais fait foi."
+ },
+ {
+  "lang": "pl",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "In a live report, you upload a document here and ShelterKart marks each detail as matching, partly matching or not matching the findings above. It isn’t available on a sample.",
+  "tr": "W prawdziwym raporcie przesyłasz tu dokument, a ShelterKart oznacza każdy szczegół jako zgodny, częściowo zgodny lub niezgodny z powyższymi ustaleniami. W przykładzie ta funkcja jest niedostępna."
+ },
+ {
+  "lang": "pl",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "Payment is not available right now. Please try again shortly.",
+  "tr": "Płatność jest teraz niedostępna. Spróbuj ponownie za chwilę."
+ },
+ {
+  "lang": "pl",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "That attempt is no longer usable. Please try again.",
+  "tr": "Ta próba jest już nieważna. Spróbuj ponownie."
+ },
+ {
+  "lang": "zh-Hant",
+  "where": "interface",
+  "kind": "length ratio 0.19",
+  "en": "Replies from the developer",
+  "tr": "開發商回覆"
+ },
+ {
+  "lang": "zh-Hant",
+  "where": "interface",
+  "kind": "negation may be lost",
+  "en": "That attempt is no longer usable. Please try again.",
+  "tr": "此次嘗試已失效。請再試一次。"
+ },
+ {
+  "lang": "es",
+  "where": "interface",
+  "kind": "identical to English",
+  "en": "India — Maharashtra",
+  "tr": "India — Maharashtra"
+ },
+ {
+  "lang": "es",
+  "where": "interface",
+  "kind": "identical to English",
+  "en": "India — Tamil Nadu",
+  "tr": "India — Tamil Nadu"
+ },
+ {
+  "lang": "ja",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: -; new: 5)",
+  "en": "Five real projects, researched from public sources and dated as shown. Payment is simulated: no money is taken.",
+  "tr": "公開情報源から調査した実在の5件のプロジェクト（日付は表示のとおり）。支払いは模擬で、料金は請求されません。"
+ },
+ {
+  "lang": "ja",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: -; new: 5)",
+  "en": "This demo covers five real projects. Tap one under the search box, or type its name.",
+  "tr": "このデモでは実在の5件のプロジェクトを扱っています。検索ボックスの下から選ぶか、名前を入力してください。"
+ },
+ {
+  "lang": "ja",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: -; new: 3)",
+  "en": "This demo covers three real projects: Mumbai, London and Dubai. Tap one under the search box, or type its name. On the live site, any project is investigated.",
+  "tr": "このデモでは実在の3件のプロジェクト（ムンバイ、ロンドン、ドバイ）を扱っています。検索ボックスの下から選ぶか、名前を入力してください。実際のサイトでは、どのプロジェクトでも調査できます。"
+ },
+ {
+  "lang": "ja",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: -; new: 3)",
+  "en": "Three real projects, investigated from public sources and dated as shown. Payment is simulated: no money is taken.",
+  "tr": "公開情報源から調査した実在の3件のプロジェクト（日付は表示のとおり）。支払いは模擬で、料金は請求されません。"
+ },
+ {
+  "lang": "ja",
+  "where": "interface",
+  "kind": "facts: numbers differ (missing: -; new: 1,3)",
+  "en": "Three searches run side by side, then every claim is graded by its sources. This can take up to a minute.",
+  "tr": "3つの検索を並行して実行し、すべての主張を出典で評価します。最大1分ほどかかることがあります。"
+ },
+ {
+  "lang": "hi",
+  "where": "casagrand-casamia",
+  "kind": "English words left: RERA-",
+  "en": "Listing sites disagree on possession date — a five-year spread for the same rera-numbered project; this is not counted against the developer. Ask for the date on the registration.",
+  "tr": "लिस्टिंग साइटें कब्ज़े की तारीख़ पर एकमत नहीं हैं — एक ही RERA-संख्या वाले प्रोजेक्ट के लिए पाँच साल का अंतर; इसे डेवलपर के विरुद्ध नहीं गिना जाता। पंजीकरण में दर्ज तारीख़ माँगें।"
+ },
+ {
+  "lang": "ar",
+  "where": "creek-bay-tower-b",
+  "kind": "English words left: RERA.",
+  "en": "A named escrow account with RERA confirmation.",
+  "tr": "حساب ضمان محدد الاسم مع تأكيد من RERA."
+ }
+]

@@ -1,0 +1,31 @@
+{
+ "_note": "The engine catalogue: default model, prices and data handling for every AI engine. The router uses it ONLY to estimate cost until real figures exist (benchmark results, then measured averages). No engine is preferred by name. Prices change often: re-check each source before budgeting, and update `checked`.",
+ "checked": "2026-10-07",
+ "engines": {
+  "anthropic": { "label": "Anthropic (Claude)", "company": "Anthropic PBC", "jurisdiction": "United States", "keyEnv": "ANTHROPIC_API_KEY", "modelEnv": "ANTHROPIC_MODEL", "defaultModel": "claude-sonnet-5-5",
+   "models": { "claude-sonnet-5-5": { "in": 2, "out": 10 }, "claude-opus-5-5": { "in": 4, "out": 20 }, "claude-haiku-5-5": { "in": 0.10, "out": 0.50, "note": "prompts up to 100,000 tokens; above that $0.50 in, $2.50 out" } },
+   "searchPer1kUsd": 10, "priceSource": "https://platform.claude.com/docs/en/about-claude/pricing", "priceVerified": true,
+   "data": "Commercial API terms; data-residency option (US-only inference at 1.1x)." },
+  "openai": { "label": "OpenAI (ChatGPT models)", "company": "OpenAI", "jurisdiction": "United States", "keyEnv": "OPENAI_API_KEY", "modelEnv": "OPENAI_MODEL", "defaultModel": "gpt-5.4-mini",
+   "models": { "gpt-5.5": { "in": 5, "out": 30 }, "gpt-5.4-mini": { "in": 0.75, "out": 4.50 }, "gpt-5.4-nano": { "in": 0.20, "out": 1.25 } },
+   "searchPer1kUsd": 10, "priceSource": "developers.openai.com/api/docs/pricing, as quoted by several secondary sources (October 2026)", "priceVerified": false,
+   "data": "Business data not used for training by default, as reported; confirm the API terms." },
+  "gemini": { "label": "Google (Gemini)", "company": "Google LLC", "jurisdiction": "United States", "keyEnv": "GEMINI_API_KEY", "modelEnv": "GEMINI_MODEL", "defaultModel": "gemini-3.5-flash",
+   "models": { "gemini-3.5-flash": { "in": 1.50, "out": 9 }, "gemini-3.1-pro-preview": { "in": 2, "out": 12, "note": "prompts up to 200,000 tokens" } },
+   "searchPer1kUsd": 14, "searchFreePerMonth": 5000, "priceSource": "ai.google.dev/gemini-api/docs/pricing, as quoted by several secondary sources (October 2026)", "priceVerified": false,
+   "data": "Paid-tier API terms differ from the free tier; confirm before sending anything but public information." },
+  "xai": { "label": "xAI (Grok)", "company": "xAI", "jurisdiction": "United States", "keyEnv": "XAI_API_KEY", "modelEnv": "XAI_MODEL", "defaultModel": "grok-4.3",
+   "models": { "grok-4.5": { "in": 2, "out": 6 }, "grok-4.3": { "in": 1.25, "out": 2.50 } },
+   "searchPer1kUsd": 5, "priceSource": "x.ai/api, as quoted by several secondary sources (October 2026)", "priceVerified": false,
+   "data": "Enterprise terms reportedly include zero data retention and US and EU regional endpoints; confirm." },
+  "deepseek": { "label": "DeepSeek", "company": "DeepSeek", "jurisdiction": "People's Republic of China", "keyEnv": "DEEPSEEK_API_KEY", "modelEnv": "DEEPSEEK_MODEL", "defaultModel": "deepseek-v4-flash",
+   "models": { "deepseek-v4-flash": { "in": 0.14, "out": 0.28 }, "deepseek-v4-pro": { "in": 1.74, "out": 3.48, "note": "another snapshot lists $1.32 in, $3.96 out" } },
+   "searchPer1kUsd": null, "priceSource": "api-docs.deepseek.com pricing, as quoted by secondary sources (October 2026)", "priceVerified": false,
+   "data": "As reported: prompts processed and stored in China; trains on API data by default unless you opt out; no API web search and no image input. Suitable, if at all, only for public information about companies." }
+ },
+ "roleDefaults": {
+  "_note": "Typical tokens and searches per call, my estimates, used only until the quality gate or the meter has real figures (5 calls per agent and engine).",
+  "research": { "in": 30000, "out": 3000, "searches": 6 }, "adviser": { "in": 3000, "out": 1500, "searches": 0 },
+  "documents": { "in": 4000, "out": 600, "searches": 0 }, "translate": { "in": 5000, "out": 5000, "searches": 0 }, "verify": { "in": 2500, "out": 800, "searches": 0 }
+ }
+}

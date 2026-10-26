@@ -1,0 +1,400 @@
+{
+ "ref": "SK-SG1RIVERMOD26",
+ "query": "River Modern",
+ "location": "River Valley, District 9",
+ "market": "sg",
+ "marketLabel": "Singapore",
+ "depth": "Research",
+ "checkedAt": "2026-09-30T00:00:00",
+ "project": {
+  "name": "River Modern",
+  "location": "River Valley Green, District 9, Singapore",
+  "developer": "GuocoLand Limited",
+  "ids": [],
+  "developer_site": "guocoland.com.sg",
+  "price_from": 1548000,
+  "price_to": 1548000,
+  "price_currency": "SGD"
+ },
+ "registry": null,
+ "counts": {
+  "confirmed": 2,
+  "reported": 3,
+  "single": 2,
+  "developer": 0,
+  "disputed": 1
+ },
+ "removed": 0,
+ "findings": [
+  {
+   "mark": "confirmed",
+   "claim": "The developer, GuocoLand Limited, carries Singapore registration number 197600660W, stated in its own SGX-filed annual reports.",
+   "sources": [
+    {
+     "url": "https://links.sgx.com/1.0.0/corporate-announcements/7E6XK37HIQX9M30Y/528753_GLL%20AR%202018.pdf",
+     "site": "sgx.com"
+    }
+   ],
+   "sites": 1,
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "confirmed",
+   "claim": "GuocoLand has been listed on the Singapore Exchange since 1978, incorporated 31 March 1976.",
+   "sources": [
+    {
+     "url": "https://links.sgx.com/1.0.0/corporate-announcements/2UMIWAX6BG76MKE7/472001_GuocoLand%20Limited%20Annual%20Report%202017.pdf",
+     "site": "sgx.com"
+    }
+   ],
+   "sites": 1,
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "kind": "developer_claim",
+   "claim": "GuocoLand states on its own website that it has developed over 11,000 homes across more than 40 residential projects in Singapore.",
+   "sources": [
+    {
+     "url": "https://rivermodern.com.sg/",
+     "site": "rivermodern.com.sg"
+    }
+   ],
+   "sites": 1,
+   "note": "This site is named after the project. Sites like this are usually run by estate agents, not the developer.",
+   "topic": "track_record",
+   "stance": "positive"
+  },
+  {
+   "mark": "reported",
+   "sites": 3,
+   "claim": "River Modern is a 455-unit, 99-year leasehold development across two 36-storey towers, launched for public viewing 20 February 2026.",
+   "sources": [
+    {
+     "url": "https://www.99.co/singapore/insider/river-modern-new-launch-review/",
+     "site": "99.co"
+    },
+    {
+     "url": "https://sgluxuryhomes.com.sg/new-launch-review/river-modern-review/",
+     "site": "sgluxuryhomes.com.sg"
+    },
+    {
+     "url": "https://riversmodern.sg/",
+     "site": "riversmodern.sg"
+    }
+   ],
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "sites": 2,
+   "claim": "GuocoLand secured the site through a Government Land Sales tender with a top bid of S$627.84 million, approximately S$1,420 per square foot per plot ratio.",
+   "sources": [
+    {
+     "url": "https://riversmodern.sg/",
+     "site": "riversmodern.sg"
+    },
+    {
+     "url": "https://sgluxuryhomes.com.sg/new-launch-review/river-modern-review/",
+     "site": "sgluxuryhomes.com.sg"
+    }
+   ],
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "sites": 2,
+   "claim": "About 70% of units are described as having unblocked river views.",
+   "sources": [
+    {
+     "url": "https://www.99.co/singapore/insider/river-modern-new-launch-review/",
+     "site": "99.co"
+    },
+    {
+     "url": "https://sgluxuryhomes.com.sg/new-launch-review/river-modern-review/",
+     "site": "sgluxuryhomes.com.sg"
+    }
+   ],
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "claim": "Units start from approximately S$1.548 million.",
+   "sources": [
+    {
+     "url": "https://www.99.co/singapore/insider/river-modern-new-launch-review/",
+     "site": "99.co"
+    }
+   ],
+   "sites": 1,
+   "topic": "price",
+   "stance": "neutral"
+  },
+  {
+   "mark": "confirmed",
+   "topic": "track_record",
+   "stance": "positive",
+   "claim": "GuocoLand's own exchange filings report Midtown Bay completed in the second quarter of 2024 and Lentor Modern, 605 units, in the third quarter of 2025.",
+   "sources": [
+    {
+     "url": "https://links.sgx.com/1.0.0/corporate-announcements/FHP1T69I187EU38J/873496_1H%20FY26%20Results%20Media%20Release_29%20Jan%202026.pdf"
+    }
+   ]
+  },
+  {
+   "mark": "confirmed",
+   "topic": "track_record",
+   "stance": "positive",
+   "claim": "GuocoLand's FY2022 results say Martin Modern sold all 450 units, which have since been handed over to their owners.",
+   "sources": [
+    {
+     "url": "https://links.sgx.com/1.0.0/corporate-announcements/Z4O7J5OJQRV5WZ4F/730224_Media%20Release_GuocoLand%20FY%202022%20results.pdf"
+    }
+   ]
+  },
+  {
+   "mark": "confirmed",
+   "topic": "track_record",
+   "stance": "neutral",
+   "claim": "A December 2021 filing said GuocoLand's Singapore projects were expected to meet revised completion targets despite construction labour shortages.",
+   "sources": [
+    {
+     "url": "https://links.sgx.com/1.0.0/corporate-announcements/P6NKE8612UMVB7HP/699117_SGX-1H%20FY21-22%20Media%20Release.pdf"
+    }
+   ]
+  },
+  {
+   "mark": "confirmed",
+   "topic": "other",
+   "stance": "neutral",
+   "claim": "GuocoLand's January 2026 results confirm River Modern: 455 units in two towers, wholly developed by GuocoLand, launching in early 2026.",
+   "sources": [
+    {
+     "url": "https://links.sgx.com/1.0.0/corporate-announcements/FHP1T69I187EU38J/873496_1H%20FY26%20Results%20Media%20Release_29%20Jan%202026.pdf"
+    }
+   ]
+  },
+  {
+   "mark": "reported",
+   "topic": "dates",
+   "stance": "neutral",
+   "claim": "River Modern's estimated Temporary Occupation Permit (TOP) date is the second half of 2030.",
+   "sources": [
+    {
+     "url": "https://www.guocoland.com.sg/Documents/News/2026/TES1229_River_Modern_Special_Feature.pdf"
+    },
+    {
+     "url": "https://alfi.dev.theedgesingapore.com/cityandcountry/special-feature/river-modern-rare-district-9-riverfront-site-superior-connectivity"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "dates",
+   "stance": "neutral",
+   "claim": "The developer's statutory disclosure gives expected vacant possession by 31 December 2032 and legal completion by 31 December 2035 — the contractual deadlines, later than the estimated TOP.",
+   "sources": [
+    {
+     "url": "https://www.edgeprop.sg/new-launches/river-modern"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "registration",
+   "stance": "neutral",
+   "claim": "The developer is River Modern Pte. Ltd., housing developer licence C1539; the land is mortgaged to OCBC, as is normal for project financing.",
+   "sources": [
+    {
+     "url": "https://www.edgeprop.sg/new-launches/river-modern"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "status",
+   "stance": "positive",
+   "claim": "Reporting GuocoLand's August 2026 exchange filing, EdgeProp says River Modern was 93% sold by 30 June, at an average of S$3,266 per sq ft.",
+   "sources": [
+    {
+     "url": "https://edgeprop.sg/property-news/guocolands-five-fy2026-residential-launches-near-sell-out-lentor-central-and-berlayar-drive-pipeline"
+    }
+   ]
+  }
+ ],
+ "conflicts": [
+  {
+   "topic": "Direct connection to Great World MRT station",
+   "versions": [
+    {
+     "value": "Directly connected to Great World MRT via a sheltered/underground walkway",
+     "url": "https://sgluxuryhomes.com.sg/new-launch-review/river-modern-review/",
+     "site": "sgluxuryhomes.com.sg"
+    },
+    {
+     "value": "Not mentioned as directly connected — nearest station described only generally",
+     "url": "https://www.99.co/singapore/insider/river-modern-new-launch-review/",
+     "site": "99.co"
+    }
+   ]
+  },
+  {
+   "topic": "Expected completion (TOP)",
+   "versions": [
+    {
+     "value": "2nd half of 2030",
+     "url": "https://www.guocoland.com.sg/Documents/News/2026/TES1229_River_Modern_Special_Feature.pdf"
+    },
+    {
+     "value": "1st half of 2030 (from the FY2026 filing)",
+     "url": "https://edgeprop.sg/property-news/guocolands-five-fy2026-residential-launches-near-sell-out-lentor-central-and-berlayar-drive-pipeline"
+    },
+    {
+     "value": "July 2029",
+     "url": "https://www.propertyguru.com.sg/listing/for-sale-river-modern-500208530"
+    }
+   ]
+  }
+ ],
+ "reading": [
+  {
+   "observation": "The 'direct MRT connection' claim appears consistently on agent and marketing microsites but not in the one genuinely independent property-portal source checked (99.co). This is the same agent-microsite pattern this product watches for in every market.",
+   "question": "Can the sales team point to the specific underground link on Great World MRT's own station map?"
+  },
+  {
+   "observation": "Singapore projects carry two kinds of date. The estimated TOP (2H 2030 here) is a forecast; the statutory dates in the sale documents (vacant possession by 31 December 2032) are the contractual deadlines. Listings quoting July 2029 are wrong on both counts.",
+   "question": "What vacant-possession date is in my Option to Purchase and Sale and Purchase Agreement, and what is the current estimated TOP?"
+  }
+ ],
+ "gaps": [
+  {
+   "topic": "Qualifying Certificate conditions for foreign buyers",
+   "why": "Not stated in any source checked."
+  },
+  {
+   "topic": "What buyers say",
+   "why": "Not researched for this sample."
+  }
+ ],
+ "questions": [
+  {
+   "when": "Before booking",
+   "who": "Sales team",
+   "question": "Is River Modern's seller GuocoLand Limited (UEN 197600660W) directly, or a separate project subsidiary?",
+   "good": "A specific project-company name and UEN, distinct from or matching the parent.",
+   "red_flag": "Just ‘GuocoLand’ with no UEN given."
+  },
+  {
+   "when": "Before signing",
+   "who": "Your own lawyer",
+   "question": "What is the Option to Purchase's expiry date, and is my booking fee refundable if I do not exercise it?",
+   "good": "A specific date and a written refund policy for the booking fee itself.",
+   "red_flag": "‘It's standard, don't worry about it.’"
+  },
+  {
+   "when": "Before each payment",
+   "who": "CRM team",
+   "question": "Under the Housing Developers Rules, which construction milestone does each payment instalment correspond to?",
+   "good": "A written progressive-payment schedule tied to specific milestones.",
+   "red_flag": "A payment request with no milestone stated."
+  }
+ ],
+ "searches": 5,
+ "pages": [
+  {
+   "url": "https://www.guocoland.com.sg/corp_his.shtml",
+   "title": "Corporate History",
+   "site": "guocoland.com.sg",
+   "cited": false
+  },
+  {
+   "url": "https://links.sgx.com/1.0.0/corporate-announcements/7E6XK37HIQX9M30Y/528753_GLL%20AR%202018.pdf",
+   "title": "GuocoLand Annual Report 2018",
+   "site": "links.sgx.com",
+   "cited": true
+  },
+  {
+   "url": "https://links.sgx.com/1.0.0/corporate-announcements/2UMIWAX6BG76MKE7/472001_GuocoLand%20Limited%20Annual%20Report%202017.pdf",
+   "title": "GuocoLand Annual Report 2017",
+   "site": "links.sgx.com",
+   "cited": true
+  },
+  {
+   "url": "https://www.99.co/singapore/insider/river-modern-new-launch-review/",
+   "title": "Rare riverfront condo in District 9, River Modern starts from S$1.548 million",
+   "site": "99.co",
+   "cited": true
+  },
+  {
+   "url": "https://sgluxuryhomes.com.sg/new-launch-review/river-modern-review/",
+   "title": "River Modern Condo Launch Review",
+   "site": "sgluxuryhomes.com.sg",
+   "cited": true
+  },
+  {
+   "url": "https://riversmodern.sg/",
+   "title": "Home - River Modern @ River Valley",
+   "site": "riversmodern.sg",
+   "cited": true
+  },
+  {
+   "url": "https://theriver-modern.sg/",
+   "title": "River Modern Condo | Price, Floor Plans & Showflat",
+   "site": "theriver-modern.sg",
+   "cited": false
+  },
+  {
+   "url": "https://rivermodern.com.sg/",
+   "title": "River Modern (project website, operator not verified)",
+   "site": "rivermodern.com.sg",
+   "cited": true
+  },
+  {
+   "url": "https://links.sgx.com/1.0.0/corporate-announcements/FHP1T69I187EU38J/873496_1H%20FY26%20Results%20Media%20Release_29%20Jan%202026.pdf",
+   "title": "GuocoLand 1H FY26 results media release (SGX)"
+  },
+  {
+   "url": "https://links.sgx.com/1.0.0/corporate-announcements/Z4O7J5OJQRV5WZ4F/730224_Media%20Release_GuocoLand%20FY%202022%20results.pdf",
+   "title": "GuocoLand FY2022 results media release (SGX)"
+  },
+  {
+   "url": "https://links.sgx.com/1.0.0/corporate-announcements/P6NKE8612UMVB7HP/699117_SGX-1H%20FY21-22%20Media%20Release.pdf",
+   "title": "GuocoLand 1H FY21/22 media release (SGX)"
+  },
+  {
+   "url": "https://www.guocoland.com.sg/Documents/News/2026/TES1229_River_Modern_Special_Feature.pdf",
+   "title": "River Modern special feature (GuocoLand site)"
+  },
+  {
+   "url": "https://alfi.dev.theedgesingapore.com/cityandcountry/special-feature/river-modern-rare-district-9-riverfront-site-superior-connectivity",
+   "title": "River Modern feature | The Edge Singapore"
+  },
+  {
+   "url": "https://edgeprop.sg/property-news/guocolands-five-fy2026-residential-launches-near-sell-out-lentor-central-and-berlayar-drive-pipeline",
+   "title": "GuocoLand's FY2026 launches near sell-out | EdgeProp"
+  },
+  {
+   "url": "https://www.edgeprop.sg/new-launches/river-modern",
+   "title": "River Modern new launch | EdgeProp (statutory disclosure)"
+  },
+  {
+   "url": "https://www.propertyguru.com.sg/listing/for-sale-river-modern-500208530",
+   "title": "River Modern listing | PropertyGuru"
+  }
+ ],
+ "scoreNote": "No score: a score needs confirmation at the regulator across its components.",
+ "responsible": {
+  "name": "Preeyancc",
+  "title": "Founder, ShelterKart",
+  "contact": "corrections@shelterkart.com"
+ },
+ "disclaimer": "Research, not advice. ShelterKart never tells you to buy or not buy, and no developer can pay to change what it shows.",
+ "notes": [
+  "Singapore's ACRA register is checked live when a report is generated. This sample confirms the developer through its own SGX exchange filings instead."
+ ]
+}

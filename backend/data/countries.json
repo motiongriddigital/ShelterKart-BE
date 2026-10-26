@@ -1,0 +1,379 @@
+[
+  {
+    "iso": "IN",
+    "name": "India",
+    "currency": "INR",
+    "tax": "IN",
+    "selectable": true
+  },
+  {
+    "iso": "AE",
+    "name": "United Arab Emirates",
+    "currency": "AED",
+    "tax": "AE",
+    "selectable": true
+  },
+  {
+    "iso": "GB",
+    "name": "United Kingdom",
+    "currency": "GBP",
+    "tax": "GB",
+    "selectable": true
+  },
+  {
+    "iso": "SG",
+    "name": "Singapore",
+    "currency": "SGD",
+    "tax": "SG",
+    "selectable": true
+  },
+  {
+    "iso": "CH",
+    "name": "Switzerland",
+    "currency": "CHF",
+    "tax": "CH",
+    "selectable": true
+  },
+  {
+    "iso": "CA",
+    "name": "Canada",
+    "currency": "CAD",
+    "tax": "CA",
+    "selectable": true
+  },
+  {
+    "iso": "US",
+    "name": "United States",
+    "currency": "USD",
+    "tax": "US",
+    "selectable": true
+  },
+  {
+    "iso": "AU",
+    "name": "Australia",
+    "currency": "AUD",
+    "tax": "AU",
+    "selectable": true
+  },
+  {
+    "iso": "NZ",
+    "name": "New Zealand",
+    "currency": "NZD",
+    "tax": "NZ",
+    "selectable": true
+  },
+  {
+    "iso": "HK",
+    "name": "Hong Kong",
+    "currency": "HKD",
+    "tax": "HK",
+    "selectable": true
+  },
+  {
+    "iso": "TW",
+    "name": "Taiwan",
+    "currency": "TWD",
+    "tax": "TW",
+    "selectable": true
+  },
+  {
+    "iso": "NO",
+    "name": "Norway",
+    "currency": "NOK",
+    "tax": "NO",
+    "selectable": true
+  },
+  {
+    "iso": "SA",
+    "name": "Saudi Arabia",
+    "currency": "SAR",
+    "tax": "SA",
+    "selectable": true
+  },
+  {
+    "iso": "QA",
+    "name": "Qatar",
+    "currency": "QAR",
+    "tax": "QA",
+    "selectable": true
+  },
+  {
+    "iso": "BH",
+    "name": "Bahrain",
+    "currency": "BHD",
+    "tax": "BH",
+    "selectable": true
+  },
+  {
+    "iso": "OM",
+    "name": "Oman",
+    "currency": "OMR",
+    "tax": "OM",
+    "selectable": true
+  },
+  {
+    "iso": "FR",
+    "name": "France",
+    "currency": "EUR",
+    "tax": "FR",
+    "selectable": true
+  },
+  {
+    "iso": "DE",
+    "name": "Germany",
+    "currency": "EUR",
+    "tax": "DE",
+    "selectable": true
+  },
+  {
+    "iso": "ES",
+    "name": "Spain",
+    "currency": "EUR",
+    "tax": "ES",
+    "selectable": true
+  },
+  {
+    "iso": "IT",
+    "name": "Italy",
+    "currency": "EUR",
+    "tax": "IT",
+    "selectable": true
+  },
+  {
+    "iso": "NL",
+    "name": "Netherlands",
+    "currency": "EUR",
+    "tax": "NL",
+    "selectable": true
+  },
+  {
+    "iso": "BE",
+    "name": "Belgium",
+    "currency": "EUR",
+    "tax": "BE",
+    "selectable": true
+  },
+  {
+    "iso": "IE",
+    "name": "Ireland",
+    "currency": "EUR",
+    "tax": "IE",
+    "selectable": true
+  },
+  {
+    "iso": "PT",
+    "name": "Portugal",
+    "currency": "EUR",
+    "tax": "PT",
+    "selectable": true
+  },
+  {
+    "iso": "AT",
+    "name": "Austria",
+    "currency": "EUR",
+    "tax": "AT",
+    "selectable": true
+  },
+  {
+    "iso": "LU",
+    "name": "Luxembourg",
+    "currency": "EUR",
+    "tax": "LU",
+    "selectable": true
+  },
+  {
+    "iso": "GR",
+    "name": "Greece",
+    "currency": "EUR",
+    "tax": "GR",
+    "selectable": true
+  },
+  {
+    "iso": "SK",
+    "name": "Slovakia",
+    "currency": "EUR",
+    "tax": "SK",
+    "selectable": true
+  },
+  {
+    "iso": "SI",
+    "name": "Slovenia",
+    "currency": "EUR",
+    "tax": "SI",
+    "selectable": true
+  },
+  {
+    "iso": "MT",
+    "name": "Malta",
+    "currency": "EUR",
+    "tax": "MT",
+    "selectable": true
+  },
+  {
+    "iso": "CY",
+    "name": "Cyprus",
+    "currency": "EUR",
+    "tax": "CY",
+    "selectable": true
+  },
+  {
+    "iso": "HR",
+    "name": "Croatia",
+    "currency": "EUR",
+    "tax": "HR",
+    "selectable": true
+  },
+  {
+    "iso": "FI",
+    "name": "Finland",
+    "currency": "EUR",
+    "tax": "FI",
+    "selectable": true
+  },
+  {
+    "iso": "EE",
+    "name": "Estonia",
+    "currency": "EUR",
+    "tax": "EE",
+    "selectable": true
+  },
+  {
+    "iso": "LV",
+    "name": "Latvia",
+    "currency": "EUR",
+    "tax": "LV",
+    "selectable": true
+  },
+  {
+    "iso": "LT",
+    "name": "Lithuania",
+    "currency": "EUR",
+    "tax": "LT",
+    "selectable": true
+  },
+  {
+    "iso": "SE",
+    "name": "Sweden",
+    "currency": "SEK",
+    "tax": "SE",
+    "selectable": true
+  },
+  {
+    "iso": "DK",
+    "name": "Denmark",
+    "currency": "DKK",
+    "tax": "DK",
+    "selectable": true
+  },
+  {
+    "iso": "PL",
+    "name": "Poland",
+    "currency": "PLN",
+    "tax": "PL",
+    "selectable": true
+  },
+  {
+    "iso": "CZ",
+    "name": "Czech Republic",
+    "currency": "CZK",
+    "tax": "CZ",
+    "selectable": true
+  },
+  {
+    "iso": "IR",
+    "name": "Iran",
+    "currency": "USD",
+    "tax": null,
+    "selectable": false,
+    "blocked": true
+  },
+  {
+    "iso": "KP",
+    "name": "North Korea",
+    "currency": "USD",
+    "tax": null,
+    "selectable": false,
+    "blocked": true
+  },
+  {
+    "iso": "SY",
+    "name": "Syria",
+    "currency": "USD",
+    "tax": null,
+    "selectable": false,
+    "blocked": true
+  },
+  {
+    "iso": "CU",
+    "name": "Cuba",
+    "currency": "USD",
+    "tax": null,
+    "selectable": false,
+    "blocked": true
+  },
+  {
+    "iso": "RU",
+    "name": "Russia",
+    "currency": "USD",
+    "tax": null,
+    "selectable": false,
+    "blocked": true
+  },
+  {
+    "iso": "BY",
+    "name": "Belarus",
+    "currency": "USD",
+    "tax": null,
+    "selectable": false,
+    "blocked": true
+  },
+  {
+    "iso": "MY",
+    "name": "Malaysia",
+    "currency": "USD",
+    "tax": "MY",
+    "selectable": true
+  },
+  {
+    "iso": "ZA",
+    "name": "South Africa",
+    "currency": "USD",
+    "tax": "ZA",
+    "selectable": true
+  },
+  {
+    "iso": "BR",
+    "name": "Brazil",
+    "currency": "USD",
+    "tax": "BR",
+    "selectable": true
+  },
+  {
+    "iso": "MX",
+    "name": "Mexico",
+    "currency": "USD",
+    "tax": "MX",
+    "selectable": true
+  },
+  {
+    "iso": "JP",
+    "name": "Japan",
+    "currency": "USD",
+    "tax": "JP",
+    "selectable": true
+  },
+  {
+    "iso": "TH",
+    "name": "Thailand",
+    "currency": "USD",
+    "tax": "TH",
+    "selectable": true
+  },
+  {
+    "iso": "PH",
+    "name": "Philippines",
+    "currency": "USD",
+    "tax": "PH",
+    "selectable": true
+  }
+]

@@ -1,0 +1,133 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hubtown Celeste — free preview</title><style>
+:root{--ink:#0A1C33;--ink-2:#2F4460;--ink-3:#52657F;--paper:#FAF8F5;--rule:#E4DDD1;--gold:#B8892F;--gold-deep:#8A6321;--gold-wash:#FBF6EA;
+--v:#1D6338;--r:#865E1D;--cl:#3B5B85;--inf:#0A2243;--inf-bg:#EEF1F6;--cf:#A32B1C;--cf-bg:#F7E3DF}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 'IBM Plex Sans','Carlito','Liberation Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
+main{max-width:46rem;margin:0 auto;padding:0 1.5rem 4rem}
+h1,h2,h3{font-family:'Fraunces',Georgia,'Liberation Serif',serif;font-weight:600;color:var(--ink);line-height:1.2}
+h2{font-size:1.5rem;margin:3.2rem 0 .8rem;padding-top:1.1rem;border-top:1px solid var(--rule)}
+h3{font-size:1.12rem;margin:1.4rem 0 .4rem}
+a{color:var(--ink-2);text-decoration-color:var(--gold);text-underline-offset:2px}
+a:focus-visible{outline:2px solid var(--gold-deep);outline-offset:2px}
+p{margin:.4rem 0}
+.meta{color:var(--ink-3);font-size:.92rem}.note{color:var(--ink-3);font-style:italic}
+.id{font-family:'IBM Plex Mono','Liberation Mono',ui-monospace,monospace;font-size:.78em;color:var(--gold-deep);margin-right:.35rem}
+ul.plain,ol.plain{list-style:none;margin:0;padding:0}
+.cover{padding:3.2rem 0 2.4rem;border-bottom:1px solid var(--rule);margin-bottom:1rem}
+.cover .brand{font-family:'Fraunces',Georgia,serif;font-size:1.25rem;color:var(--gold-deep);margin:0}
+.cover .kind{color:var(--ink-3);margin:.1rem 0 0;font-size:.95rem}
+.cover-main{margin:5.5rem 0 4.5rem}
+.cover h1{font-size:3.1rem;margin:0 0 .5rem;letter-spacing:-.015em;line-height:1.05}
+.cover .where{font-size:1.15rem;color:var(--ink-2);margin:0 0 1.6rem}
+.cover .pitch{font-family:'Fraunces',Georgia,serif;font-size:1.5rem;line-height:1.3;color:var(--ink);max-width:34rem;border-left:3px solid var(--gold);padding-left:1.1rem;margin:0}
+.cover dl{display:grid;grid-template-columns:8.5rem 1fr;gap:.3rem 1rem;margin:0 0 1.3rem;font-size:.95rem}
+.cover dt{color:var(--ink-3)}.cover dd{margin:0;font-weight:500}
+.cover .small{font-size:.85rem;color:var(--ink-3);max-width:36rem}
+.toc{list-style:none;margin:.6rem 0 0;padding:0}
+.toc li{display:flex;align-items:baseline;gap:.5rem;padding:.38rem 0;border-bottom:1px dotted var(--rule)}
+.toc a{text-decoration:none;color:var(--ink);flex:1}.toc .pg{color:var(--ink-3);font-variant-numeric:tabular-nums}.toc .ds{display:block;color:var(--ink-3);font-size:.85rem}
+.howto{background:var(--gold-wash);padding:1rem 1.2rem;margin:1.8rem 0 0;font-size:.95rem;border-left:3px solid var(--gold)}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:.45rem 1.4rem;font-size:.86rem;color:var(--ink-2);margin:1.2rem 0 0;padding:0;list-style:none}
+.legend li{padding-left:.7rem;border-left:3px solid var(--rule)}
+.legend .lv{border-color:var(--v)}.legend .lr{border-color:#C99A3F}.legend .lc{border-color:#6E8CB3}.legend .li{border-color:var(--inf)}.legend .lf{border-color:var(--cf)}
+.glance{width:100%;border-collapse:collapse;font-size:.95rem;margin:.6rem 0}
+.glance th{width:11rem;text-align:left;font-weight:500;color:var(--ink-3);vertical-align:top;padding:.36rem .8rem .36rem 0;border-bottom:1px solid var(--rule)}
+.glance td{vertical-align:top;padding:.36rem 0;border-bottom:1px solid var(--rule)}
+.glance .cfl{display:inline-block;font-size:.74rem;color:var(--cf);background:var(--cf-bg);padding:.02rem .4rem;margin-left:.3rem;white-space:nowrap}
+.glance td div{margin:.05rem 0}
+.prs{display:grid;gap:.6rem;margin:.6rem 0}
+.pr{border:1px solid var(--rule);background:#fff;padding:.6rem 1rem;break-inside:avoid}
+.pr-label{margin:0 0 .25rem;font-size:.8rem;color:var(--gold-deep);font-weight:600}
+.pr-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.pr-a,.pr-b{padding:.15rem 1rem .15rem 0}
+.pr-b{border-left:2px solid var(--gold);padding-left:1rem}
+.pr-a span,.pr-b span{font-size:.78rem;color:var(--ink-3)}
+.pr-a p{color:var(--ink-3);font-size:1rem;margin:0}
+.pr-b p{color:var(--ink);font-weight:600;font-size:1rem;margin:0}
+.pr-note{font-size:.86rem;color:var(--ink-2);margin:.35rem 0 0}
+.q,.qc{padding:1rem 0 1.05rem;border-bottom:1px solid var(--rule);break-inside:avoid}
+.q-head{margin:0;font-size:.86rem;color:var(--ink-3)}.q-to{font-weight:500}
+.q-text{font-size:1.05rem;font-weight:500;margin:.25rem 0 .4rem}
+.q-why{color:var(--ink-2);font-size:.93rem}
+.q-test{display:grid;grid-template-columns:9.5rem 1fr;gap:.2rem 1rem;margin:.5rem 0 0;font-size:.92rem}.q-test dt{color:var(--ink-3)}.q-test dd{margin:0}
+.where{font-size:.84rem;color:var(--ink-3);margin-top:.35rem;overflow-wrap:anywhere}
+.trk-line{margin:.55rem 0 0;font-size:.82rem;color:var(--ink-3)}
+.trk{display:inline-flex;align-items:center;gap:.35rem}
+.box{display:inline-block;width:.78rem;height:.78rem;border:1.3px solid var(--ink-3);border-radius:2px;vertical-align:-.1em;margin-right:.1rem}
+.f{padding:.6rem 0 .65rem .9rem;border-left:3px solid var(--rule);margin:.55rem 0;break-inside:avoid}
+.f-text{margin:0}.f-status{margin:.15rem 0 0;font-size:.82rem;font-weight:500}
+.st-verified{border-color:var(--v)}.st-verified .f-status{color:var(--v)}
+.st-reported{border-color:#C99A3F}.st-reported .f-status{color:var(--r)}
+.st-claim{border-color:#6E8CB3}.st-claim .f-status{color:var(--cl)}
+.st-conflict{border-color:var(--cf)}.st-conflict .f-status{color:var(--cf)}
+.inf{background:var(--inf-bg);padding:.95rem 1.1rem;margin:.9rem 0;break-inside:avoid;border-left:3px solid var(--inf)}
+.inf ol{margin:.5rem 0 0;padding-left:1.2rem}.inf li{margin:.2rem 0}.inf .kind{font-size:.82rem;color:var(--inf);font-weight:600;margin:0}
+table{width:100%;border-collapse:collapse;font-size:.9rem;margin:.6rem 0}
+th,td{text-align:left;vertical-align:top;padding:.45rem .6rem .45rem 0;border-bottom:1px solid var(--rule)}th{font-weight:500;color:var(--ink-3)}
+.wrap{overflow-x:auto}
+table.tk{font-size:.82rem}table.tk td.n{white-space:nowrap}table.tk .bx{white-space:nowrap}
+.lock{border:1px solid var(--rule);background:#fff;padding:1.1rem 1.3rem;margin:1rem 0;break-inside:avoid}
+.lock h3{margin:.1rem 0 .5rem}.lock ul{margin:.4rem 0 0;padding-left:1.1rem}.lock li{margin:.25rem 0}
+.unlock{background:var(--ink);color:#fff;padding:1.4rem 1.6rem;margin:1.6rem 0;break-inside:avoid}
+.unlock h3{color:#fff;margin:0 0 .4rem;font-size:1.3rem}.unlock p{color:#dfe5ee;margin:.3rem 0}
+.unlock .price{font-family:'Fraunces',Georgia,serif;font-size:2.1rem;color:#F2DCA8;margin:.4rem 0}
+.unlock .btn{display:inline-block;background:#F2DCA8;color:var(--ink);font-weight:600;padding:.6rem 1.2rem;margin-top:.5rem;text-decoration:none}
+.notice{margin-top:2.4rem;font-size:.85rem;color:var(--ink-3)}
+@media print{
+ body{background:#fff;font-size:10.3pt}main{max-width:none;padding:0}
+ h2{break-after:avoid;margin-top:2.2rem}h3{break-after:avoid}a{color:var(--ink)}
+ .cover{height:252mm;display:flex;flex-direction:column;justify-content:space-between;padding:0;margin:0;border:0;break-after:page}
+ .cover-main{margin:0}
+ .pagebreak{break-before:page}
+}
+@media (max-width:40rem){.cover h1{font-size:2.2rem}.q-test{grid-template-columns:1fr}.pr-grid,.legend{grid-template-columns:1fr}.pr-b{border-left:0;border-top:2px solid var(--gold);padding:.5rem 0 0;margin-top:.4rem}}
+</style></head><body><main>
+<section style="padding:2.6rem 0 .5rem">
+  <p style="font-family:'Fraunces',Georgia,serif;font-size:1.25rem;color:var(--gold-deep);margin:0">ShelterKart</p>
+  <p class="meta" style="margin:.1rem 0 1.6rem">Free preview. The full report unlocks below.</p>
+  <h1 style="font-size:2.5rem;margin:.2rem 0 .3rem;letter-spacing:-.01em">Hubtown Celeste</h1>
+  <p class="meta">B G Kher Marg, Worli, Mumbai 400018 · India, Maharashtra · P51900008925 · research to 13 October 2026</p>
+  <p style="font-size:1.1rem;color:var(--ink-2);max-width:38rem;margin-top:1rem">We found 43 things from 28 sources and 2 places where sources disagree, and turned them into 30 questions for the developer's teams. Here is what stood out first.</p>
+</section>
+<h2 style="margin-top:2rem">Where the marketing and the record part ways</h2><div class="prs"><div class="pr"><p class="pr-label">Who sells it</p><div class="pr-grid"><div class="pr-a"><span>Promised or marketed</span><p>Sold as Hubtown</p></div><div class="pr-b"><span>The record shows</span><p>Registered to Nayan Real Estate Private Limited</p></div></div><p class="pr-note">The company that signs your agreement is the one you can enforce against.</p></div><div class="pr"><p class="pr-label">When you get it</p><div class="pr-grid"><div class="pr-a"><span>Promised or marketed</span><p>Marketed: December 2027</p></div><div class="pr-b"><span>The record shows</span><p>Filed with the regulator: 31 Jul 2029</p></div></div><p class="pr-note">19 months later than the marketed date.</p></div><div class="pr"><p class="pr-label">What is registered</p><div class="pr-grid"><div class="pr-a"><span>Promised or marketed</span><p>211 units registered</p></div><div class="pr-b"><span>The record shows</span><p>6,481.23 sq m of carpet area against 2,623.62 sq m sanctioned</p></div></div><p class="pr-note">Carpet area cannot exceed the built-up area. Ask for the approved area statement.</p></div></div>
+<h2 class="pagebreak" style="margin-top:0;border-top:0;padding-top:0">Three questions to start with</h2>
+<p class="meta">Put these to the developer in writing. Each says who should answer and what a good answer looks like.</p>
+<ol class="plain"><li class="q" id="Q1">
+  <p class="q-head"><span class="id">Q1</span> <span class="q-to">Ask the legal team, before booking</span></p>
+  <p class="q-text">The registration names Nayan Real Estate Private Limited as promoter, while the project is sold as Hubtown. Which company signs my agreement for sale, issues my receipts and holds the title? Please give its CIN and registered office in writing.</p>
+  <p class="q-why"><b>Why it matters.</b> You can only enforce your agreement against the company that signs it. A brand creates no obligation.</p>
+  <dl class="q-test"><dt>A good answer</dt><dd>A signed letter naming one company with its CIN, matching the RERA certificate and the draft agreement.</dd><dt>Does not close it</dt><dd>&quot;It is all Hubtown&quot; or a group chart in a brochure.</dd></dl>
+  <p class="where">Where it appears: <a href="https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925" rel="noopener noreferrer">aurumproptech.in / mumbai-city/hubtown-celeste-P51900008925</a></p>
+  
+</li><li class="q" id="Q2">
+  <p class="q-head"><span class="id">Q2</span> <span class="q-to">Ask the promoters, before booking</span></p>
+  <p class="q-text">Hubtown's Managing Director and a Hubtown director appear on Nayan Real Estate's filing. Will Hubtown Limited sign an enforceable guarantee of completion and of Nayan's obligations under my agreement, including refunds and delay interest?</p>
+  <p class="q-why"><b>Why it matters.</b> Common control is not legal liability. Without a signed guarantee the listed parent owes you nothing if the project company fails.</p>
+  <dl class="q-test"><dt>A good answer</dt><dd>A guarantee or undertaking executed by Hubtown Limited and annexed to the agreement, reviewed by your lawyer.</dd><dt>Does not close it</dt><dd>A verbal assurance or a press release.</dd></dl>
+  <p class="where">Where it appears: <a href="https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925" rel="noopener noreferrer">aurumproptech.in / mumbai-city/hubtown-celeste-P51900008925</a>, <a href="https://www.tofler.in/hubtown-limited/company/L45200MH1989PLC050688" rel="noopener noreferrer">tofler.in / company/L45200MH1989PLC050688</a>, <a href="https://www.bseindia.com/xml-data/corpfiling/AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf" rel="noopener noreferrer">bseindia.com / AttachHis/feef6693-193f-4cab-b381-360a67521ede.pdf</a></p>
+  
+</li><li class="q" id="Q3">
+  <p class="q-head"><span class="id">Q3</span> <span class="q-to">Ask the legal team, before booking</span></p>
+  <p class="q-text">The project was registered in August 2017 and its filed completion date is 31 July 2029. What was the original completion date, how many times has it been extended, and did the existing allottees consent to each extension as MahaRERA requires?</p>
+  <p class="q-why"><b>Why it matters.</b> Twelve years from registration to completion is long. Each extension, and whether buyers consented, shows how the project has been run and what your date is worth.</p>
+  <dl class="q-test"><dt>A good answer</dt><dd>The original certificate, every extension order and the allottee-consent records.</dd><dt>Does not close it</dt><dd>&quot;Covid delays&quot; without the orders.</dd></dl>
+  <p class="where">Where it appears: <a href="https://www.aurumproptech.in/pulse/rera/maharashtra/mumbai-city/hubtown-celeste-P51900008925" rel="noopener noreferrer">aurumproptech.in / mumbai-city/hubtown-celeste-P51900008925</a>, <a href="https://thelawsuits.in/?p=3169" rel="noopener noreferrer">thelawsuits.in / p=3169</a></p>
+  
+</li></ol>
+<div class="lock"><h3>27 more questions are in the full report</h3>
+<p>10 for the legal team, 7 for the accounts team, 4 for the promoters, 3 for the sales team, 2 for the site and engineering team, 1 for your own lawyer. Each names the document that closes it.</p></div>
+<div class="lock"><h3>What the full report adds</h3><ul>
+<li>All 30 questions, by stage (before booking, signing, each payment and possession), with why each matters, a good answer, and what does not close it</li>
+<li>8 conclusions drawn by connecting the facts, with the reasoning shown step by step</li>
+<li>The 2 disagreements between sources, side by side, and the numbers checked: areas, dates, price per sq ft and what a delay is worth</li>
+<li>Every one of the 43 findings with a link to where it appears and a clear status</li>
+<li>A one-page tracker for answers and documents, and what to request where records are not online</li>
+<li>A PDF to keep, and a live page that is refreshed if we find something new</li></ul></div>
+<div class="unlock" id="unlock"><h3>Unlock the full report</h3>
+<p class="price">₹4,300</p><p>Set by the property's value (about ₹3.98 crore) and the depth of the research. The amount you pay is confirmed at checkout.</p>
+<p>One payment. No subscription. We e-mail the PDF and a link as soon as it is ready, and you can read it on this page while it completes.</p>
+<a class="btn" href="#unlock">Unlock the full report</a></div>
+<p class="notice">Research, not advice. This report states what public sources show and what to ask. It does not tell you whether to buy. ShelterKart is paid only by buyers; no developer can influence it.</p>
+</main></body></html>

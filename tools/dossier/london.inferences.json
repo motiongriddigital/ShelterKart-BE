@@ -1,0 +1,48 @@
+{
+ "inferences": [
+  {
+   "kind": "building safety",
+   "strength": "possible",
+   "text": "At least some buildings at Sutton Garden Square are likely to be higher-risk buildings (the scheme ranges from 6 to 21 storeys). If The Kensington's building is one, its timeline depends on two approvals from the Building Safety Regulator, before work and before occupation, which developers in England have reported as a common source of delay.",
+   "steps": [
+    {
+     "text": "The permission covers eight buildings of 6 to 21 storeys",
+     "sources": [
+      "https://www.sutton.gov.uk/w/plans-for-new-homes-at-key-town-centre-site-approved"
+     ]
+    },
+    {
+     "text": "Buildings of 18 metres or seven storeys need Gateway 2 approval before work and a Gateway 3 certificate before occupation",
+     "sources": [
+      "https://gov.uk/government/publications/building-safety-bill-factsheets/building-control-regime-for-higher-risk-buildings-gateways-2-and-3-factsheet"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "identity",
+   "strength": "possible",
+   "text": "The company behind the permission (St George, per the council) and the brand on sale (Berkeley) differ, and the scheme has two names. A buyer should confirm the contracting company and search both names.",
+   "steps": [
+    {
+     "text": "Council: permission granted to St George (Berkeley Group)",
+     "sources": [
+      "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre"
+     ]
+    },
+    {
+     "text": "Marketing: Berkeley launches Sutton Garden Square",
+     "sources": [
+      "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton"
+     ]
+    },
+    {
+     "text": "Council and residents' groups: \"Chalk Gardens\"",
+     "sources": [
+      "https://www.ssna.co.uk/chalk-gardens"
+     ]
+    }
+   ]
+  }
+ ]
+}

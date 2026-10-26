@@ -1,0 +1,221 @@
+{
+ "questions": [
+  {
+   "when": "before booking",
+   "to": "legal team",
+   "question": "Sutton Council names St George as the developer behind the permission, while the homes are sold as Berkeley. Which company signs my contract and holds the freehold, and what is its Companies House number?",
+   "why": "Your contract is enforceable against the company that signs it, not the brand.",
+   "good": "The company named in the draft contract with its number, matching the land registry title.",
+   "not_accepted": "\"It is all Berkeley Group.\"",
+   "sources": [
+    "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre",
+    "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton"
+   ]
+  },
+  {
+   "when": "before booking",
+   "to": "site and engineering team",
+   "question": "The scheme has eight buildings of 6 to 21 storeys. Is The Kensington's building a higher-risk building (18 metres or seven storeys), and if so, has the Building Safety Regulator approved Gateway 2 for it? Please share the approval notice and its date.",
+   "why": "For a higher-risk building, construction may not start before Gateway 2 approval and nobody may move in before a Gateway 3 completion certificate. Delays at either gateway move your completion date.",
+   "good": "The regulator's approval notice, or a statement that the building is below the threshold with its height.",
+   "not_accepted": "\"Building control is in hand.\"",
+   "sources": [
+    "https://gov.uk/government/publications/building-safety-bill-factsheets/building-control-regime-for-higher-risk-buildings-gateways-2-and-3-factsheet",
+    "https://www.sutton.gov.uk/w/plans-for-new-homes-at-key-town-centre-site-approved"
+   ]
+  },
+  {
+   "when": "before booking",
+   "to": "site and engineering team",
+   "question": "Piling began on 16 July 2026. Was that work covered by an approved building control application, or was the work split into stages with separate approvals?",
+   "why": "Starting higher-risk building work without approval is an offence, and enforcement can halt the site.",
+   "good": "The approval or the staged approvals that cover the piling.",
+   "not_accepted": "An answer that does not name the approval.",
+   "sources": [
+    "https://suttonsouth.mycouncillor.org.uk/2026/07/16/progress-on-sutton-garden-square/",
+    "https://cms.law/en/gbr/legal-updates/new-high-risk-buildings-approval-regime-comes-into-force-on-1-october-2023"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Berkeley says the first homes complete from 2028; an agent says Q4 2028 to Q1 2029. What completion date, long-stop date and right to rescind will my contract contain?",
+   "why": "Off-plan contracts in England usually give the developer a long-stop date; until then you may have no remedy for delay.",
+   "good": "The contract clause with the long-stop date and your right to withdraw and recover your deposit.",
+   "not_accepted": "An estimated date in a brochure.",
+   "sources": [
+    "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton",
+    "https://londraestate.co.uk/sutton-garden-square/"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Where will my deposit be held: by your solicitors as stakeholder, or released to the developer? Is it protected if the developer cannot complete?",
+   "why": "A deposit released to the developer before completion is at risk if the company fails.",
+   "good": "The contract clause and, if released, the insurance or guarantee that protects it.",
+   "not_accepted": "\"Deposits are always safe with Berkeley.\"",
+   "sources": []
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Which new-home warranty covers my apartment (for example NHBC or Premier), for how long, and from what date? Please share the provider and the policy summary.",
+   "why": "A ten-year structural warranty is what most lenders require and what protects you from defects after the first years.",
+   "good": "The provider's name and the cover note for your plot.",
+   "not_accepted": "A promise to provide it at completion.",
+   "sources": []
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "What are the lease terms: length, ground rent, service charge budget for the first year, reserve fund, and any estate charge for the 1.1-acre park and public realm? Who is the management company?",
+   "why": "Service and estate charges on large mixed schemes can rise sharply; the first-year budget and how costs are shared with 1,014 homes matter.",
+   "good": "The draft lease, the first-year budget and the apportionment method.",
+   "not_accepted": "A \"typical\" service charge figure.",
+   "sources": [
+    "https://www.estatesgazette.co.uk/news/berkeley-sets-out-plans-for-1000-home-sutton-garden-square-scheme/",
+    "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "How is the apartment heated: by its own system or a shared heat network? If shared, what are the standing charges, who supplies the heat, and is the network covered by heat network regulation?",
+   "why": "Heat network customers cannot switch supplier, so the terms decide what you pay for years.",
+   "good": "The heat supply agreement and an estimate of annual costs.",
+   "not_accepted": "\"Underfloor heating is included.\"",
+   "sources": [
+    "https://www.timeout.com/london/news/neighbourhood-development-south-london-sutton-1000-homes-071126"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "site and engineering team",
+   "question": "The site is a former chalk quarry. Please share the ground investigation report and the piling and foundation design approval, and say how chalk solution features and settlement were assessed.",
+   "why": "Chalk ground can hide voids; the foundation design should address them before buyers commit.",
+   "good": "The ground investigation summary and the engineer's design approval.",
+   "not_accepted": "\"Piling tests showed minimal vibration.\"",
+   "sources": [
+    "https://www.estatesgazette.co.uk/news/berkeley-sets-out-plans-for-1000-home-sutton-garden-square-scheme/",
+    "https://suttonsouth.mycouncillor.org.uk/2026/07/16/progress-on-sutton-garden-square/"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "The scheme is called \"Chalk Gardens\" in council records and \"Sutton Garden Square\" in marketing. Please confirm the planning references (DM2022/01764 and DM2024/01476) and the conditions that apply to my building, including those discharged and outstanding.",
+   "why": "Searches and records may use either name; outstanding pre-occupation conditions can delay completion.",
+   "good": "A list of conditions with discharge status for your building.",
+   "not_accepted": "\"All conditions are in hand.\"",
+   "sources": [
+    "https://planning.org.uk/app/210/SLPQHXKCFO800",
+    "https://www.ssna.co.uk/chalk-gardens",
+    "https://www.sutton.gov.uk/w/more-affordable-homes-for-sutton-town-centre"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "The 2024 variation changed storey heights, numbers of homes, car parking and play space. What changed for The Kensington's building, and does my apartment's floor, outlook or parking depend on it?",
+   "why": "A plan that changed after launch may not match the brochure you were shown.",
+   "good": "The approved drawings for your building and floor.",
+   "not_accepted": "Marketing floor plans.",
+   "sources": [
+    "https://planning.org.uk/app/210/SLPQHXKCFO800"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Is a parking space included or available for my apartment, at what price, and with an electric-vehicle charger? How many spaces does the varied permission allow for the whole scheme?",
+   "why": "The permission's parking conditions were varied; spaces may be limited.",
+   "good": "The allocation in the contract and the approved parking numbers.",
+   "not_accepted": "\"Subject to availability.\"",
+   "sources": [
+    "https://planning.org.uk/app/210/SLPQHXKCFO800"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Are the 217 council homes in the same buildings as private homes? Will all residents share the amenities (gym, roof terrace, concierge), and how are their costs shared?",
+   "why": "Shared or separate access and costs affect service charges and day-to-day living.",
+   "good": "A building-by-building tenure plan and the amenity access rules.",
+   "not_accepted": "\"Everyone will love it here.\"",
+   "sources": [
+    "https://sutton.gov.uk/-/the-former-b-q-site-s106-deal-with-berkeley-homes"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Later phases run towards 2030. What is the construction programme for buildings near mine, the working hours, and the measures for noise, dust and access while I live there?",
+   "why": "Moving in during a multi-year build affects comfort, resale and rental value.",
+   "good": "The construction management plan and phase programme.",
+   "not_accepted": "\"There will be minimal disruption.\"",
+   "sources": [
+    "https://www.getsurrey.co.uk/news/surrey-news/major-21-storey-tower-project-33731970",
+    "https://suttonsouth.mycouncillor.org.uk/2026/07/16/progress-on-sutton-garden-square/"
+   ]
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Is the developer registered with the New Homes Quality Board, so that the New Homes Ombudsman can hear a complaint about my home?",
+   "why": "Registration gives you a free route to complain about defects and service after you buy.",
+   "good": "Confirmation of registration and the complaint procedure.",
+   "not_accepted": "No answer.",
+   "sources": []
+  },
+  {
+   "when": "before signing",
+   "to": "legal team",
+   "question": "Is the Berkeley Group a member of the government's Responsible Actors Scheme for building-safety remediation? Please confirm for the company that signs my contract.",
+   "why": "Members are committed to fixing life-critical defects in buildings they developed; non-members face restrictions.",
+   "good": "Confirmation with a link to the government list.",
+   "not_accepted": "A general statement on safety.",
+   "sources": []
+  },
+  {
+   "when": "before signing",
+   "to": "sales team",
+   "question": "Please share the current price list for The Kensington with any incentives, and the prices achieved on recent sales. One-bedroom homes are listed from £375,000.",
+   "why": "Incentives and achieved prices show the real market for the homes you are comparing.",
+   "good": "A dated price list with incentives stated.",
+   "not_accepted": "\"Prices are rising fast.\"",
+   "sources": [
+    "https://londraestate.co.uk/sutton-garden-square/"
+   ]
+  },
+  {
+   "when": "before each payment",
+   "to": "site and engineering team",
+   "question": "What stage has my building reached, as certified, and when will the warranty provider and the regulator inspect it next?",
+   "why": "Payments in England are usually deposit then completion, but staged reservations or upgrades should follow certified progress.",
+   "good": "The latest stage certificate or inspection record.",
+   "not_accepted": "Photos alone.",
+   "sources": []
+  },
+  {
+   "when": "before possession",
+   "to": "legal team",
+   "question": "Has the Building Safety Regulator issued the Gateway 3 completion certificate and registered the building, and has the warranty provider issued its final certificate for my apartment?",
+   "why": "Nobody may occupy a higher-risk building before Gateway 3, and lenders need the warranty certificate.",
+   "good": "Both certificates, dated, for your building.",
+   "not_accepted": "Completion offered \"with certificates to follow\".",
+   "sources": [
+    "https://gov.uk/government/publications/building-safety-bill-factsheets/building-control-regime-for-higher-risk-buildings-gateways-2-and-3-factsheet"
+   ]
+  },
+  {
+   "when": "before possession",
+   "to": "your own lawyer",
+   "question": "Ask your solicitor to check the title and the lease against the draft contract, and to raise pre-contract enquiries on building safety, the heat network, the estate charge and the section 106 obligations.",
+   "why": "These searches and enquiries settle what public sources cannot.",
+   "good": "Your solicitor's written report on title.",
+   "not_accepted": "The developer's own summary.",
+   "sources": []
+  }
+ ]
+}

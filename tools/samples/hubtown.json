@@ -1,0 +1,536 @@
+{
+ "query": "Hubtown Celeste",
+ "location": "Worli, Mumbai",
+ "market": "in",
+ "marketLabel": "India — Maharashtra",
+ "depth": "Research",
+ "checkedAt": "2026-09-30T00:00:00",
+ "project": {
+  "name": "Hubtown Celeste",
+  "location": "Siddharth Nagar, Worli, Mumbai",
+  "developer": "Hubtown Limited",
+  "ids": [
+   "P51900008925"
+  ],
+  "developer_site": "hubtown.co.in",
+  "price_from": 14900000,
+  "price_to": 21000000,
+  "price_currency": "INR"
+ },
+ "registry": null,
+ "notes": [
+  "MahaRERA's own project pages do not allow automated access, so the registration number below is reported by several independent sites rather than confirmed at the regulator. IBBI's insolvency register is checked against the developer's CIN in a live report; it was not run for this sample."
+ ],
+ "removed": 0,
+ "findings": [
+  {
+   "mark": "reported",
+   "claim": "Registered with MahaRERA as P51900008925.",
+   "sources": [
+    {
+     "url": "https://www.propertycrow.com/mumbai/propertyview_hubtown-celeste-worli_1202.html"
+    },
+    {
+     "url": "https://www.worli.one/hubtown-celeste/"
+    },
+    {
+     "url": "https://blox.xyz/projects/hubtown-celeste"
+    },
+    {
+     "url": "https://indianpremises.com/mumbai/worli/project/hubtown-celeste"
+    },
+    {
+     "url": "https://hubtown-celeste.in/"
+    }
+   ],
+   "topic": "registration",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "claim": "A single residential tower of ground plus 38 floors, with 330 sq ft units that can be combined into 660 sq ft two-bedroom “Jodi” apartments.",
+   "sources": [
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "url": "https://www.worli.one/hubtown-celeste/"
+    },
+    {
+     "url": "https://hubtown-celeste.in/"
+    }
+   ],
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "claim": "A full Commencement Certificate has been issued for the project.",
+   "sources": [
+    {
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "url": "https://www.worli.one/hubtown-celeste/"
+    }
+   ],
+   "topic": "legal",
+   "stance": "positive"
+  },
+  {
+   "mark": "single",
+   "claim": "The structure is described as standing to the 27th floor, well into its upper floors.",
+   "sources": [
+    {
+     "url": "https://www.worli.one/hubtown-celeste/"
+    },
+    {
+     "url": "https://www.propertycrow.com/mumbai/propertyview_hubtown-celeste-worli_1202.html"
+    }
+   ],
+   "topic": "progress",
+   "stance": "positive"
+  },
+  {
+   "mark": "reported",
+   "claim": "The developer, Hubtown Limited, was formerly Ackruti City Limited and changed its name in November 2011.",
+   "sources": [
+    {
+     "url": "https://www.valueresearchonline.com/stocks/40880/hubtown-ltd/"
+    },
+    {
+     "url": "https://www.investing.com/equities/hubtown"
+    },
+    {
+     "url": "https://finance.yahoo.com/quote/HUBTOWN.NS/"
+    },
+    {
+     "url": "https://www.moneyworks4me.com/company/news/index/id/6745"
+    }
+   ],
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "claim": "Hubtown Limited is listed on the BSE (532799) and the NSE (HUBTOWN).",
+   "sources": [
+    {
+     "url": "https://www.thecompanycheck.com/company/hubtown-limited/L45200MH1989PLC050688"
+    },
+    {
+     "url": "https://www.moneyworks4me.com/company/news/index/id/6745"
+    }
+   ],
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "claim": "A company-data site lists Hubtown Limited's CIN as L45200MH1989PLC050688, incorporated on 16 February 1989, with paid-up capital of ₹142.10 crore.",
+   "sources": [
+    {
+     "url": "https://www.thecompanycheck.com/company/hubtown-limited/L45200MH1989PLC050688"
+    }
+   ],
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "claim": "In December 2025 Hubtown withdrew a proposed preferential issue of 1,46,80,249 shares, and its share price fell about 11.5% during that day's trading.",
+   "sources": [
+    {
+     "url": "https://www.business-standard.com/markets/news/hubtown-shares-tank-12-percent-in-trade-here-s-what-s-worrying-investors-125121100220_1.html"
+    }
+   ],
+   "topic": "financial",
+   "stance": "negative"
+  },
+  {
+   "mark": "reported",
+   "claim": "Hubtown is merging the companies behind its 25 West, 25 South and 25 Downtown projects into the listed company.",
+   "sources": [
+    {
+     "url": "https://www.business-standard.com/markets/news/hubtown-shares-tank-12-percent-in-trade-here-s-what-s-worrying-investors-125121100220_1.html"
+    },
+    {
+     "url": "https://zerodha.com/markets/stocks/NSE/HUBTOWN/"
+    }
+   ],
+   "topic": "financial",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "claim": "Hubtown often develops through joint ventures and joint development agreements.",
+   "sources": [
+    {
+     "url": "https://www.bitget.com/stock/nse-hubtown/what-is"
+    }
+   ],
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "single",
+   "claim": "One listing site says reviews mention shifted possession timelines and slow progress on site.",
+   "sources": [
+    {
+     "url": "https://blox.xyz/projects/hubtown-celeste"
+    }
+   ],
+   "topic": "sentiment",
+   "stance": "negative"
+  },
+  {
+   "mark": "reported",
+   "topic": "track_record",
+   "stance": "positive",
+   "claim": "Hubtown's management says one tower of its 25 South project in Prabhadevi has been handed over, with the rest expected to receive occupation certificates during FY27; a portal lists 25 South as partially ready to move.",
+   "sources": [
+    {
+     "url": "https://www.multibagg.ai/market-pulse/articles/hubtown-q1fy27-97090"
+    },
+    {
+     "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-25-south/11052/project"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "financial",
+   "stance": "neutral",
+   "claim": "For the April–June 2026 quarter, Hubtown reported pre-sales of ₹535 crore and collections of ₹320 crore.",
+   "sources": [
+    {
+     "url": "https://www.multibagg.ai/market-pulse/articles/hubtown-q1fy27-97090"
+    }
+   ]
+  },
+  {
+   "mark": "developer",
+   "kind": "developer_claim",
+   "topic": "other",
+   "stance": "neutral",
+   "claim": "Hubtown's own Celeste page carries a notice from RERA's introduction in 2017 that its website was being updated for RERA compliance, and calls its content indicative.",
+   "sources": [
+    {
+     "url": "https://hubtown.co.in/project/hubtown-celeste-7"
+    }
+   ]
+  },
+  {
+   "mark": "single",
+   "topic": "price",
+   "stance": "neutral",
+   "claim": "An independent review site places Celeste in the lower quartile of Worli new-construction prices, at about ₹60,000–62,000 per sq ft.",
+   "sources": [
+    {
+     "url": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026"
+    }
+   ]
+  }
+ ],
+ "conflicts": [
+  {
+   "topic": "Possession date",
+   "versions": [
+    {
+     "value": "1 December 2027, stated as the RERA date (with a separate “target” of March 2027)",
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "value": "December 2027",
+     "url": "https://www.propertycrow.com/mumbai/propertyview_hubtown-celeste-worli_1202.html"
+    },
+    {
+     "value": "December 2027",
+     "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189"
+    },
+    {
+     "value": "3 July 2028",
+     "url": "https://blox.xyz/projects/hubtown-celeste"
+    },
+    {
+     "value": "31 January 2029",
+     "url": "https://www.casafy.in/properties/hubtown-celeste-worli/"
+    },
+    {
+     "value": "July 2029",
+     "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project"
+    },
+    {
+     "value": "July 2029",
+     "url": "https://www.rathiglobalrealty.com/hubtown-celeste-worli-mumbai-npd"
+    }
+   ]
+  },
+  {
+   "topic": "Starting price",
+   "versions": [
+    {
+     "value": "₹1.49 crore",
+     "url": "https://indianpremises.com/mumbai/worli/project/hubtown-celeste"
+    },
+    {
+     "value": "₹1.99 crore (below the 11th floor)",
+     "url": "https://www.worli.one/hubtown-celeste/"
+    },
+    {
+     "value": "about ₹2.10 crore all-in",
+     "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189"
+    }
+   ]
+  },
+  {
+   "topic": "Height of the building",
+   "versions": [
+    {
+     "value": "Ground plus 38 floors",
+     "url": "https://www.worli.one/hubtown-celeste/"
+    },
+    {
+     "value": "2 basements, stilt, 7 parking podiums and 11 storeys",
+     "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189"
+    },
+    {
+     "value": "Ground plus 22 floors (in the same listing that elsewhere says 38)",
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "value": "17 storeys",
+     "url": "https://www.homebazaar.com/hubtown-celeste-worli-3737"
+    }
+   ]
+  },
+  {
+   "topic": "What the 330 sq ft unit is",
+   "versions": [
+    {
+     "value": "A one-bedroom (1 BHK)",
+     "url": "https://housiey.com/projects/hubtown-celeste"
+    },
+    {
+     "value": "A two-bedroom (2 BHK)",
+     "url": "https://indianpremises.com/mumbai/worli/project/hubtown-celeste"
+    }
+   ]
+  }
+ ],
+ "reading": [
+  {
+   "observation": "Seven listing sites give possession dates from March 2027 to July 2029. None comes from Hubtown or MahaRERA itself, so ShelterKart does not count this against the developer — but only the date on the registration and in your agreement binds anyone.",
+   "question": "Which possession date is on the MahaRERA registration for P51900008925, and is the same date in my Agreement for Sale?"
+  },
+  {
+   "observation": "Hubtown's own Celeste page shows a 2017 notice that the site was being updated for RERA, rather than the registration number or dates. The authoritative details are on MahaRERA and in your documents, not in any marketing page.",
+   "question": "Please send me the MahaRERA registration certificate and the current quarterly progress report for P51900008925."
+  },
+  {
+   "observation": "The same 330 sq ft unit is sold as a 1 BHK on some sites and as a 2 BHK on another. In Maharashtra, what you pay for is the RERA carpet area written into the agreement, not the label.",
+   "question": "What is the RERA carpet area of my unit, in square feet, as written in the agreement?"
+  },
+  {
+   "observation": "hubtown-celeste.in and hubtownceleste.com say or appear to be run by agents, not Hubtown. What they say is agent marketing, not a statement by the developer.",
+   "question": "Which of the claims I have been shown come from Hubtown itself, in writing?"
+  }
+ ],
+ "gaps": [
+  {
+   "topic": "MahaRERA's own project record",
+   "why": "MahaRERA's pages do not allow automated access, so nothing here could be confirmed at the regulator."
+  },
+  {
+   "topic": "Which company is the promoter on the registration",
+   "why": "Hubtown often builds through joint ventures; whether Hubtown Limited or another company is the registered promoter is not stated in any source checked."
+  },
+  {
+   "topic": "Escrow account and quarterly progress reports",
+   "why": "Not published on any page found."
+  },
+  {
+   "topic": "What buyers say",
+   "why": "No buyer reviews, forum threads or YouTube videos about Celeste were found — only agent and portal listings."
+  },
+  {
+   "topic": "IBBI insolvency check",
+   "why": "The live report checks IBBI's register against the developer's CIN. It was not run for this sample."
+  }
+ ],
+ "questions": [
+  {
+   "when": "Before booking",
+   "who": "Sales team",
+   "question": "Please show me the MahaRERA registration for P51900008925. Which possession date does it state?",
+   "good": "The registration certificate, with one date on it.",
+   "red_flag": "A date given verbally, or “the website says December”."
+  },
+  {
+   "when": "Before booking",
+   "who": "Legal team",
+   "question": "Is Hubtown Limited (CIN L45200MH1989PLC050688) the promoter on the MahaRERA registration, or a joint-venture or subsidiary company? Which company signs my agreement?",
+   "good": "One named company with its CIN, matching the registration.",
+   "red_flag": "“It’s all Hubtown” with no company named."
+  },
+  {
+   "when": "Before signing",
+   "who": "Legal team",
+   "question": "What is the RERA carpet area of my unit, and is it called a 1 BHK or a 2 BHK in the agreement?",
+   "good": "A carpet area in square feet written into the agreement.",
+   "red_flag": "Only a “saleable” or “super built-up” figure."
+  },
+  {
+   "when": "Before each payment",
+   "who": "CRM team",
+   "question": "Is this payment going into the project's designated RERA account? Please share a stamped bank statement from the last 90 days.",
+   "good": "A named bank and a dated, stamped statement.",
+   "red_flag": "An account in any name other than the registered promoter."
+  },
+  {
+   "when": "Before possession",
+   "who": "Legal team",
+   "question": "Has the Occupation Certificate been issued for my floor?",
+   "good": "A copy of the Occupation Certificate covering your floor.",
+   "red_flag": "Possession offered before the Occupation Certificate."
+  }
+ ],
+ "searches": 5,
+ "pages": [
+  {
+   "url": "https://housiey.com/projects/hubtown-celeste",
+   "title": "Hubtown Celeste Worli - Brochure, Pros&Cons, PriceSheet"
+  },
+  {
+   "url": "https://www.propertycrow.com/mumbai/propertyview_hubtown-celeste-worli_1202.html",
+   "title": "Hubtown Celeste Worli Mumbai | Property Crow"
+  },
+  {
+   "url": "https://www.worli.one/hubtown-celeste/",
+   "title": "Hubtown Celeste Worli – 1 BHK Sea View Flats"
+  },
+  {
+   "url": "https://hubtown-celeste.in/",
+   "title": "Hubtown Celeste Worli | 2 BHK at Mumbai"
+  },
+  {
+   "url": "https://www.mumbaipropertyexchange.com/project/hubtown-celeste-worli/8189",
+   "title": "Hubtown Celeste in Worli — Mumbai Property Exchange"
+  },
+  {
+   "url": "https://brickfolio.in/hubtown-celeste-worli-1564-pid",
+   "title": "Hubtown Celeste, Worli | Brickfolio"
+  },
+  {
+   "url": "https://blox.xyz/projects/hubtown-celeste",
+   "title": "Hubtown Celeste In Worli | Blox"
+  },
+  {
+   "url": "https://indianpremises.com/mumbai/worli/project/hubtown-celeste",
+   "title": "Hubtown Celeste Worli | Indian Premises"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Lokhandwala_Minerva",
+   "title": "Lokhandwala Minerva — Wikipedia"
+  },
+  {
+   "url": "https://www.valueresearchonline.com/stocks/40880/hubtown-ltd/",
+   "title": "Hubtown Ltd. | Value Research"
+  },
+  {
+   "url": "https://www.investing.com/equities/hubtown",
+   "title": "Hubtown Ltd | Investing.com"
+  },
+  {
+   "url": "https://finance.yahoo.com/quote/HUBTOWN.NS/",
+   "title": "Hubtown Limited (HUBTOWN.NS) | Yahoo Finance"
+  },
+  {
+   "url": "https://www.business-standard.com/markets/news/hubtown-shares-tank-12-percent-in-trade-here-s-what-s-worrying-investors-125121100220_1.html",
+   "title": "Hubtown shares tank 12% in trade | Business Standard"
+  },
+  {
+   "url": "https://www.bitget.com/stock/nse-hubtown/what-is",
+   "title": "What is Hubtown Limited (HUBTOWN) stock"
+  },
+  {
+   "url": "https://www.moneyworks4me.com/company/news/index/id/6745",
+   "title": "Ackruti City changes its name | MoneyWorks4Me"
+  },
+  {
+   "url": "https://zerodha.com/markets/stocks/NSE/HUBTOWN/",
+   "title": "Hubtown Ltd. | Zerodha"
+  },
+  {
+   "url": "https://www.thecompanycheck.com/company/hubtown-limited/L45200MH1989PLC050688",
+   "title": "Hubtown Limited | The Company Check"
+  },
+  {
+   "url": "https://www.zricks.com/developer/HubtownLimited",
+   "title": "Hubtown Limited | Zricks"
+  },
+  {
+   "url": "https://hubtown.co.in/project/hubtown-celeste-7",
+   "title": "Hubtown Celeste | Hubtown (developer site)"
+  },
+  {
+   "url": "https://www.multibagg.ai/market-pulse/articles/hubtown-q1fy27-97090",
+   "title": "Hubtown Q1 FY27: premium launches and revenue recognition"
+  },
+  {
+   "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-25-south/11052/project",
+   "title": "Hubtown 25 South, Prabhadevi | Square Yards"
+  },
+  {
+   "url": "https://www.squareyards.com/mumbai-residential-property/hubtown-celeste/2863/project",
+   "title": "Hubtown Celeste Worli | Square Yards"
+  },
+  {
+   "url": "https://www.casafy.in/properties/hubtown-celeste-worli/",
+   "title": "Hubtown Celeste Worli | Casafy"
+  },
+  {
+   "url": "https://www.rathiglobalrealty.com/hubtown-celeste-worli-mumbai-npd",
+   "title": "Hubtown Celeste Worli | Rathi Global Realty"
+  },
+  {
+   "url": "https://www.homebazaar.com/hubtown-celeste-worli-3737",
+   "title": "Hubtown Celeste | Home Bazaar"
+  },
+  {
+   "url": "https://propertybutler.in/insights/building-deep-hubtown-celeste-worli-review-2026",
+   "title": "Hubtown Celeste Worli Review 2026 | Property Butler"
+  },
+  {
+   "url": "https://hubtownceleste.com/",
+   "title": "Hubtownn Celeste Worli (agent site)"
+  },
+  {
+   "url": "https://www.propi.in/project/hubtown-celeste-worli-by-hubtown-limited/8189",
+   "title": "Hubtown Celeste | Propi"
+  },
+  {
+   "url": "https://housiey.com/projects/hubtown-25-south",
+   "title": "Hubtown 25 South Prabhadevi | Housiey"
+  },
+  {
+   "url": "https://www.hubtown25south.com/",
+   "title": "25 South | agent site"
+  },
+  {
+   "url": "https://www.livelawbiz.com/consumer-cases/homebuyers-can-claim-interest-for-delayed-possession-despite-project-deadline-extension-maharera-516517",
+   "title": "MahaRERA ruling on delayed possession (not about Hubtown)"
+  },
+  {
+   "url": "https://lawbeat.in/news-updates/maharera-orders-possession-with-interest-or-refund-in-wadala-redevelopment-project-after-promoter-misses-stipulated-timeline-1550837",
+   "title": "MahaRERA Wadala order (not about Hubtown)"
+  }
+ ],
+ "scoreNote": "No score: a score needs confirmation at the regulator across its components.",
+ "responsible": {
+  "name": "Preeyancc",
+  "title": "Founder, ShelterKart",
+  "contact": "corrections@shelterkart.com"
+ },
+ "disclaimer": "Research, not advice. ShelterKart never tells you to buy or not buy, and no developer can pay to change what it shows."
+}

@@ -1,0 +1,74 @@
+{
+ "name": "Creek Bay Tower B (Dubai)",
+ "mustFind": [
+  {
+   "id": 1,
+   "what": "the DLD project number",
+   "any": [
+    "4198"
+   ]
+  },
+  {
+   "id": 2,
+   "what": "the registered completion date",
+   "any": [
+    "30 April 2030"
+   ]
+  },
+  {
+   "id": 3,
+   "what": "certified progress",
+   "any": [
+    "0.62%"
+   ]
+  },
+  {
+   "id": 4,
+   "what": "the project's three towers and developer",
+   "all": [
+    "three-tower",
+    "Emaar"
+   ]
+  },
+  {
+   "id": 5,
+   "what": "the disagreement on the payment plan",
+   "all": [
+    "80/20",
+    "10/70/20"
+   ]
+  },
+  {
+   "id": 6,
+   "what": "the disagreement on the master developer",
+   "all": [
+    "Dubai Holding",
+    "sole master developer"
+   ]
+  },
+  {
+   "id": 7,
+   "what": "what a defaulting buyer can lose",
+   "all": [
+    "Law 19 of 2017",
+    "25%"
+   ]
+  },
+  {
+   "id": 8,
+   "what": "the launch price",
+   "any": [
+    "AED 1.8 million"
+   ]
+  },
+  {
+   "id": 9,
+   "what": "escrow and Oqood registration",
+   "all": [
+    "escrow",
+    "Oqood"
+   ]
+  }
+ ],
+ "leadsNotFacts": []
+}

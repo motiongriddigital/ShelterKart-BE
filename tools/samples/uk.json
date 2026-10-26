@@ -1,0 +1,368 @@
+{
+ "ref": "SK-UK1SUTTON2026",
+ "query": "Sutton Garden Square",
+ "location": "Sutton, London",
+ "market": "uk",
+ "marketLabel": "United Kingdom",
+ "depth": "Developer confirmed at source",
+ "checkedAt": "2026-09-30T00:00:00",
+ "project": {
+  "name": "The Kensington, Sutton Garden Square",
+  "location": "Sutton, South West London",
+  "developer": "Berkeley Group",
+  "ids": [],
+  "developer_site": "berkeleygroup.co.uk",
+  "price_from": 375000,
+  "price_to": 650000,
+  "price_currency": "GBP"
+ },
+ "registry": {
+  "name": "The Berkeley Group Holdings PLC",
+  "id": "05172586",
+  "url": "https://find-and-update.company-information.service.gov.uk/company/05172586"
+ },
+ "counts": {
+  "confirmed": 2,
+  "reported": 3,
+  "single": 0,
+  "developer": 1,
+  "disputed": 2
+ },
+ "removed": 0,
+ "findings": [
+  {
+   "mark": "confirmed",
+   "claim": "The developer's parent, The Berkeley Group Holdings PLC, is Companies House number 05172586, status Active, incorporated 7 July 2004.",
+   "sources": [
+    {
+     "url": "https://find-and-update.company-information.service.gov.uk/company/05172586",
+     "site": "service.gov.uk"
+    }
+   ],
+   "sites": 1,
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "confirmed",
+   "claim": "Registered office: Berkeley House, 19 Portsmouth Road, Cobham, Surrey, KT11 1JG.",
+   "sources": [
+    {
+     "url": "https://find-and-update.company-information.service.gov.uk/company/05172586",
+     "site": "service.gov.uk"
+    }
+   ],
+   "sites": 1,
+   "topic": "developer",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "sites": 3,
+   "claim": "Sutton Garden Square is a 5.6-acre regeneration project delivering over 1,000 homes.",
+   "sources": [
+    {
+     "url": "https://www.rightmove.co.uk/properties/87926238",
+     "site": "rightmove.co.uk"
+    },
+    {
+     "url": "https://sg.news.yahoo.com/apartments-uk-developments-london-dock-001500094.html",
+     "site": "yahoo.com"
+    },
+    {
+     "url": "https://www.worldconstructionnetwork.com/news/berkeley-sutton-garden-square/",
+     "site": "worldconstructionnetwork.com"
+    }
+   ],
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "sites": 4,
+   "claim": "One-bedroom apartments in the first phase, The Kensington, start from £375,000.",
+   "sources": [
+    {
+     "url": "https://www.rightmove.co.uk/properties/87926238",
+     "site": "rightmove.co.uk"
+    },
+    {
+     "url": "https://stackedhomes.com/berkeley-london-dock-sutton-garden-square-singapore-launch/",
+     "site": "stackedhomes.com"
+    },
+    {
+     "url": "https://www.benhams.com.my/london/sutton-garden-square-sutton-sm1/",
+     "site": "benhams.com.my"
+    },
+    {
+     "url": "https://londraestate.co.uk/sutton-garden-square/",
+     "site": "londraestate.co.uk"
+    }
+   ],
+   "topic": "price",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "sites": 3,
+   "claim": "Construction of The Kensington collection began in 2026, with first homes completing from 2028.",
+   "sources": [
+    {
+     "url": "https://www.worldconstructionnetwork.com/news/berkeley-sutton-garden-square/",
+     "site": "worldconstructionnetwork.com"
+    },
+    {
+     "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton",
+     "site": "berkeleygroup.co.uk"
+    },
+    {
+     "url": "https://londraestate.co.uk/sutton-garden-square/",
+     "site": "londraestate.co.uk"
+    }
+   ],
+   "topic": "dates",
+   "stance": "neutral"
+  },
+  {
+   "mark": "developer",
+   "claim": "Berkeley's own site describes The Pavilion amenities: co-working spaces, a gym, concierge, games room, pet spa and children's playroom.",
+   "sources": [
+    {
+     "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton",
+     "site": "berkeleygroup.co.uk"
+    }
+   ],
+   "sites": 1,
+   "topic": "other",
+   "stance": "neutral"
+  },
+  {
+   "mark": "reported",
+   "topic": "track_record",
+   "stance": "positive",
+   "claim": "In the year to April 2026, Berkeley completed 4,076 new homes across London and the South East, up from 4,047 the year before.",
+   "sources": [
+    {
+     "url": "https://www.ajbell.co.uk/news/articles/berkeley-group-shares-annual-profit-edges-past-guidance"
+    },
+    {
+     "url": "https://nasdaq.com/articles/berkeley-group-fy26-profit-down-weak-revenues"
+    }
+   ]
+  },
+  {
+   "mark": "reported",
+   "topic": "financial",
+   "stance": "positive",
+   "claim": "Berkeley reported net cash of £363 million after share buy-backs, and refinanced its bank facilities to total liquidity of £1.8 billion.",
+   "sources": [
+    {
+     "url": "https://www.lse.co.uk/rns/BKG/final-results-qloeuj4y5bpu2dr.html"
+    },
+    {
+     "url": "https://www.asktraders.com/?p=250860"
+    }
+   ]
+  },
+  {
+   "mark": "reported",
+   "topic": "financial",
+   "stance": "neutral",
+   "claim": "Pre-tax profit fell 14.7% to £451.4 million, in line with the company’s own guidance.",
+   "sources": [
+    {
+     "url": "https://nasdaq.com/articles/berkeley-group-fy26-profit-down-weak-revenues"
+    },
+    {
+     "url": "https://www.ajbell.co.uk/news/articles/berkeley-group-shares-annual-profit-edges-past-guidance"
+    },
+    {
+     "url": "https://www.asktraders.com/?p=250860"
+    }
+   ]
+  },
+  {
+   "mark": "developer",
+   "kind": "developer_claim",
+   "topic": "sentiment",
+   "stance": "positive",
+   "claim": "Berkeley says it has an industry-leading Net Promoter Score of +77.9 and ranks first for customer care and build quality on HomeViews. These figures come from Berkeley itself.",
+   "sources": [
+    {
+     "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/full-year-2026-results-announced"
+    }
+   ]
+  }
+ ],
+ "conflicts": [
+  {
+   "topic": "Two-bedroom starting price",
+   "versions": [
+    {
+     "value": "£432,000",
+     "url": "https://www.rightmove.co.uk/properties/87926238",
+     "site": "rightmove.co.uk"
+    },
+    {
+     "value": "£442,000",
+     "url": "https://www.onthemarket.com/new-homes/developers/development/sutton-garden-square-74980/",
+     "site": "onthemarket.com"
+    }
+   ]
+  },
+  {
+   "topic": "Three-bedroom starting price",
+   "versions": [
+    {
+     "value": "£645,000",
+     "url": "https://stackedhomes.com/berkeley-london-dock-sutton-garden-square-singapore-launch/",
+     "site": "stackedhomes.com"
+    },
+    {
+     "value": "£650,000",
+     "url": "https://www.rightmove.co.uk/properties/87926235",
+     "site": "rightmove.co.uk"
+    }
+   ]
+  }
+ ],
+ "reading": [
+  {
+   "observation": "Two Companies House entities share very similar names: 'The Berkeley Group Holdings PLC' (05172586, the actual listed parent) and 'Berkeley Group PLC(The)' (01454064, an older, separately-numbered entity). A careless match could confirm the wrong one.",
+   "question": "Which Berkeley company is the legal seller for my specific plot, and does it match Companies House number 05172586?"
+  }
+ ],
+ "gaps": [
+  {
+   "topic": "The exact legal seller for a specific plot",
+   "why": "Berkeley Group comprises six operating companies (Berkeley Homes, St Edward, St George, St James, St Joseph, St William); which one sells this plot isn't stated publicly."
+  },
+  {
+   "topic": "Independent buyer reviews",
+   "why": "Berkeley's customer-satisfaction figures were found only on its own website."
+  }
+ ],
+ "questions": [
+  {
+   "when": "Before booking",
+   "who": "Sales team",
+   "question": "Which of Berkeley's six operating companies is the legal seller on my reservation form, and does it match Companies House number 05172586?",
+   "good": "A specific company name and number matching the Berkeley Group Holdings PLC filing.",
+   "red_flag": "Just ‘Berkeley’, with no company number given."
+  },
+  {
+   "when": "Before signing",
+   "who": "Legal team",
+   "question": "Is my exact plot's price £432,000 or £442,000 — the two figures published for two-bedroom units differ by £10,000.",
+   "good": "A written, plot-specific price sheet.",
+   "red_flag": "‘Around £440,000’ with no exact figure."
+  },
+  {
+   "when": "Before each payment",
+   "who": "CRM team",
+   "question": "Is my deposit protected by the NHBC Buildmark scheme or an equivalent, and can I see the policy?",
+   "good": "A named scheme and a policy document or number.",
+   "red_flag": "‘Yes, it's all covered’ with no named scheme."
+  }
+ ],
+ "searches": 4,
+ "pages": [
+  {
+   "url": "https://find-and-update.company-information.service.gov.uk/company/05172586",
+   "title": "Company Overview for THE BERKELEY GROUP HOLDINGS PLC (05172586)",
+   "site": "gov.uk",
+   "cited": true
+  },
+  {
+   "url": "https://find-and-update.company-information.service.gov.uk/company/01454064",
+   "title": "Company Overview for BERKELEY GROUP PLC(THE) (01454064)",
+   "site": "gov.uk",
+   "cited": false
+  },
+  {
+   "url": "https://www.rightmove.co.uk/properties/87926238",
+   "title": "2 bedroom apartment for sale in Sutton Garden Square by Berkeley",
+   "site": "rightmove.co.uk",
+   "cited": true
+  },
+  {
+   "url": "https://www.rightmove.co.uk/properties/87926235",
+   "title": "3 bedroom flat for sale in Sutton Garden Square by Berkeley",
+   "site": "rightmove.co.uk",
+   "cited": true
+  },
+  {
+   "url": "https://sg.news.yahoo.com/apartments-uk-developments-london-dock-001500094.html",
+   "title": "Apartments at UK developments London Dock and Sutton Garden Square to launch for sale",
+   "site": "news.yahoo.com",
+   "cited": true
+  },
+  {
+   "url": "https://www.onthemarket.com/new-homes/developers/development/sutton-garden-square-74980/",
+   "title": "Sutton Garden Square | New Development by Berkeley | OnTheMarket",
+   "site": "onthemarket.com",
+   "cited": true
+  },
+  {
+   "url": "https://stackedhomes.com/berkeley-london-dock-sutton-garden-square-singapore-launch/",
+   "title": "These New 999-Year London Homes Start From $645K",
+   "site": "stackedhomes.com",
+   "cited": true
+  },
+  {
+   "url": "https://www.worldconstructionnetwork.com/news/berkeley-sutton-garden-square/",
+   "title": "Berkeley unveils Sutton Garden Square regeneration project",
+   "site": "worldconstructionnetwork.com",
+   "cited": true
+  },
+  {
+   "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/berkeley-launches-new-south-london-neighbourhood-in-the-heart-of-sutton",
+   "title": "Berkeley Launches New South London Neighbourhood",
+   "site": "berkeleygroup.co.uk",
+   "cited": true
+  },
+  {
+   "url": "https://www.benhams.com.my/london/sutton-garden-square-sutton-sm1/",
+   "title": "Sutton Garden Square | New London Apartments from £375,000",
+   "site": "benhams.com.my",
+   "cited": true
+  },
+  {
+   "url": "https://londraestate.co.uk/sutton-garden-square/",
+   "title": "Sutton Garden Square | New Apartments in Sutton",
+   "site": "londraestate.co.uk",
+   "cited": true
+  },
+  {
+   "url": "https://www.ajbell.co.uk/news/articles/berkeley-group-shares-annual-profit-edges-past-guidance",
+   "title": "Berkeley Group shares up as annual profit edges past guidance | AJ Bell"
+  },
+  {
+   "url": "https://nasdaq.com/articles/berkeley-group-fy26-profit-down-weak-revenues",
+   "title": "Berkeley Group FY26 profit down on weak revenues | Nasdaq (RTTNews)"
+  },
+  {
+   "url": "https://www.asktraders.com/?p=250860",
+   "title": "Berkeley Group shares jump as year-end results beat fears | AskTraders"
+  },
+  {
+   "url": "https://www.lse.co.uk/rns/BKG/final-results-qloeuj4y5bpu2dr.html",
+   "title": "Berkeley Group final results (RNS) | LSE.co.uk"
+  },
+  {
+   "url": "https://www.berkeleygroup.co.uk/news-and-insights/news-and-features/2026/full-year-2026-results-announced",
+   "title": "Full year 2026 results announced | Berkeley Group (developer site)"
+  },
+  {
+   "url": "https://www.hbf.co.uk/news/new-build-homeowners-report-high-levels-of-satisfaction-2026/",
+   "title": "HBF national new homes customer satisfaction 2026 (does not name builders)"
+  }
+ ],
+ "scoreNote": "No score: a score needs confirmation at the regulator across its components.",
+ "responsible": {
+  "name": "Preeyancc",
+  "title": "Founder, ShelterKart",
+  "contact": "corrections@shelterkart.com"
+ },
+ "disclaimer": "Research, not advice. ShelterKart never tells you to buy or not buy, and no developer can pay to change what it shows."
+}

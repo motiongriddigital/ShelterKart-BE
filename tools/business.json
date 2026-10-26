@@ -1,0 +1,13 @@
+{
+  "_readme": "Fill every field marked REQUIRED, then run: node tools/build_policies.js. Razorpay checks these pages before issuing live keys.",
+  "tradingName": "ShelterKart",
+  "legalName": "",
+  "registeredAddress": "",
+  "phone": "",
+  "supportEmail": "",
+  "correctionsEmail": "corrections@shelterkart.com",
+  "grievanceOfficer": { "name": "", "designation": "Grievance Officer", "email": "" },
+  "replyWithinBusinessDays": 2,
+  "refundWithinBusinessDays": 7,
+  "gstin": ""
+}

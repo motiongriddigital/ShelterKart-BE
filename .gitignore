@@ -1,0 +1,11 @@
+backend/.env.first-run
+tools/samples/live-dry/
+tools/samples/live/
+backend/data/live-jobs/
+backups/
+node_modules/
+.env
+backend/.env
+.env.local
+*.log
+.DS_Store
