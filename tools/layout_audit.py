@@ -1,5 +1,6 @@
 import asyncio, json, os, sys
 from playwright.async_api import async_playwright
+PAGE = 'file://' + os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'shelterkart-frontend.html'))
 WIDTHS=[(360,740),(390,844),(768,1024),(1024,768),(1280,800),(1920,1000)]
 CHECK = r'''(()=>{
   const vw=innerWidth, out={}; out.sideways=document.documentElement.scrollWidth-vw;
@@ -24,7 +25,7 @@ async def main():
     async with async_playwright() as p:
         b=await p.chromium.launch()
         for w,h in WIDTHS:
-            pg=await b.new_page(viewport={'width':w,'height':h}); await pg.goto('file:///home/claude/sk/shelterkart-frontend.html'); await pg.wait_for_timeout(1000)
+            pg=await b.new_page(viewport={'width':w,'height':h}); await pg.goto(PAGE); await pg.wait_for_timeout(1000)
             ok=pg.locator('#consentBanner button').filter(has_text='OK').first
             if await ok.count() and await ok.is_visible(): await ok.click(); await pg.wait_for_timeout(400)
             rec={'home':await pg.evaluate(CHECK)}
