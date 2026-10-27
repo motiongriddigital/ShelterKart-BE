@@ -29,10 +29,6 @@ info:
     - Report references look like `SK-` followed by 12 upper-case hex characters.
     - Payments are switched on only when `PAYMENTS_ENABLED=true`, `ACCESS_TOKEN_SECRET` and the Razorpay key pair are all set.
       Until then the payment routes answer 503 `Payments are not enabled yet.` and no report is locked.
-  license:
-    name: Proprietary
-    identifier: LicenseRef-Proprietary
-    url: https://github.com/
 servers:
   - url: '{apiBase}'
     description: The API origin. Set the website's API_BASE to the same value.
