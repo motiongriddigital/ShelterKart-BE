@@ -1316,7 +1316,8 @@ class PaymentEventError extends Error {}
    BEFORE the global express.json() parser for this path. */
 app.post('/api/payments/webhook',
   express.raw({ type: 'application/json', limit: '1mb' }),
-  async (req, res) => {
+  ah(async (req, res) => {
+    if (!Buffer.isBuffer(req.body)) return res.status(415).json({ ok: false, error: 'Unsupported content type' });
     const provider = String(req.get('x-sk-provider') || 'unknown');
     const signature = req.get('x-sk-signature') || '';
     const secret = process.env.PAYMENT_WEBHOOK_SECRET;
@@ -1422,7 +1423,7 @@ app.post('/api/payments/webhook',
     } finally {
       client.release();
     }
-  }
+  })
 );
 
 
@@ -1579,6 +1580,8 @@ app.post('/api/admin/held/:ref/approve', adminAuth, ah(async (req, res) => {
 // routes, so their errors never reached it. Registered last, it covers
 // every route, and never leaks a stack trace or database text.
 app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') return res.status(400).json({ ok: false, error: 'Malformed JSON' });
+  if (err && err.type === 'entity.too.large') return res.status(413).json({ ok: false, error: 'Request body too large' });
   console.error(err);
   if (err && err.message === 'Origin not allowed') return res.status(403).json({ ok: false, error: 'Origin not allowed' });
   res.status(500).json({ ok: false, error: 'Internal server error' });
