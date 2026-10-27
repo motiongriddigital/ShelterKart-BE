@@ -51,6 +51,7 @@ function fakeClient({ failOn = null } = {}) {
       if (url.includes('/api/developer-response/')) return { status: 200, headers: H({}) };
       if (url.endsWith('/api/research/challenge')) return { status: 200, headers: H({}), json: async () => ({ ok: true, token: 'p.s', bits: 16 }) };
       if (url.endsWith('/api/payments/webhook')) { if (crashes) throw new Error('connection refused'); return { status: 415, headers: H({}) }; }
+      if (url.endsWith('/api/developer-response')) { if (crashes) throw new Error('connection refused'); return { status: 400, headers: H({}) }; }
       if (url.endsWith('/razorpay/webhook')) {
         const good = crypto.createHmac('sha256', 'whs').update(o.body).digest('hex') === o.headers['x-razorpay-signature'];
         return { status: good || acceptsForged ? 200 : 401, headers: H({}) };
@@ -63,6 +64,7 @@ function fakeClient({ failOn = null } = {}) {
     assert(bad.some(c => !c.pass && /wrong signature is refused/.test(c.label)));
     const crashed = await run(make(false, true), { SMOKE_WEBHOOK_SECRET: 'whs' });
     assert(crashed.some(c => !c.pass && /non-JSON content type/.test(c.label)));
+    assert(crashed.some(c => !c.pass && /object instead of text/.test(c.label)));
   });
   await t('the daily cap: unset is 1,500; 0 now PAUSES (it used to become 1,500); nonsense is 1,500', async () => {
     assert.deepStrictEqual([R.capOf({}), R.capOf({ RESEARCH_DAILY_CAP: '' }), R.capOf({ RESEARCH_DAILY_CAP: '0' }), R.capOf({ RESEARCH_DAILY_CAP: '25' }), R.capOf({ RESEARCH_DAILY_CAP: 'lots' })], [1500, 1500, 0, 25, 1500]);

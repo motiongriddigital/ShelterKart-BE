@@ -47,6 +47,9 @@ async function run(fetchImpl = globalThis.fetch, env = process.env) {
   // 6. the rate limiter is the real one: it reports its limits
   const q = await fetchImpl(base + '/api/research/quote', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: 'SK-000000000000' }) });
   ok('the rate limiter is active (RateLimit headers present)', q.headers.get('ratelimit-limit') || q.headers.get('ratelimit') || q.headers.get('ratelimit-policy'), `status ${q.status}`);
+  const dr = await fetchImpl(base + '/api/developer-response', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportRef: 'SK-AAAAAAAAAAAA', findingText: 'x', responseText: { toString: 1 }, contactEmail: 'a@b.co' }) }).catch(() => null);
+  const drAlive = await get('/api/health').catch(() => null);
+  ok('a reply with an object instead of text is refused (400) and the server stays up', Boolean(dr) && dr.status === 400 && Boolean(drAlive) && drAlive.status === 200, `status ${dr && dr.status}, health ${drAlive && drAlive.status}`);
   const mj = await fetchImpl(base + '/api/research/quote', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{bad json' });
   ok('malformed JSON is refused with 400, not 500', mj.status === 400, `status ${mj.status}`);
   return checks;
