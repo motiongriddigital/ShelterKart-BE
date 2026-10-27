@@ -1,3 +1,5 @@
+> Historical document from the delivery of 2026-10-24. Parts are out of date (for example it describes a stubbed backend); the current state is in README.md, HANDOVER.md and LATEST.md.
+
 # ShelterKart — Final Consolidated Build
 
 **The model, in one line:** CIBIL judges a borrower for a bank before it lends.
