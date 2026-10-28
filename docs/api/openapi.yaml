@@ -1,0 +1,2927 @@
+openapi: 3.1.0
+info:
+  title: ShelterKart API
+  version: 1.0.0
+  summary: HTTP contract of backend/server.js
+  description: |
+    This contract describes every route registered in `backend/server.js` as of the commit it was written against.
+    It was written from the code, then checked against a locally running server for status codes and error bodies
+    that do not need a database, an AI engine or a payment provider. Where a response is large, nested or depends on
+    data that could not be exercised, the description says "shape not fully documented" instead of guessing.
+
+    Conventions that hold for the whole API:
+
+    - JSON error bodies are `{ "ok": false, "error": "<message>" }`, sometimes with a `code` and other fields.
+      Most successful JSON bodies carry `"ok": true`. The exceptions are called out per operation.
+    - A request whose `Origin` header is not in `ALLOWED_ORIGINS` is refused with 403 `{ "ok": false, "error": "Origin not allowed" }`
+      before any route runs. In production an empty `ALLOWED_ORIGINS` refuses every request that carries an `Origin` header.
+      Requests without an `Origin` header (curl, server to server, same-origin navigations) are not affected.
+      Browsers add an `Origin` header to every cross-origin request and to same-origin POST requests, so a page served by this
+      API that posts back to it needs the API's own origin in `ALLOWED_ORIGINS` as well. See README.md in this folder.
+    - The global JSON body parser accepts bodies up to 10 kb. Malformed JSON and bodies over the limit are not turned into
+      400 or 413: they reach the generic error handler and return 500 `{ "ok": false, "error": "Internal server error" }`.
+      The routes that have their own body parser are `POST /api/research/document-check` (12 mb JSON),
+      `POST /api/admin/investigate` (20 kb JSON) and the three webhooks (raw body, 1 mb).
+    - A path that matches no route returns Express's default 404 HTML page (`Cannot GET /path`), not JSON.
+    - Rate limiters count every request that reaches them, including requests that go on to fail validation.
+      The JSON limiters answer 429 `{ "ok": false, "error": "..." }`. The limiters without a custom message
+      (`checkoutResearchLimiter`, `trackLimiter`) answer 429 with the plain text `Too many requests, please try again later.`
+    - Report references look like `SK-` followed by 12 upper-case hex characters.
+    - Payments are switched on only when `PAYMENTS_ENABLED=true`, `ACCESS_TOKEN_SECRET` and the Razorpay key pair are all set.
+      Until then the payment routes answer 503 `Payments are not enabled yet.` and no report is locked.
+servers:
+  - url: '{apiBase}'
+    description: The API origin. Set the website's API_BASE to the same value.
+    variables:
+      apiBase:
+        default: http://localhost:4000
+        description: The origin the backend is served from, with no trailing slash. The server listens on PORT, default 4000.
+tags:
+  - name: Health
+    description: Liveness and reference data.
+  - name: Research
+    description: The search flow, quotes, checkout and access tokens.
+  - name: Investigate
+    description: The questions-first investigator used by the buyer flow.
+  - name: Pages
+    description: Server-rendered HTML pages and PDFs, opened by navigation rather than called from the website script.
+  - name: Webhooks
+    description: Payment provider callbacks. They use the raw request body for signature verification.
+  - name: Tracking
+    description: Browser analytics events.
+  - name: Reply
+    description: Disputes and the developer right of reply.
+  - name: Admin
+    description: Operator routes behind HTTP Basic authentication and the admin rate limiter.
+  - name: SEO
+    description: robots.txt and sitemap.xml.
+  - name: Retired
+    description: Routes that always answer 410.
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      tags: [Health]
+      summary: Liveness check
+      description: Returns the service name and the server time. Used by the CI smoke test.
+      security: []
+      x-source: backend/server.js:118
+      responses:
+        '200':
+          description: The service is up.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, service, time]
+                properties:
+                  ok: {type: boolean, const: true}
+                  service: {type: string, const: shelterkart-api}
+                  time: {type: string, format: date-time}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /api/markets:
+    get:
+      operationId: listMarkets
+      tags: [Health]
+      summary: List the 36 research markets
+      description: |
+        Returns a bare JSON array (no `ok` wrapper). `depth` is `Research` for a market whose official register is currently
+        switched off by the source health check, otherwise the market's own depth label. `note` is replaced by a fixed sentence
+        in that case. The `status` values are those in backend/engine/markets.js and are not enumerated here.
+      security: []
+      x-source: backend/server.js:1113
+      responses:
+        '200':
+          description: One entry per market.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [code, label, status, depth, note]
+                  properties:
+                    code: {$ref: '#/components/schemas/Market'}
+                    label: {type: string}
+                    status: {type: string}
+                    depth: {type: string}
+                    note: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /api/languages:
+    get:
+      operationId: listLanguages
+      tags: [Health]
+      summary: List reader languages and each market's languages
+      description: Cached for one hour (`Cache-Control public, max-age=3600`).
+      security: []
+      x-source: backend/server.js:1019
+      responses:
+        '200':
+          description: Enabled languages, and for each market code the language codes its buyers use (enabled ones first).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, languages, markets]
+                properties:
+                  ok: {type: boolean, const: true}
+                  languages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: {type: string, examples: [hi]}
+                        native: {type: string}
+                        name: {type: string}
+                        dir: {type: string, enum: [ltr, rtl]}
+                        locale: {type: string, examples: [hi-IN]}
+                        review: {type: string, description: 'Review state of the translation. Values seen: native, ai.'}
+                  markets:
+                    type: object
+                    description: Market code to an ordered list of language codes.
+                    additionalProperties:
+                      type: array
+                      items: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /api/pricing/countries:
+    get:
+      operationId: listPricingCountries
+      tags: [Research]
+      summary: Countries a buyer can be in, and whether reports are on sale there
+      description: |
+        Feeds the country selector. Never cached (`Cache-Control no-store`) because `network` depends on the visitor.
+        Blocked countries are left out. The list is sorted by name.
+      security: []
+      x-source: backend/server.js:448
+      responses:
+        '200':
+          description: The country list.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, countries, network, priceBookVersion]
+                properties:
+                  ok: {type: boolean, const: true}
+                  countries:
+                    type: array
+                    items:
+                      type: object
+                      required: [iso, name, currency, onSale]
+                      properties:
+                        iso: {type: string, pattern: '^[A-Z]{2}$'}
+                        name: {type: string}
+                        currency: {type: string, examples: [INR]}
+                        onSale: {type: boolean}
+                        reason:
+                          type: [string, 'null']
+                          description: 'Why the country is not on sale. Values seen in a running server: no_payment_route, registration_required, unverified. Other values come from backend/pricing/data.js and are not enumerated.'
+                  network:
+                    type: string
+                    description: The visitor's country from the hosting network's header (cf-ipcountry, x-vercel-ip-country, cloudfront-viewer-country or fly-client-country), or an empty string.
+                  priceBookVersion: {type: string, examples: ['2026-10.2']}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /api/research/challenge:
+    get:
+      operationId: getResearchChallenge
+      tags: [Research]
+      summary: Get a proof-of-work challenge for a new search
+      description: |
+        The browser solves it and sends the result as `pow` on `POST /api/research` or `POST /api/investigate`.
+        The token is signed, expires in five minutes and is accepted once. Difficulty rises when the day's research allowance is
+        half and eighty percent used. Fetching one costs nothing. Always answers 200, even when the bot guard is off.
+        Limited by `trackLimiter` (60 requests per minute per IP).
+      security: []
+      x-rate-limit: trackLimiter
+      x-source: backend/server.js:1123
+      responses:
+        '200':
+          description: A challenge.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, token, bits, expiresAt]
+                properties:
+                  ok: {type: boolean, const: true}
+                  token: {type: string}
+                  bits: {type: integer, description: 'Leading zero bits required: SHA-256(token + ":" + solution).'}
+                  expiresAt: {type: string, format: date-time}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedText'}
+  /api/research:
+    post:
+      operationId: runResearch
+      tags: [Research]
+      summary: Search for a project or developer and get its brief
+      description: |
+        Runs a new search or serves one already researched (exact spelling, another spelling, or a registration number).
+        Only new research costs money, so only new research needs `pow` when the bot guard is on
+        (`BOT_GUARD`, default on in production). Searches answerable from memory are exempt from `researchLimiter`, and with the bot guard on a request
+        that carries no `pow` token is not counted either (it is refused before any cost).
+        Phone numbers and e-mail addresses in `query` and `location` are removed before the query leaves the process.
+        The response is not cached (`Cache-Control no-store`, `X-Robots-Tag noindex, nofollow`).
+        When payments are active and the caller does not send a valid `X-Report-Access` token for this report, the brief is the
+        allow-listed preview with `locked: true`.
+        When `lang` names an enabled language other than English the brief is translated after gating; a translation failure falls back to English.
+        The price shown in `paywall` uses `country` from the body (or the query string), else the network's suggestion.
+      security:
+        - {}
+        - accessToken: []
+      x-rate-limit: researchLimiter
+      x-source: backend/server.js:1129
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ResearchRequest'}
+      responses:
+        '200':
+          description: The brief and the paywall state.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BriefResponse'}
+        '400':
+          description: 'Validation failed. Messages: "Enter a property or developer name between 2 and 120 characters.", "Location is too long." (over 80 characters), "Unknown market."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '428':
+          description: A new search needs the proof of work and `pow` was missing or not accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, code, reason, error]
+                properties:
+                  ok: {type: boolean, const: false}
+                  code: {type: string, const: challenge}
+                  reason: {type: string, enum: [missing, malformed, tampered, expired, used, not_solved]}
+                  error: {type: string}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '500':
+          description: 'Unexpected failure: "Research failed. Please try again."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: 'Research is paused (RESEARCH_PAUSED, a zero daily cap, or the market is in RESEARCH_MARKETS_OFF), the daily cap is used up, or neither the web search nor the register could complete. The message says which. No `code` field is returned.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/research/by-ref/{ref}:
+    get:
+      operationId: getReportByRef
+      tags: [Research]
+      summary: Open the exact report behind a shared link
+      description: |
+        Serves the stored report, gated the same way as `POST /api/research`. Records a `report_open` analytics event.
+        Not cached (`Cache-Control no-store`, `X-Robots-Tag noindex, nofollow`). Shares `researchLimiter` with the other routes that use it,
+        so these requests count toward the same per-IP hourly limit. The limiter's skip rule never skips a GET, so every call counts.
+      security:
+        - {}
+        - accessToken: []
+      x-rate-limit: researchLimiter
+      x-source: backend/server.js:1024
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {$ref: '#/components/parameters/XReportAccess'}
+        - {$ref: '#/components/parameters/LangQuery'}
+        - {$ref: '#/components/parameters/CountryQuery'}
+        - {$ref: '#/components/parameters/SessionQuery'}
+      responses:
+        '200':
+          description: The brief and the paywall state.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BriefResponse'}
+        '400':
+          description: 'The reference is malformed: "Not a valid report reference."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: 'No such report is held: "This report is no longer available. Search again for the latest information."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+  /api/research/quote:
+    post:
+      operationId: issueQuote
+      tags: [Research]
+      summary: Issue a signed price for a report and a buyer
+      description: |
+        Returns a quote locked for 30 minutes (the price book's `quoteMinutes`, default 30). Any earlier open quote for the same report and
+        session is superseded. The price is set by the property and the evidence depth, never by the browser. The buyer is resolved from
+        `billingCountry`, then `country`, then the network's suggestion. Not cached (`Cache-Control no-store`).
+        Step 2 of the sale described in HANDOVER.md section 1.
+      security: []
+      x-rate-limit: researchLimiter
+      x-source: backend/server.js:459
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ref]
+              properties:
+                ref: {$ref: '#/components/schemas/ReportRef'}
+                previousQuoteId:
+                  type: string
+                  pattern: '^q_[0-9a-f]{20}$'
+                  description: The quote being replaced after the buyer changed country. Recorded as a `country_changed` event.
+                billingCountry: {type: string, description: 'ISO 3166 alpha-2 code. Takes precedence over `country`.'}
+                country: {type: string, description: ISO 3166 alpha-2 code the buyer selected.}
+                session: {type: string, description: 'Opaque browser session id. Characters other than letters, digits, underscore and hyphen are removed, truncated to 64; empty becomes "anon".'}
+      responses:
+        '200':
+          description: The quote.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, quote]
+                properties:
+                  ok: {type: boolean, const: true}
+                  quote: {$ref: '#/components/schemas/Quote'}
+        '400':
+          description: 'The reference is malformed: "Unknown report reference."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: 'The report is not held: "This report is no longer available. Search again, then unlock the new report."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '409':
+          description: |
+            The quote cannot be issued. `code` is `held` (adverse findings wait for a person), `not_ready` (a dossier whose first findings are
+            still coming in), `country_required` (no usable country signal), or `not_on_sale` (with `reason` and `country`).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, code, error]
+                properties:
+                  ok: {type: boolean, const: false}
+                  code: {type: string, enum: [held, not_ready, country_required, not_on_sale]}
+                  reason: {type: string, description: 'Present for not_on_sale. Reason values come from backend/pricing/data.js (for example no_payment_route, registration_required, unverified, threshold_reached).'}
+                  country: {type: string}
+                  error: {type: string}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+  /api/research/checkout:
+    post:
+      operationId: startCheckout
+      tags: [Research]
+      summary: Start a purchase for a quoted report
+      description: |
+        Step 3 of the sale. Stores a pending purchase and opens a payment with the provider chosen by data for the buyer's country:
+        Razorpay (India) or the Merchant of Record (Dodo Payments). The amount is the quote's gross total, never anything the browser sent.
+        Only a signed webhook (or, for the merchant, the server's own check of the merchant's records) marks a purchase paid.
+
+        Idempotency: the same `idempotencyKey` returns the same purchase. A retry of a pending Razorpay purchase returns the stored order
+        (without `quoteId`). A retry of a pending merchant purchase opens a fresh single-use session for the same purchase. A retry of a purchase that is
+        no longer pending, or whose order step never completed, is a 409.
+
+        Billing country check: if `billingCountry` differs from the quote's country the call returns 409 `billing_country` with a new quote to confirm.
+        Which provider is used is data driven (`backend/data/payment-routes.json`); the merchant route needs `PUBLIC_BASE_URL`.
+      security: []
+      x-rate-limit: checkoutResearchLimiter
+      x-source: backend/server.js:339
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ref, idempotencyKey]
+              properties:
+                ref: {$ref: '#/components/schemas/ReportRef'}
+                idempotencyKey: {type: string, pattern: '^[A-Za-z0-9_-]{16,64}$'}
+                quoteId:
+                  type: string
+                  pattern: '^q_[0-9a-f]{20}$'
+                  description: Required unless the idempotency key was already used for a pending purchase.
+                billingCountry: {type: string, description: ISO 3166 alpha-2 code. Required unless the idempotency key was already used.}
+                buyerKind: {type: string, enum: [individual, business], description: 'Anything other than "business" is treated as individual.'}
+                taxId: {type: string, description: 'Kept for the invoice, not validated, and changes no tax. Cleaned to at most 20 letters and digits.'}
+                lang: {type: string, description: 'Reader language, recorded on the `checkout_started` event only.'}
+      responses:
+        '200':
+          description: The purchase and the provider's payment details. Exactly one of `razorpay` or `mor` is present.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckoutResponse'}
+        '400':
+          description: |
+            Invalid request. `code` is absent for "Unknown report reference." and "Missing or invalid idempotency key.", and one of
+            `quote_required`, `billing_required`, `quote_signature` otherwise.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckoutError'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '`quote_unknown` (with `requote: true`), or the report is no longer held (no `code`).'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckoutError'}
+        '409':
+          description: |
+            `quote_expired`, `quote_superseded` or `quote_used` (with `requote: true`); `billing_country` (with `requote: true`, `previous` and a new `quote`);
+            `not_on_sale` (with `reason` and `country`); or no `code` for "This checkout attempt has already been used. Please start again."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckoutError'}
+        '429': {$ref: '#/components/responses/RateLimitedText'}
+        '503':
+          description: 'Payments are not enabled yet; `not_on_sale` with `reason: no_payment_route`; or "Payment could not be started right now. Please try again in a moment." when the provider call failed.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CheckoutError'}
+  /api/research/razorpay/verify:
+    post:
+      operationId: verifyRazorpayPayment
+      tags: [Research]
+      summary: Confirm a Razorpay payment from the browser and receive an access token
+      description: |
+        The checkout success handler. The signature is checked against the order id stored on the server for this purchase, so a browser cannot pair a real
+        payment with someone else's order. Marks the purchase paid if the webhook has not already done so. Calling it for an already paid purchase returns a token again.
+      security: []
+      x-rate-limit: checkoutResearchLimiter
+      x-source: backend/server.js:882
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ref, purchaseId, razorpay_payment_id, razorpay_signature]
+              properties:
+                ref: {$ref: '#/components/schemas/ReportRef'}
+                purchaseId: {type: string, format: uuid}
+                razorpay_payment_id: {type: string, pattern: '^pay_\w+$'}
+                razorpay_signature: {type: string}
+      responses:
+        '200':
+          description: The payment is verified.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TokenResponse'}
+        '400':
+          description: '"Invalid request." (field formats) or "This payment could not be verified. If you were charged, write to us with your receipt."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"Purchase not found." (unknown purchase, wrong report, or no stored order id)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedText'}
+        '503': {$ref: '#/components/responses/PaymentsDisabled'}
+  /api/research/access:
+    post:
+      operationId: exchangePurchaseForToken
+      tags: [Research]
+      summary: Exchange a paid purchase for an access token
+      description: |
+        The purchase id is a random UUID known only to the buyer who started it. For a pending merchant purchase the server first asks the merchant for the
+        session and payment records and settles the purchase if the payment succeeded for exactly the quoted amount and currency (the buyer's return before the webhook).
+      security: []
+      x-rate-limit: checkoutResearchLimiter
+      x-source: backend/server.js:983
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ref, purchaseId]
+              properties:
+                ref: {$ref: '#/components/schemas/ReportRef'}
+                purchaseId: {type: string, format: uuid}
+      responses:
+        '200':
+          description: The purchase is paid.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TokenResponse'}
+        '400':
+          description: '"Invalid request."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '402':
+          description: '"Payment has not been confirmed yet." Also returned when the purchase is unknown.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedText'}
+        '503': {$ref: '#/components/responses/PaymentsDisabled'}
+  /api/research/recover:
+    post:
+      operationId: recoverAccess
+      tags: [Research]
+      summary: Recover access with the payment id from a receipt
+      description: For a buyer who paid on another device or cleared their browser. Looks up a paid purchase by the provider's payment id and issues a token.
+      security: []
+      x-rate-limit: checkoutResearchLimiter
+      x-source: backend/server.js:1073
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [paymentId]
+              properties:
+                paymentId: {type: string, pattern: '^pay_[A-Za-z0-9]{8,30}$', description: The Razorpay payment id from the receipt.}
+      responses:
+        '200':
+          description: A paid purchase matches.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, ref, token]
+                properties:
+                  ok: {type: boolean, const: true}
+                  ref: {$ref: '#/components/schemas/ReportRef'}
+                  token: {type: string}
+        '400':
+          description: 'The id does not look like a Razorpay payment id: "Enter the payment ID from your Razorpay receipt. It starts with pay_."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"No paid ShelterKart report matches that payment ID. If you were charged, write to us with your receipt."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedText'}
+        '503': {$ref: '#/components/responses/PaymentsDisabled'}
+  /api/research/document-check:
+    post:
+      operationId: checkDocument
+      tags: [Research]
+      summary: Check a buyer's own document against the research
+      description: |
+        The document is never stored, logged or cached. The route runs (or reuses) the research for `query`, applies the paywall, then reads the document with an AI engine
+        that the operator has approved for personal data (`AI_PERSONAL_DATA_ENGINES`; empty means the check is off) and cross-checks the extracted fields.
+        With payments active, a valid `X-Report-Access` token for the report is required, otherwise 402. This route has its own body parser (JSON up to 12 mb)
+        and the global 10 kb parser does not run on it. The bot guard proof of work is not applied here.
+        Not cached (`Cache-Control no-store`).
+      security:
+        - {}
+        - accessToken: []
+      x-rate-limit: documentLimiter
+      x-source: backend/server.js:998
+      parameters:
+        - {$ref: '#/components/parameters/XReportAccess'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query, market, file, mediaType]
+              properties:
+                query: {type: string, minLength: 2, maxLength: 120}
+                location: {type: string, maxLength: 80}
+                market: {$ref: '#/components/schemas/Market'}
+                file: {type: string, description: 'The document as a base64 string, at most 11 MiB of base64 (about 8 MB of file).'}
+                mediaType: {type: string, enum: [application/pdf, image/jpeg, image/png, image/webp]}
+                lang: {type: string}
+                country: {type: string}
+      responses:
+        '200':
+          description: The cross-check result.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, result]
+                properties:
+                  ok: {type: boolean, const: true}
+                  result:
+                    type: object
+                    description: 'Fields documentType, checks and summary. Each check has topic, status, detail and action. Status values seen in the code: match, mismatch, missing, unverified, partial. The summary shape is not fully documented.'
+                    required: [documentType, checks]
+                    properties:
+                      documentType: {type: string}
+                      checks:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            topic: {type: string}
+                            status: {type: string}
+                            detail: {type: string}
+                            action: {type: string}
+                      summary: {}
+        '400':
+          description: Research input invalid (same messages as `POST /api/research`), unsupported media type ("Upload a PDF, JPEG, PNG or WebP file.") or file too large ("The file must be under 8 MB.").
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '402':
+          description: '"Checking your documents is part of the full report." (the report is still locked)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '422':
+          description: The document could not be read clearly, or contains text that could not be read safely.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '500':
+          description: '"The document check could not be completed." (an error with no status)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: Research could not complete or is paused, document checks are not configured on this server, or the document could not be read right now.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/investigate:
+    post:
+      operationId: startInvestigation
+      tags: [Investigate]
+      summary: Start (or reuse) an investigation and get its report reference
+      description: |
+        Names a property. The free preview runs the first sweep in the background and the paid report continues it after payment. Every investigation is stored under a normal
+        report ref, so quote, checkout, verification, webhooks and access tokens serve it unchanged. The same project (same words in name and location, same country) is reused for 30 days
+        and returns 200 with `reused: true`.
+
+        Order of checks: input (400), research paused (503 `paused`), reuse (200), proof of work (428), daily and per-market caps and the AI daily maximum (503 `paused`),
+        concurrency (429), then the job starts (202).
+      security: []
+      x-rate-limit: researchLimiter
+      x-source: backend/server.js:714
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: {type: string, minLength: 3, maxLength: 120}
+                location: {type: string, maxLength: 120}
+                country: {type: string, description: ISO 3166 alpha-2 code of the project's country. Used as the investigation's market.}
+                market: {type: string, maxLength: 60, description: Market label stored on the report.}
+                pow: {$ref: '#/components/schemas/Pow'}
+      responses:
+        '200':
+          description: This project was already investigated in the last 30 days.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, ref, reused]
+                properties:
+                  ok: {type: boolean, const: true}
+                  ref: {$ref: '#/components/schemas/ReportRef'}
+                  reused: {type: boolean, const: true}
+        '202':
+          description: A new investigation was started. The report page is `/r/{ref}` and live progress is `/api/investigate/{ref}/events`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, ref]
+                properties:
+                  ok: {type: boolean, const: true}
+                  ref: {$ref: '#/components/schemas/ReportRef'}
+        '400':
+          description: '"Name the project, in 3 to 120 characters."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '428':
+          description: The proof of work is missing or not accepted. Unlike `POST /api/research`, no `reason` is returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, code, error]
+                properties:
+                  ok: {type: boolean, const: false}
+                  code: {type: string, const: challenge}
+                  error: {type: string}
+        '429':
+          description: 'Either `researchLimiter` (JSON message "Too many new searches from this connection. Please try again in an hour.") or too many investigations running ("Many investigations are running. Please try again in a few minutes.").'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: '`code: paused`: research is paused for the market, the daily cap, the per-market cap or the AI daily maximum is reached.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, code, error]
+                properties:
+                  ok: {type: boolean, const: false}
+                  code: {type: string, const: paused}
+                  error: {type: string}
+  /api/investigate/{ref}/events:
+    get:
+      operationId: streamInvestigationEvents
+      tags: [Investigate]
+      summary: Live progress of an investigation (Server-Sent Events)
+      description: |
+        Replays the events held so far, then keeps the stream open while the job is sweeping (or completing, when the caller holds a valid access token in `t`).
+        An unknown reference, or a job that is not running, returns 200 with the replay and then ends the stream; only a malformed reference is an error.
+        Without a valid token each event carries only `type`, `stage`, `phase`, `counts` and, for the `sweep` stage and for errors, `message`.
+        With a valid token the event also carries `round`. The public stream never carries paid content. The event name (`event:` line) equals the event's `type`.
+        Event types seen in the code: progress, error, done. Other types come from the investigator engine and are not enumerated.
+        Not rate limited.
+      security:
+        - {}
+        - accessTokenQuery: []
+      x-source: backend/server.js:742
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {$ref: '#/components/parameters/TokenQuery'}
+      responses:
+        '200':
+          description: 'An event stream. Each frame is `event: <type>` and `data: <json>`.'
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '400':
+          description: 'The reference is malformed. The body is exactly `{ "ok": false }` with no message.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: {type: boolean, const: false}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /api/investigate/{ref}/contact:
+    post:
+      operationId: setInvestigationContact
+      tags: [Investigate]
+      summary: Save where the finished report should be sent
+      description: |
+        At least one of `email` or `phone` is required. The contact is stored on the report and used by delivery after payment.
+        No access token is required: anyone who knows the report reference can call it. See README.md, "not documented / needs a human".
+      security: []
+      x-rate-limit: checkoutResearchLimiter
+      x-source: backend/server.js:753
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: {type: string, format: email}
+                phone: {type: string, description: 'A WhatsApp number with its country code. Spaces, brackets and hyphens are removed before validation.'}
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ok'}
+        '400':
+          description: Malformed reference ("Unknown report reference.") or an invalid contact (the message names the problem).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"Unknown report." (not held, or not an investigation)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedText'}
+  /start:
+    get:
+      operationId: getStartPage
+      tags: [Pages]
+      summary: The investigate-a-property page (server-rendered HTML)
+      description: Not cached (`Cache-Control no-store`). `country` pre-selects the buyer's country; otherwise the network's suggestion is used. The page's script calls the API on its own origin with relative URLs.
+      security: []
+      x-source: backend/server.js:708
+      parameters:
+        - {$ref: '#/components/parameters/CountryQuery'}
+      responses:
+        '200':
+          description: HTML.
+          content:
+            text/html:
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /assets/report-live.js:
+    get:
+      operationId: getReportLiveScript
+      tags: [Pages]
+      summary: The script used by the server-rendered report pages
+      description: Cached for five minutes (`Cache-Control public, max-age=300`).
+      security: []
+      x-source: backend/server.js:712
+      responses:
+        '200':
+          description: JavaScript.
+          content:
+            application/javascript:
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /r/{ref}:
+    get:
+      operationId: getReportPage
+      tags: [Pages]
+      summary: A buyer's report page (server-rendered HTML)
+      description: |
+        Not cached (`Cache-Control no-store`, `Referrer-Policy no-referrer`). What it shows depends on the report and on `t`:
+        the working page while the first sweep is running (no dossier yet), the full report when `t` is a valid access token for this reference
+        (and, if the dossier is not yet complete, that visit makes a paid report continue), otherwise the free preview with the price in the buyer's country.
+        An unknown or non-investigation reference returns the start page with a "not found" sentence and status 404.
+        `country` overrides the price country. Only references created by `POST /api/investigate` have a page here; references from `POST /api/research` do not.
+      security:
+        - {}
+        - accessTokenQuery: []
+      x-source: backend/server.js:762
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {$ref: '#/components/parameters/TokenQuery'}
+        - {$ref: '#/components/parameters/CountryQuery'}
+      responses:
+        '200':
+          description: HTML (working page, full report or preview).
+          content:
+            text/html:
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: HTML start page saying the report was not found.
+          content:
+            text/html:
+              schema: {type: string}
+  /r/{ref}/pdf:
+    get:
+      operationId: getReportPdf
+      tags: [Pages]
+      summary: The full report as a PDF
+      description: Requires a valid access token in `t`. Rendered on demand with a headless browser and sent as an attachment (`Content-Disposition attachment`, `Cache-Control no-store`).
+      security:
+        - accessTokenQuery: []
+      x-source: backend/server.js:781
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {$ref: '#/components/parameters/TokenQuery'}
+      responses:
+        '200':
+          description: The PDF.
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '403':
+          description: 'The reference is malformed or the token is missing, expired or not valid: "This link has expired or is not valid." A CORS refusal (`Origin not allowed`) also returns 403 with a different message.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '404':
+          description: '"No report yet." (not held, or no dossier)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: '"PDF download is not available yet." when the PDF renderer is not installed.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /samples/{id}:
+    get:
+      operationId: getSamplePage
+      tags: [Pages]
+      summary: A published sample report (server-rendered HTML)
+      description: |
+        Reads `backend/data/sample-reports/{id}.json`. The ids present in this repository are celeste, dubai and london. `id` must match `^[a-z0-9-]{2,40}$`.
+        Cached for ten minutes. An unknown id returns the start page with a "not found" sentence and status 404.
+      security: []
+      x-source: backend/server.js:833
+      parameters:
+        - {$ref: '#/components/parameters/SampleId'}
+      responses:
+        '200':
+          description: HTML.
+          content:
+            text/html:
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: HTML start page saying the sample was not found.
+          content:
+            text/html:
+              schema: {type: string}
+  /samples/{id}/pdf:
+    get:
+      operationId: getSamplePdf
+      tags: [Pages]
+      summary: A published sample report as a PDF
+      description: Printed once per id and kept in memory. Sent inline (`Content-Disposition inline`), cached for one hour.
+      security: []
+      x-source: backend/server.js:839
+      parameters:
+        - {$ref: '#/components/parameters/SampleId'}
+      responses:
+        '200':
+          description: The PDF.
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"No such sample."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: '"PDF download is not available yet." when the PDF renderer is not installed.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /guide:
+    get:
+      operationId: getGuidePage
+      tags: [Pages]
+      summary: The free Home Buying Guide (HTML)
+      description: Read from `backend/data/guide/`. Cached for ten minutes.
+      security: []
+      x-source: backend/server.js:808
+      responses:
+        '200':
+          description: HTML.
+          content:
+            text/html:
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"The guide is not installed on this server."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /guide/pdf:
+    get:
+      operationId: getGuidePdf
+      tags: [Pages]
+      summary: The Home Buying Guide as a PDF download
+      description: Sent as an attachment, cached for one hour. The website sends a HEAD request to this path to check that it exists.
+      security: []
+      x-source: backend/server.js:826
+      responses:
+        '200':
+          description: The PDF.
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"The guide PDF is not installed on this server."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /guide/card.png:
+    get:
+      operationId: getGuideCardPng
+      tags: [Pages]
+      summary: The sales-office question card as an image
+      description: Cached for one hour.
+      security: []
+      x-source: backend/server.js:814
+      responses:
+        '200':
+          description: The image.
+          content:
+            image/png:
+              schema: {type: string, format: binary}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"The card is not installed on this server."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /guide/card.pdf:
+    get:
+      operationId: getGuideCardPdf
+      tags: [Pages]
+      summary: The sales-office question card as a PDF download
+      description: Sent as an attachment, cached for one hour.
+      security: []
+      x-source: backend/server.js:820
+      responses:
+        '200':
+          description: The PDF.
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"The card is not installed on this server."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/track:
+    post:
+      operationId: trackEvent
+      tags: [Tracking]
+      summary: Record a browser analytics event
+      description: |
+        Only the listed event names are accepted and only the listed fields are read. Searches, purchases and revenue are recorded by the server itself and cannot be set here.
+        A comment in server.js says "these four names", but the code accepts the seven below.
+        Limited by `trackLimiter` (60 requests per minute per IP).
+      security: []
+      x-rate-limit: trackLimiter
+      x-source: backend/server.js:1063
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [event]
+              properties:
+                event: {type: string, enum: [page_view, unlock_click, save_pdf, share_whatsapp, guide_open, guide_download, guide_share]}
+                path: {type: string}
+                referrer: {type: string}
+                utm: {description: 'Passed through to analytics. Shape not documented.'}
+                market: {type: string}
+                ref: {type: string}
+      responses:
+        '204':
+          description: Recorded (or silently dropped by the analytics layer).
+        '400':
+          description: 'Unknown event name. The body is exactly `{ "ok": false }`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: {type: boolean, const: false}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedText'}
+  /api/dispute:
+    post:
+      operationId: submitDispute
+      tags: [Reply]
+      summary: Report an inaccuracy
+      description: Stores a dispute for the admin to review. Limited by `disputeLimiter` (10 requests per hour per IP).
+      security: []
+      x-rate-limit: disputeLimiter
+      x-source: backend/server.js:1226
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [note]
+              properties:
+                note: {type: string, maxLength: 4000, description: What is wrong.}
+                contact: {type: string, description: Truncated to 200 characters.}
+                reportRef: {type: string, description: 'Stored only if it matches the report reference format, otherwise stored as null.'}
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ok'}
+        '400':
+          description: '"Please describe what is wrong." (missing or not a string) or "Please keep the description under 4,000 characters."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '500':
+          description: '"Your report of an inaccuracy could not be saved. Please try again, or write to us."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/developer-response:
+    post:
+      operationId: submitDeveloperResponse
+      tags: [Reply]
+      summary: A developer's right of reply to a finding
+      description: |
+        Stored as pending. A person approves or rejects it in the admin; it is never published automatically and never replaces the finding.
+        Limited by `replyLimiter` (3 requests per hour per IP, counting requests that fail validation).
+      security: []
+      x-rate-limit: replyLimiter
+      x-source: backend/server.js:1243
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reportRef, findingText, responseText, contactEmail]
+              properties:
+                reportRef: {$ref: '#/components/schemas/ReportRef'}
+                findingText: {type: string, maxLength: 2000, description: 'The finding being replied to, quoted.'}
+                responseText: {type: string, maxLength: 2000}
+                contactEmail: {type: string, format: email, description: For admin follow-up only. Lower-cased. Never returned by the public read.}
+      responses:
+        '200':
+          description: Submitted for review.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, message]
+                properties:
+                  ok: {type: boolean, const: true}
+                  message: {type: string, examples: ['Submitted for review. Approved responses are published within 48 hours.']}
+        '400':
+          description: A required field is missing, a length is exceeded, the e-mail is invalid, or the reference is malformed. The message names the problem.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"No report with that reference is available. Please check the reference on the report."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '500':
+          description: '"Your response could not be saved. Please try again in a moment."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/developer-response/{reportRef}:
+    get:
+      operationId: listApprovedDeveloperResponses
+      tags: [Reply]
+      summary: Approved developer replies for a report
+      description: Public. Returns only replies a person has approved, never the sender's address. Not rate limited.
+      security: []
+      x-source: backend/server.js:1265
+      parameters:
+        - name: reportRef
+          in: path
+          required: true
+          schema: {$ref: '#/components/schemas/ReportRef'}
+      responses:
+        '200':
+          description: 'The replies. There is no `ok` field. `from_developer_domain` is true when the sender''s e-mail domain matches the developer''s own website; it is a label, not proof.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [responses]
+                properties:
+                  responses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        finding_text: {type: string}
+                        response_text: {type: string}
+                        submitted_at: {type: string, format: date-time}
+                        from_developer_domain: {type: boolean}
+        '400':
+          description: '"Unknown report reference."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '500':
+          description: '"Replies could not be loaded right now."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/payments/razorpay/webhook:
+    post:
+      operationId: razorpayWebhook
+      tags: [Webhooks]
+      summary: Razorpay payment webhook
+      description: |
+        The backstop if the buyer closes the tab before the checkout handler runs. The route has its own raw body parser (`express.raw`, type `application/json`, 1 mb)
+        and the global JSON parser is skipped for this path. The signature is an HMAC-SHA256 hex digest of the exact raw bytes, compared in constant time
+        against `RAZORPAY_WEBHOOK_SECRET`. No JSON parser may sit in front of this route (including a proxy or middleware that re-serialises the body), or the bytes change
+        and every signature fails.
+
+        Once the signature is valid the route answers 200 so Razorpay does not retry forever; what it did is in the body. Events handled: `payment.captured` and `order.paid`.
+        Redeliveries are detected by `(provider, event_id)` in `payment_events`. A payment whose currency or amount in subunits differs from the stored purchase by even one unit
+        does not unlock anything (`mismatch: true`). Any other event is acknowledged with `ignored`.
+        A request whose `Content-Type` is not `application/json` is not parsed and answers 401. The request body is a Razorpay event; its shape is Razorpay's and is not documented here.
+      security:
+        - razorpayWebhookSignature: []
+      x-source: backend/server.js:899
+      requestBody:
+        required: true
+        description: The raw Razorpay event JSON, byte for byte.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: 'Accepted. The flags are mutually exclusive: `ignored` (the event name), `duplicate`, `unknown_order`, `mismatch`, or none (processed).'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/WebhookAck'}
+        '400':
+          description: 'The body is not valid JSON. The body is `{ "ok": false }`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: false}
+        '401':
+          description: The signature is missing or does not match.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '503':
+          description: '`RAZORPAY_WEBHOOK_SECRET` is not set. The body is `{ "ok": false }`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: false}
+  /api/payments/mor/webhook:
+    post:
+      operationId: merchantOfRecordWebhook
+      tags: [Webhooks]
+      summary: Merchant of Record (Dodo Payments) webhook
+      description: |
+        Verified over the exact raw body with the Standard Webhooks scheme: the `webhook-id`, `webhook-timestamp` and `webhook-signature` headers, with a five minute tolerance
+        on the timestamp, against `DODO_WEBHOOK_KEY`. The route has its own raw body parser (1 mb) and the global JSON parser is skipped for this path.
+        No JSON parser may sit in front of this route.
+
+        Once the signature is valid the route answers 200. De-duplicated by the `webhook-id` header. It can only confirm the quote's total: the same currency and the same amount in the
+        smallest unit, or nothing unlocks (`mismatch: true`). Only `payment.succeeded` settles a purchase; `payment.failed` and `refund.*` are recorded and answered with `noted`.
+        A paid event without a usable purchase id in its metadata is recorded as unmatched (`unmatched: true`) and is settled later by the buyer's return (`POST /api/research/access`).
+        A request whose `Content-Type` is not `application/json` is not parsed and answers 401. The request body is a Dodo event; its shape is Dodo's and is not documented here.
+      security:
+        - morWebhookSignature: []
+      x-source: backend/server.js:944
+      parameters:
+        - name: webhook-id
+          in: header
+          required: true
+          schema: {type: string}
+        - name: webhook-timestamp
+          in: header
+          required: true
+          description: Unix time in seconds.
+          schema: {type: string}
+      requestBody:
+        required: true
+        description: The raw Dodo event JSON, byte for byte.
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: 'Accepted. Flags: `ignored` (the event type), `duplicate`, `noted` (the event type), `unmatched`, `unknown_purchase`, `mismatch`, or none (processed).'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/WebhookAck'}
+        '400':
+          description: 'The body is not valid JSON. The body is `{ "ok": false }`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: false}
+        '401':
+          description: The signature headers are missing, stale or do not match.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '503':
+          description: '`DODO_WEBHOOK_KEY` is not set. The body is `{ "ok": false }`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: false}
+  /api/payments/webhook:
+    post:
+      operationId: genericPaymentWebhook
+      tags: [Webhooks]
+      summary: Generic signed payment webhook (non-Razorpay provider)
+      description: |
+        The route has its own raw body parser (1 mb) and the global JSON parser is skipped for this path. The signature is an HMAC-SHA256 hex digest of the exact raw bytes, sent in
+        `x-sk-signature`, compared in constant time against `PAYMENT_WEBHOOK_SECRET`. No JSON parser may sit in front of this route.
+        `x-sk-provider` names the provider (default `unknown`) and is stored as the purchase's provider.
+
+        Unlike the other two webhooks, the event is logged before the signature is judged, so a rejected signature leaves an `ignored` row as an audit trail, and the order of answers is:
+        503 (no secret), 400 (not JSON, or no `id`), 200 `duplicate` (the `(provider, id)` pair was seen), 401 (bad signature), 200 `ignored` (type other than `payment.succeeded`),
+        then settlement.
+
+        A `payment.succeeded` event must carry `data.reportRef` (a report reference), `data.purchaseId` (a UUID) and `data.amount` (a number not below the stored purchase amount).
+        Anything else, including an unknown purchase type, answers 400 "Could not process payment event".
+        Nothing in the frontend calls this route. Which provider uses it is not stated in the code; `.env.example` says it is "only for a non-Razorpay provider".
+
+        Known defect observed while writing this contract (not fixed here): the handler is an `async` function with no error handling around the signature step.
+        If the request's `Content-Type` is not `application/json`, `express.raw` leaves the body unparsed, `crypto.createHmac(...).update(req.body)` throws a TypeError,
+        Express 4 does not catch it, and on Node 23 the whole server process exited (verified locally with `PAYMENT_WEBHOOK_SECRET` set).
+        The Razorpay and merchant webhooks answer 401 in the same situation. Providers should send `application/json`.
+      security:
+        - genericWebhookSignature: []
+      x-source: backend/server.js:1317
+      parameters:
+        - name: x-sk-provider
+          in: header
+          required: false
+          schema: {type: string}
+      requestBody:
+        required: true
+        description: The raw event JSON, byte for byte.
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, type]
+              properties:
+                id: {type: string, description: Event id. Used for replay protection.}
+                type: {type: string, description: 'Only `payment.succeeded` is acted on.'}
+                data:
+                  type: object
+                  properties:
+                    reportRef: {$ref: '#/components/schemas/ReportRef'}
+                    purchaseId: {type: string, format: uuid}
+                    amount: {type: number}
+      responses:
+        '200':
+          description: 'Accepted: processed, `duplicate: true`, or `ignored` (the event type).'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/WebhookAck'}
+        '400':
+          description: '"Malformed payload", "Missing event id", "Amount does not match report price" or "Could not process payment event".'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401':
+          description: '"Invalid signature"'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '500':
+          description: '"Event log failed"'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: '`PAYMENT_WEBHOOK_SECRET` is not set. The body is `{ "ok": false }`.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: false}
+  /robots.txt:
+    get:
+      operationId: getRobotsTxt
+      tags: [SEO]
+      summary: robots.txt
+      description: |
+        Allows `/` and disallows `/r/`, `/api/`, `/admin`, `/start` and `/investigate`. Adds a `Sitemap:` line when `PUBLIC_BASE_URL` (or `SITE_URL`) is set.
+        Cached for one hour.
+      security: []
+      x-source: backend/server.js:103
+      responses:
+        '200':
+          description: Plain text.
+          content:
+            text/plain:
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /sitemap.xml:
+    get:
+      operationId: getSitemapXml
+      tags: [SEO]
+      summary: sitemap.xml
+      description: |
+        Lists `/`, the static pages (about, contact, corrections, delivery, evidence, methodology, pricing, privacy, refunds, terms), `/guide`, `/guide/pdf`, `/guide/card.pdf`
+        and `/samples/celeste`, `/samples/london`, `/samples/dubai`, all under `PUBLIC_BASE_URL` (or `SITE_URL`). The static pages are not served by this backend; the sitemap assumes
+        they live under the same origin. Cached for one hour.
+      security: []
+      x-source: backend/server.js:109
+      responses:
+        '200':
+          description: XML.
+          content:
+            application/xml:
+              schema: {type: string}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: 'Plain text "Set PUBLIC_BASE_URL to publish a sitemap." when neither variable is set.'
+          content:
+            text/plain:
+              schema: {type: string}
+  /api/admin/stats:
+    get:
+      operationId: adminGetStats
+      tags: [Admin]
+      summary: Counts of paid purchases, pending checkouts, open disputes and pending replies
+      description: The success body has no `ok` field. Needs the database.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1520
+      responses:
+        '200':
+          description: The counts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [paidPurchases, pendingCheckouts, openDisputes, pendingResponses]
+                properties:
+                  paidPurchases: {type: integer}
+                  pendingCheckouts: {type: integer}
+                  openDisputes: {type: integer}
+                  pendingResponses: {type: integer}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '500':
+          description: '"Could not load stats." (for example when no database is configured)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/analytics:
+    get:
+      operationId: adminGetAnalytics
+      tags: [Admin]
+      summary: Dashboard numbers aggregated from raw analytics events
+      description: |
+        `days` is clamped to 1 to 400 (default 30). Reads at most 250000 events and sets `truncated` when it hit that limit. Not cached.
+        Shape not fully documented: the fields below were seen on a running server with no data; their element shapes come from `aggregate()` in backend/engine/analytics.js.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1103
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema: {type: integer, minimum: 1, maximum: 400, default: 30}
+      responses:
+        '200':
+          description: The aggregate.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, days, from, to, truncated, totals, stored]
+                properties:
+                  ok: {type: boolean, const: true}
+                  days: {type: integer}
+                  from: {type: string, description: 'Date, YYYY-MM-DD.'}
+                  to: {type: string, description: 'Date, YYYY-MM-DD.'}
+                  truncated: {type: boolean}
+                  totals:
+                    type: object
+                    description: 'Counters: visitors, page_views, searches, report_opens, unlock_clicks, checkouts_started, purchases, pdf_saves, whatsapp_shares, guide_opens, guide_downloads, guide_shares, document_checks, access_recovered, and `revenue` (an array, element shape not documented).'
+                    additionalProperties: true
+                  funnel:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        label: {type: string}
+                        count: {type: integer}
+                        ofPrevious: {type: [number, 'null']}
+                  daily: {type: array, items: {type: object, additionalProperties: true}}
+                  channels: {type: array, items: {}}
+                  referrers: {type: array, items: {}}
+                  campaigns: {type: array, items: {}}
+                  countries: {type: array, items: {}}
+                  devices: {type: array, items: {}}
+                  markets: {type: array, items: {}}
+                  top_searches: {type: array, items: {}}
+                  search_outcomes: {type: array, items: {}}
+                  country_funnel: {type: array, items: {}}
+                  languages: {type: array, items: {}}
+                  stored: {type: boolean, description: Whether events are persisted (a database is configured).}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/costs:
+    get:
+      operationId: adminGetCosts
+      tags: [Admin]
+      summary: What the AI is costing, today and per report
+      description: Reads the in-memory job list (the 25 most recently updated reports). Shape of `pdf` is the PDF queue state.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:853
+      responses:
+        '200':
+          description: The cost summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, today, limits, reports, pdf]
+                properties:
+                  ok: {type: boolean, const: true}
+                  today:
+                    type: object
+                    properties:
+                      date: {type: string}
+                      usd: {type: number}
+                      byMarket: {type: object, additionalProperties: {type: number}}
+                  limits:
+                    type: object
+                    properties:
+                      alertUsd: {type: number}
+                      maxUsd: {type: number}
+                      paused: {type: boolean}
+                      capShare: {type: number}
+                      dailyCap: {type: number}
+                      marketCap: {type: number}
+                      preview:
+                        type: object
+                        properties:
+                          panel: {type: integer}
+                          searches: {type: integer}
+                          fetches: {type: integer}
+                  perPaidReport: {type: [number, 'null']}
+                  reports:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ref: {type: string}
+                        market: {type: [string, 'null']}
+                        status: {type: string, description: 'Job status. Values seen in the code: sweeping, preview, completing, done, failed, interrupted.'}
+                        paid: {type: boolean}
+                        costUsd: {type: number}
+                        capUsd: {type: [number, 'null']}
+                  pdf:
+                    type: object
+                    properties:
+                      active: {type: integer}
+                      waiting: {type: integer}
+                      limit: {type: integer}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/delivery:
+    get:
+      operationId: adminGetDelivery
+      tags: [Admin]
+      summary: Report delivery status
+      description: Not cached. `recent` holds up to the last 50 delivery log entries; their shape is not documented.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:864
+      responses:
+        '200':
+          description: Delivery providers and recent attempts.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, email, whatsapp, recent, pdf]
+                properties:
+                  ok: {type: boolean, const: true}
+                  email: {type: [string, 'null'], description: 'The configured e-mail provider, or null.'}
+                  whatsapp: {type: boolean}
+                  recent: {type: array, items: {type: object, additionalProperties: true}}
+                  pdf: {type: boolean, description: Whether PDF rendering is available.}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/engines:
+    get:
+      operationId: adminGetEngines
+      tags: [Admin]
+      summary: Which AI engine serves each agent, in what order, and what each did
+      description: Never shows a key. Not cached. Shape not fully documented; see `status()` in backend/engines/index.js.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:866
+      responses:
+        '200':
+          description: The engine status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, roles, engines]
+                properties:
+                  ok: {type: boolean, const: true}
+                  roles:
+                    type: object
+                    description: 'One entry per agent (research, adviser, documents, translate, verify), each with role, op, gated, routing, candidates and excluded.'
+                    additionalProperties: {type: object, additionalProperties: true}
+                  engines:
+                    type: object
+                    description: 'Per engine id: label, configured, jurisdiction, data, priceVerified.'
+                    additionalProperties: {type: object, additionalProperties: true}
+                  usage: {description: Usage meter snapshot. Shape not documented.}
+                  pricesChecked: {type: string}
+                  benchmarkAt: {type: [string, 'null']}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/tax:
+    get:
+      operationId: adminGetTax
+      tags: [Admin]
+      summary: Tax exposure per country
+      description: |
+        Twelve-month sales per country against its registration threshold, and which countries sell and why not. Not cached.
+        Shape not fully documented: the element shape of `progress` and `off` comes from backend/pricing/ledger.js and backend/pricing/data.js.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:872
+      responses:
+        '200':
+          description: The tax summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, priceBookVersion, progress, onSale, off]
+                properties:
+                  ok: {type: boolean, const: true}
+                  priceBookVersion: {type: string}
+                  progress: {type: array, items: {type: object, additionalProperties: true}}
+                  onSale: {type: array, items: {type: string}, description: ISO codes of countries on sale.}
+                  off: {type: array, items: {type: object, additionalProperties: true}, description: 'Countries not on sale, with iso, name and the sale status.'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/refunds:
+    post:
+      operationId: adminRefundPurchase
+      tags: [Admin]
+      summary: Refund a purchase, fully or in part
+      description: |
+        The refund is in the purchase's original currency and amount. Only a paid (or partly refunded) purchase with a provider payment id can be refunded.
+        Calls the provider, records the refund, reverses tax in proportion and writes an audit row. Needs the database.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:479
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [purchaseId]
+              properties:
+                purchaseId: {type: string, format: uuid}
+                amount: {type: number, description: Major units of the purchase currency. Omitted means everything still refundable.}
+                reason: {type: string, description: Truncated to 200 characters.}
+      responses:
+        '200':
+          description: The refund was made.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, refundId, amount, currency, taxReversed, remaining, full]
+                properties:
+                  ok: {type: boolean, const: true}
+                  refundId: {type: string, description: The provider's refund reference.}
+                  amount: {type: number}
+                  currency: {type: string}
+                  taxReversed: {type: number}
+                  remaining: {type: number}
+                  full: {type: boolean}
+        '400':
+          description: '"Invalid purchase id."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '409':
+          description: A refund rule refused it. `code` is `not_found`, `not_paid`, `already_refunded`, `exceeds` or `no_provider`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, code, error]
+                properties:
+                  ok: {type: boolean, const: false}
+                  code: {type: string, enum: [not_found, not_paid, already_refunded, exceeds, no_provider]}
+                  error: {type: string}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '500':
+          description: Unexpected failure, including a provider error that is not a refund rule (generic body).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/purge:
+    post:
+      operationId: adminPurge
+      tags: [Admin]
+      summary: Remove stored research by url or host (legal takedown)
+      description: Reported as purged only once storage has confirmed the deletion too. If both `url` and `host` are given, `url` is used.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:296
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url: {type: string}
+                host: {type: string}
+      responses:
+        '200':
+          description: Purged. The two counts are the number of records removed from memory and from storage.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, purged, purgedFromStorage]
+                properties:
+                  ok: {type: boolean, const: true}
+                  purged: {type: integer}
+                  purgedFromStorage: {type: integer}
+        '400':
+          description: '"Provide a url or a host."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/reports:
+    get:
+      operationId: adminListReports
+      tags: [Admin]
+      summary: The 100 most recent reports
+      description: Not cached.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1088
+      responses:
+        '200':
+          description: The list.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, reports]
+                properties:
+                  ok: {type: boolean, const: true}
+                  reports:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ref: {type: string}
+                        title: {type: string}
+                        place: {type: string}
+                        market: {type: string}
+                        developer: {type: string}
+                        checkedAt: {type: string, format: date-time}
+                        findings: {type: integer}
+                        disputes: {type: integer}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/reports/{ref}:
+    get:
+      operationId: adminGetReport
+      tags: [Admin]
+      summary: Any report in full, never the paywalled view
+      description: Not cached.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1092
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+      responses:
+        '200':
+          description: The stored report.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, brief]
+                properties:
+                  ok: {type: boolean, const: true}
+                  brief: {$ref: '#/components/schemas/Brief'}
+        '400':
+          description: '"Not a valid report reference."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"No such report is held."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/source-health:
+    get:
+      operationId: adminGetSourceHealth
+      tags: [Admin]
+      summary: What the nightly check believes about every official register
+      description: Lists the markets that have a register connector.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1044
+      responses:
+        '200':
+          description: One entry per market with a register.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, markets]
+                properties:
+                  ok: {type: boolean, const: true}
+                  markets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        market: {type: string}
+                        label: {type: string}
+                        state: {type: string, description: 'Values seen in the code: not_checked, healthy, degraded, down, unconfirmed, skipped.'}
+                        reason: {type: [string, 'null'], description: 'Values seen in the code: blocked, failing.'}
+                        detail: {type: [string, 'null']}
+                        consecutiveFailures: {type: integer}
+                        lastOkAt: {type: [string, 'null']}
+                        checkedAt: {type: [string, 'null']}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/source-health/run:
+    post:
+      operationId: adminRunSourceHealth
+      tags: [Admin]
+      summary: Run the register health check now
+      description: Makes live requests to the registers. No request body is read. Never two runs at once.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1052
+      responses:
+        '200':
+          description: The results. Each entry is `market`, `label` and the market's health record; the record's shape is not fully documented.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, results]
+                properties:
+                  ok: {type: boolean, const: true}
+                  results:
+                    type: array
+                    items: {type: object, additionalProperties: true}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '409':
+          description: '"A health check is already running."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/disputes:
+    get:
+      operationId: adminListDisputes
+      tags: [Admin]
+      summary: Open disputes, newest first
+      description: 'Returns a bare array of `disputes` rows (`SELECT *`). The columns in backend/schema.sql are listed; with no database the in-memory store returns the same fields it stored.'
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1542
+      responses:
+        '200':
+          description: The open disputes.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: {type: string, format: uuid}
+                    contact: {type: [string, 'null']}
+                    note: {type: string}
+                    report_ref: {type: [string, 'null']}
+                    previous_value: {type: [string, 'null']}
+                    corrected_value: {type: [string, 'null']}
+                    status: {type: string}
+                    submitted_at: {type: string, format: date-time}
+                    resolved_at: {type: [string, 'null'], format: date-time}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/disputes/{id}/resolve:
+    post:
+      operationId: adminResolveDispute
+      tags: [Admin]
+      summary: Mark a dispute resolved
+      description: Answers 200 even if no dispute has that id.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1544
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      responses:
+        '200':
+          description: Resolved.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ok'}
+        '400':
+          description: '"Invalid identifier." (the id is not a UUID of version 1 to 5)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/responses:
+    get:
+      operationId: adminListPendingResponses
+      tags: [Admin]
+      summary: Pending developer replies with what a reviewer needs
+      description: |
+        Returns a bare array of `developer_responses` rows (`SELECT *`, status pending, newest first) with four fields added: `sender_check`, `developer_site`, `finding_match` and `report_available`.
+        Unlike the public read, this includes `contact_email`.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1548
+      responses:
+        '200':
+          description: The pending replies.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: {type: string, format: uuid}
+                    report_ref: {type: string}
+                    finding_text: {type: string}
+                    response_text: {type: string}
+                    contact_email: {type: string}
+                    status: {type: string}
+                    submitted_at: {type: string, format: date-time}
+                    reviewed_at: {type: [string, 'null'], format: date-time}
+                    sender_check: {type: string, enum: [match, no_match, unknown], description: Whether the sender's e-mail domain matches the developer's own website.}
+                    developer_site: {type: [string, 'null']}
+                    finding_match: {type: integer, description: 'Index of the finding the reply quotes, or -1 when it matches none.'}
+                    report_available: {type: boolean}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/responses/{id}/approve:
+    post:
+      operationId: adminApproveResponse
+      tags: [Admin]
+      summary: Approve a developer reply for publication
+      description: Sets the reply's status to approved. Answers 200 even if no reply has that id.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1555
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      responses:
+        '200':
+          description: Approved.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ok'}
+        '400':
+          description: '"Invalid identifier."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/responses/{id}/reject:
+    post:
+      operationId: adminRejectResponse
+      tags: [Admin]
+      summary: Reject a developer reply
+      description: Sets the reply's status to rejected. Answers 200 even if no reply has that id.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1557
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      responses:
+        '200':
+          description: Rejected.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Ok'}
+        '400':
+          description: '"Invalid identifier."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/held:
+    get:
+      operationId: adminListHeldReports
+      tags: [Admin]
+      summary: Reports held for a person to check adverse findings
+      description: Looks at the 300 most recent reports. `markets` is the list of markets in `ADVERSE_HOLD_MARKETS`.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1560
+      responses:
+        '200':
+          description: The held reports.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, markets, held]
+                properties:
+                  ok: {type: boolean, const: true}
+                  markets: {type: array, items: {type: string}}
+                  held:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        ref: {type: string}
+                        project: {type: [string, 'null']}
+                        developer: {type: [string, 'null']}
+                        market: {type: string}
+                        adverse:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              index: {type: integer}
+                              claim: {type: string}
+                              topic: {type: string}
+                              sources: {type: array, items: {type: object, additionalProperties: true}, description: Up to five sources.}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/held/{ref}/approve:
+    post:
+      operationId: adminApproveHeldReport
+      tags: [Admin]
+      summary: Release a held report after a person has checked it
+      description: Marks the report's review as approved, which lifts the hold on the findings and on unlocking.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1570
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+      responses:
+        '200':
+          description: Released.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, ref, review]
+                properties:
+                  ok: {type: boolean, const: true}
+                  ref: {$ref: '#/components/schemas/ReportRef'}
+                  review:
+                    type: object
+                    description: The report's review record. Contains `status` and `adverse`; other fields are not documented.
+                    additionalProperties: true
+        '400':
+          description: '"Unknown report reference."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"No such report."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/investigate:
+    post:
+      operationId: adminStartInvestigation
+      tags: [Admin]
+      summary: Start an admin pilot investigation
+      description: |
+        The admin-only investigator: a panel of AI engines investigates a property and produces the report, with progress streamed as Server-Sent Events.
+        Jobs live in memory for a day. This route has its own JSON parser (20 kb). At most `INVESTIGATE_CONCURRENCY` (default 2) run at once.
+        It is separate from the buyer flow (`POST /api/investigate`) and does not create a report reference.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:509
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: {type: string, minLength: 3, maxLength: 200}
+                location: {type: string, maxLength: 120}
+                market: {type: string, maxLength: 60}
+                languages: {type: array, maxItems: 4, items: {type: string}}
+      responses:
+        '202':
+          description: Started. The two paths are relative to the API origin.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, id, events, report]
+                properties:
+                  ok: {type: boolean, const: true}
+                  id: {type: string, description: Random job id (12 base64url characters).}
+                  events: {type: string, examples: [/api/admin/investigate/abc/events]}
+                  report: {type: string, examples: [/api/admin/investigate/abc/report]}
+        '400':
+          description: '"Name the property to investigate."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429':
+          description: Either the admin rate limit or "Investigations are already running. Try again when one finishes."
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/investigate/{id}:
+    get:
+      operationId: adminGetInvestigation
+      tags: [Admin]
+      summary: State of an admin pilot investigation
+      description: Not cached. `events` and `dossier` shapes come from backend/engine/investigator.js and are not documented here.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:526
+      parameters:
+        - {$ref: '#/components/parameters/JobIdPath'}
+      responses:
+        '200':
+          description: The job.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, id, query, status, error, events, dossier]
+                properties:
+                  ok: {type: boolean, const: true}
+                  id: {type: string}
+                  query: {type: string}
+                  status: {type: string, enum: [running, done, failed]}
+                  error: {type: string}
+                  events: {type: array, items: {type: object, additionalProperties: true}}
+                  dossier: {type: [object, 'null'], additionalProperties: true}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"No such investigation."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/investigate/{id}/events:
+    get:
+      operationId: adminStreamInvestigationEvents
+      tags: [Admin]
+      summary: Progress of an admin pilot investigation (Server-Sent Events)
+      description: Replays held events, then streams until the job ends. Includes an `update` event carrying the current dossier when one exists.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:531
+      parameters:
+        - {$ref: '#/components/parameters/JobIdPath'}
+      responses:
+        '200':
+          description: An event stream.
+          content:
+            text/event-stream:
+              schema: {type: string}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"No such investigation."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/investigate/{id}/report:
+    get:
+      operationId: adminGetInvestigationReport
+      tags: [Admin]
+      summary: The dossier of an admin pilot investigation as HTML
+      description: Not cached.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:540
+      parameters:
+        - {$ref: '#/components/parameters/JobIdPath'}
+      responses:
+        '200':
+          description: HTML.
+          content:
+            text/html:
+              schema: {type: string}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: '"No report yet." (no such job, or no dossier yet)'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/resolve:
+    x-source: backend/server.js:1223
+    x-registration: app.all
+    get:
+      operationId: retiredResolveGet
+      tags: [Retired]
+      summary: Retired endpoint (GET)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    post:
+      operationId: retiredResolvePost
+      tags: [Retired]
+      summary: Retired endpoint (POST)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    put:
+      operationId: retiredResolvePut
+      tags: [Retired]
+      summary: Retired endpoint (PUT)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    patch:
+      operationId: retiredResolvePatch
+      tags: [Retired]
+      summary: Retired endpoint (PATCH)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    delete:
+      operationId: retiredResolveDelete
+      tags: [Retired]
+      summary: Retired endpoint (DELETE)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+  /api/report/{type}/{id}:
+    x-source: backend/server.js:1223
+    x-registration: app.all
+    parameters:
+      - {name: type, in: path, required: true, schema: {type: string}}
+      - {name: id, in: path, required: true, schema: {type: string}}
+    get:
+      operationId: retiredReportGet
+      tags: [Retired]
+      summary: Retired endpoint (GET)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    post:
+      operationId: retiredReportPost
+      tags: [Retired]
+      summary: Retired endpoint (POST)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    put:
+      operationId: retiredReportPut
+      tags: [Retired]
+      summary: Retired endpoint (PUT)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    patch:
+      operationId: retiredReportPatch
+      tags: [Retired]
+      summary: Retired endpoint (PATCH)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    delete:
+      operationId: retiredReportDelete
+      tags: [Retired]
+      summary: Retired endpoint (DELETE)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+  /api/send-otp:
+    x-source: backend/server.js:1223
+    x-registration: app.all
+    get:
+      operationId: retiredSendOtpGet
+      tags: [Retired]
+      summary: Retired endpoint (GET)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    post:
+      operationId: retiredSendOtpPost
+      tags: [Retired]
+      summary: Retired endpoint (POST)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    put:
+      operationId: retiredSendOtpPut
+      tags: [Retired]
+      summary: Retired endpoint (PUT)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    patch:
+      operationId: retiredSendOtpPatch
+      tags: [Retired]
+      summary: Retired endpoint (PATCH)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    delete:
+      operationId: retiredSendOtpDelete
+      tags: [Retired]
+      summary: Retired endpoint (DELETE)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+  /api/verify-otp:
+    x-source: backend/server.js:1223
+    x-registration: app.all
+    get:
+      operationId: retiredVerifyOtpGet
+      tags: [Retired]
+      summary: Retired endpoint (GET)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    post:
+      operationId: retiredVerifyOtpPost
+      tags: [Retired]
+      summary: Retired endpoint (POST)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    put:
+      operationId: retiredVerifyOtpPut
+      tags: [Retired]
+      summary: Retired endpoint (PUT)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    patch:
+      operationId: retiredVerifyOtpPatch
+      tags: [Retired]
+      summary: Retired endpoint (PATCH)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    delete:
+      operationId: retiredVerifyOtpDelete
+      tags: [Retired]
+      summary: Retired endpoint (DELETE)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+  /api/checkout:
+    x-source: backend/server.js:1223
+    x-registration: app.all
+    get:
+      operationId: retiredCheckoutGet
+      tags: [Retired]
+      summary: Retired endpoint (GET)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    post:
+      operationId: retiredCheckoutPost
+      tags: [Retired]
+      summary: Retired endpoint (POST)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    put:
+      operationId: retiredCheckoutPut
+      tags: [Retired]
+      summary: Retired endpoint (PUT)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    patch:
+      operationId: retiredCheckoutPatch
+      tags: [Retired]
+      summary: Retired endpoint (PATCH)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    delete:
+      operationId: retiredCheckoutDelete
+      tags: [Retired]
+      summary: Retired endpoint (DELETE)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+  /api/report-checkout:
+    x-source: backend/server.js:1223
+    x-registration: app.all
+    get:
+      operationId: retiredReportCheckoutGet
+      tags: [Retired]
+      summary: Retired endpoint (GET)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    post:
+      operationId: retiredReportCheckoutPost
+      tags: [Retired]
+      summary: Retired endpoint (POST)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    put:
+      operationId: retiredReportCheckoutPut
+      tags: [Retired]
+      summary: Retired endpoint (PUT)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    patch:
+      operationId: retiredReportCheckoutPatch
+      tags: [Retired]
+      summary: Retired endpoint (PATCH)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+    delete:
+      operationId: retiredReportCheckoutDelete
+      tags: [Retired]
+      summary: Retired endpoint (DELETE)
+      description: Registered with `app.all`, so every method answers 410. The old OTP, lead-capture and client-priced checkout system was retired; 410 rather than 404 so a stale cached copy of the site gets an explicit answer.
+      security: []
+      responses:
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '410': {$ref: '#/components/responses/Retired'}
+components:
+  securitySchemes:
+    accessToken:
+      type: apiKey
+      in: header
+      name: X-Report-Access
+      description: |
+        A signed access token for one report: `payload.signature`, HMAC-SHA256 with `ACCESS_TOKEN_SECRET`, tied to one report reference, valid 30 days.
+        Issued by `POST /api/research/razorpay/verify`, `POST /api/research/access` and `POST /api/research/recover`, and embedded in the link delivered to the buyer.
+        It is optional on the routes that accept it: without a valid token the report is the free preview.
+    accessTokenQuery:
+      type: apiKey
+      in: query
+      name: t
+      description: The same access token, passed as the `t` query parameter. Used by the server-rendered report pages and the event stream.
+    adminBasic:
+      type: http
+      scheme: basic
+      description: |
+        HTTP Basic against `ADMIN_USERNAME` and `ADMIN_PASSWORD` (compared in constant time). If either variable is unset every admin route answers 503.
+        Every route under `/api/admin` is also behind `adminLimiter`: 20 requests per 15 minutes per IP, counting successful requests.
+    razorpayWebhookSignature:
+      type: apiKey
+      in: header
+      name: X-Razorpay-Signature
+      description: HMAC-SHA256 hex digest of the exact raw request body, keyed with `RAZORPAY_WEBHOOK_SECRET`.
+    morWebhookSignature:
+      type: apiKey
+      in: header
+      name: webhook-signature
+      description: |
+        Standard Webhooks signature, `v1,<base64 HMAC-SHA256>` over `{webhook-id}.{webhook-timestamp}.{raw body}`, keyed with `DODO_WEBHOOK_KEY`.
+        Space-separated lists of signatures are accepted. The `webhook-id` and `webhook-timestamp` headers are also required.
+    genericWebhookSignature:
+      type: apiKey
+      in: header
+      name: X-SK-Signature
+      description: HMAC-SHA256 hex digest of the exact raw request body, keyed with `PAYMENT_WEBHOOK_SECRET`.
+  parameters:
+    RefPath:
+      name: ref
+      in: path
+      required: true
+      description: Report reference.
+      schema: {$ref: '#/components/schemas/ReportRef'}
+    XReportAccess:
+      name: X-Report-Access
+      in: header
+      required: false
+      description: Access token for the report. Without a valid one the report is the preview when payments are active.
+      schema: {type: string}
+    LangQuery:
+      name: lang
+      in: query
+      required: false
+      description: Reader language code from `GET /api/languages`. Unknown or disabled codes fall back to English.
+      schema: {type: string}
+    CountryQuery:
+      name: country
+      in: query
+      required: false
+      description: ISO 3166 alpha-2 code of the buyer's selected country. Decides currency, tax and payment route, never the dollar value of the fee.
+      schema: {type: string, pattern: '^[A-Za-z]{2}$'}
+    SessionQuery:
+      name: session
+      in: query
+      required: false
+      description: Opaque browser session id used to group quotes.
+      schema: {type: string}
+    TokenQuery:
+      name: t
+      in: query
+      required: false
+      description: Access token for the report.
+      schema: {type: string}
+    SampleId:
+      name: id
+      in: path
+      required: true
+      description: Sample id. The ids shipped in this repository are celeste, dubai and london.
+      schema: {type: string, pattern: '^[a-z0-9-]{2,40}$'}
+    UuidPath:
+      name: id
+      in: path
+      required: true
+      description: A UUID of version 1 to 5.
+      schema: {type: string, format: uuid}
+    JobIdPath:
+      name: id
+      in: path
+      required: true
+      description: Job id returned by `POST /api/admin/investigate`.
+      schema: {type: string}
+  responses:
+    OriginNotAllowed:
+      description: 'The request carried an `Origin` header that is not in `ALLOWED_ORIGINS`. The body is `{ "ok": false, "error": "Origin not allowed" }`. Applies to every route.'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    RateLimitedJson:
+      description: Rate limit reached. The limiter's own JSON message is returned.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    RateLimitedText:
+      description: 'Rate limit reached. This limiter has no custom message, so the body is the plain text "Too many requests, please try again later." with `RateLimit-*` and `Retry-After` headers.'
+      content:
+        text/html:
+          schema: {type: string}
+    PaymentsDisabled:
+      description: '"Payments are not enabled yet."'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    AdminUnauthorized:
+      description: 'Missing or wrong Basic credentials: "Authentication required" or "Invalid credentials". The response carries `WWW-Authenticate: Basic realm="ShelterKart Admin"`.'
+      headers:
+        WWW-Authenticate:
+          schema: {type: string, examples: ['Basic realm="ShelterKart Admin"']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    AdminNotConfigured:
+      description: '"Admin access is not configured." (`ADMIN_USERNAME` or `ADMIN_PASSWORD` is unset)'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Retired:
+      description: '"This endpoint has been retired."'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    Error:
+      type: object
+      required: [ok, error]
+      properties:
+        ok: {type: boolean, const: false}
+        error: {type: string}
+        code: {type: string}
+    Ok:
+      type: object
+      required: [ok]
+      properties:
+        ok: {type: boolean, const: true}
+    ReportRef:
+      type: string
+      pattern: '^SK-[0-9A-F]{12}$'
+      examples: [SK-2AADD4DEE5DD]
+    Market:
+      type: string
+      description: A research market code (backend/engine/markets.js).
+      enum: [uk, fr, 'no', sg, ie, tw, au, fi, cz, ee, lv, pl, es, lt, dk, ch, be, se, ae, in, hk, nz, ca, my, us, de, nl, pt, it, sa, za, br, mx, jp, th, ph]
+    Pow:
+      type: object
+      description: A solved proof-of-work challenge from `GET /api/research/challenge`.
+      required: [token, solution]
+      properties:
+        token: {type: string, maxLength: 400}
+        solution: {type: string, pattern: '^[0-9a-z]{1,16}$'}
+    ResearchRequest:
+      type: object
+      required: [query, market]
+      properties:
+        query: {type: string, minLength: 2, maxLength: 120, description: 'A property or developer name, a spelling variant, or a registration number.'}
+        location: {type: string, maxLength: 80}
+        market: {$ref: '#/components/schemas/Market'}
+        lang: {type: string, description: Reader language code.}
+        country: {type: string, description: 'Buyer''s selected country (ISO alpha-2), used for the price in `paywall`.'}
+        session: {type: string}
+        pow: {$ref: '#/components/schemas/Pow'}
+    Paywall:
+      type: object
+      required: [active]
+      description: |
+        `{ "active": false }` when payments are off. When active: the fee for this buyer, read in the buyer's currency. Nothing is stored or locked here; a quote is issued on unlock.
+      properties:
+        active: {type: boolean}
+        price: {type: number, description: The gross price in the buyer's currency.}
+        currency: {type: string}
+        depth: {type: string, enum: [gold, heavy, thin]}
+        depthLabel: {type: string}
+        basis:
+          type: object
+          description: 'How the fee was set: `kind` (`property` or `reference`) and, for `property`, the property value used. Shape not fully documented.'
+          additionalProperties: true
+        fee:
+          type: object
+          properties:
+            net: {type: number}
+            tax: {type: number}
+            taxName: {type: string}
+            taxRateBps: {type: integer}
+            taxInclusive: {type: boolean}
+        buyer:
+          type: object
+          description: 'country, source (billing, selected, network or default), currency, fallback, onSale, reason and wanted. Shape not fully documented.'
+          additionalProperties: true
+        priceBookVersion: {type: string}
+    Brief:
+      type: object
+      additionalProperties: true
+      description: |
+        A report. Shape not fully documented: it is large, its nested objects are produced by the research engine, the grounding gate and the adviser, and it differs by `kind`.
+
+        For a search report (no `kind`), `runResearch` builds: version, ref, query, location, market, marketLabel, depth, marketNote, checkedAt, project, registry, counts, findings, conflicts, gaps,
+        reading, questions, removed, searches, pages, notes, pipeline_status, responsible, disclaimer and protections. `cached` and `matchedAs` are added when served from memory, `credits` is
+        added by the credits layer, and `held` replaces adverse findings while a person checks them.
+
+        For an investigator report (`kind: dossier`) the stored record holds kind, ref, phase, query (prefixed `dossier:`), location, market, marketLabel, project, findings, conflicts, checkedAt, dossier, and contact when saved.
+
+        When the caller is not entitled, the brief is an allow-list preview: `locked: true`, at most 3 findings and 2 questions, empty `reading` and `pages`, `protectionsCount` instead of `protections`, and `lockedCounts`.
+        When entitled (or payments are off) `locked` is false. The preview is a projection of the search-report fields above, so an unpaid dossier report exposes only the fields in that projection.
+      properties:
+        ref: {$ref: '#/components/schemas/ReportRef'}
+        kind: {type: string, const: dossier}
+        query: {type: string}
+        location: {type: string}
+        market: {type: string}
+        marketLabel: {type: string}
+        checkedAt: {type: string, format: date-time}
+        locked: {type: boolean}
+        project: {type: object, additionalProperties: true}
+        findings: {type: array, items: {type: object, additionalProperties: true}}
+        conflicts: {type: array, items: {type: object, additionalProperties: true}}
+        questions: {type: array, items: {type: object, additionalProperties: true}}
+    BriefResponse:
+      type: object
+      required: [ok, brief, paywall]
+      properties:
+        ok: {type: boolean, const: true}
+        brief: {$ref: '#/components/schemas/Brief'}
+        paywall: {$ref: '#/components/schemas/Paywall'}
+    Quote:
+      type: object
+      description: The quote as the page needs it. The signature and the property value are never sent.
+      required: [id, ref, country, currency, net, tax, gross, expiresAt]
+      properties:
+        id: {type: string, pattern: '^q_[0-9a-f]{20}$'}
+        ref: {$ref: '#/components/schemas/ReportRef'}
+        country: {type: string}
+        countrySource: {type: string, description: 'billing, selected, network or default.'}
+        currency: {type: string}
+        net: {type: number}
+        tax: {type: number}
+        gross: {type: number, description: The total that is charged.}
+        taxName: {type: string}
+        taxRateBps: {type: integer}
+        taxInclusive: {type: boolean}
+        taxBy: {type: string, enum: [shelterkart, merchant_of_record]}
+        depthLabel: {type: string}
+        priceBookVersion: {type: string}
+        issuedAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+    CheckoutResponse:
+      type: object
+      required: [ok, purchaseId, amount, currency]
+      properties:
+        ok: {type: boolean, const: true}
+        purchaseId: {type: string, format: uuid}
+        amount: {type: number, description: The quote's gross total in major units.}
+        currency: {type: string}
+        quoteId: {type: string, description: Absent when a pending Razorpay purchase is returned for a retried idempotency key.}
+        razorpay:
+          type: object
+          description: Present when the provider is Razorpay. Open Razorpay Checkout with these values.
+          required: [keyId, orderId, amountSubunits]
+          properties:
+            keyId: {type: string}
+            orderId: {type: string}
+            amountSubunits: {type: integer}
+        mor:
+          type: object
+          description: Present when the provider is the Merchant of Record. Send the buyer to `checkoutUrl`; they return to `PUBLIC_BASE_URL/?sk_ref=<ref>&sk_purchase=<purchaseId>`.
+          required: [checkoutUrl]
+          properties:
+            checkoutUrl: {type: string, format: uri}
+    CheckoutError:
+      type: object
+      required: [ok]
+      properties:
+        ok: {type: boolean, const: false}
+        error: {type: string}
+        code:
+          type: string
+          description: 'quote_required, quote_unknown, quote_expired, quote_superseded, quote_used, quote_signature, billing_required, billing_country or not_on_sale.'
+        requote: {type: boolean, description: 'True when the page should fetch a fresh quote and show the price again.'}
+        reason: {type: string, description: 'Present with `not_on_sale`.'}
+        country: {type: string}
+        previous:
+          type: object
+          description: With `billing_country`, the quote the buyer was shown.
+          properties:
+            country: {type: string}
+            currency: {type: string}
+            gross: {type: number}
+        quote: {$ref: '#/components/schemas/Quote'}
+    TokenResponse:
+      type: object
+      required: [ok, token]
+      properties:
+        ok: {type: boolean, const: true}
+        token: {type: string, description: 'An access token for the report. Send it as `X-Report-Access` or as `t`.'}
+    WebhookAck:
+      type: object
+      required: [ok]
+      description: The acknowledgement. Which extra flag is present depends on what the handler did; see the operation.
+      properties:
+        ok: {type: boolean, const: true}
+        ignored: {type: string, description: The event name that is not acted on.}
+        duplicate: {type: boolean}
+        unknown_order: {type: boolean}
+        unknown_purchase: {type: boolean}
+        unmatched: {type: boolean}
+        mismatch: {type: boolean}
+        noted: {type: string}
