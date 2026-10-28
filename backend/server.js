@@ -83,7 +83,7 @@ app.use(cors({
    The document check needs a larger limit than 10 KB. */
 const OWN_BODY_PARSER = new Set(['/api/payments/webhook', '/api/payments/razorpay/webhook', '/api/payments/mor/webhook', '/api/research/document-check']);
 const jsonSmall = express.json({ limit: '10kb' });
-app.use((req, res, next) => OWN_BODY_PARSER.has(req.path) ? next() : jsonSmall(req, res, next));
+app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
@@ -1223,13 +1223,13 @@ const crypto = require('crypto');
 app.all(['/api/resolve', '/api/report/:type/:id', '/api/send-otp', '/api/verify-otp', '/api/checkout', '/api/report-checkout'],
   (req, res) => res.status(410).json({ ok: false, error: 'This endpoint has been retired.' }));
 
-app.post('/api/dispute', disputeLimiter, async (req, res) => {
+app.post('/api/dispute', disputeLimiter, ah(async (req, res) => {
   const { contact, note, reportRef } = req.body || {};
   if (!note || typeof note !== 'string') return res.status(400).json({ ok: false, error: 'Please describe what is wrong.' });
   if (note.length > 4000) return res.status(400).json({ ok: false, error: 'Please keep the description under 4,000 characters.' });
   try { await REVIEWS.addDispute({ contact: contact ? String(contact).slice(0, 200) : null, note, reportRef: REF_RE.test(String(reportRef || '')) ? reportRef : null }); res.json({ ok: true }); }
   catch (e) { console.error('[dispute] could not be saved:', e && e.message); res.status(500).json({ ok: false, error: 'Your report of an inaccuracy could not be saved. Please try again, or write to us.' }); }
-});
+}));
 
 // ============================================================
 // DEVELOPER RIGHT OF REPLY — Constitution rule 5. Free, unconditional,
@@ -1240,9 +1240,9 @@ app.post('/api/dispute', disputeLimiter, async (req, res) => {
 // ============================================================
 const replyLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 3, message: { ok:false, error:'Too many submissions. Please try again later.' } });
 
-app.post('/api/developer-response', replyLimiter, async (req, res) => {
+app.post('/api/developer-response', replyLimiter, ah(async (req, res) => {
   const { reportRef, findingText, responseText, contactEmail } = req.body || {};
-  if (!reportRef || !findingText || !responseText || !contactEmail) {
+  if ([reportRef, findingText, responseText, contactEmail].some(v => typeof v !== 'string') || !reportRef || !findingText || !responseText || !contactEmail) {
     return res.status(400).json({ ok: false, error: 'reportRef, findingText, responseText, and contactEmail are required.' });
   }
   if (String(responseText).length > 2000) return res.status(400).json({ ok: false, error: 'Response cannot exceed 2000 characters.' });
@@ -1259,10 +1259,10 @@ app.post('/api/developer-response', replyLimiter, async (req, res) => {
     console.error('[developer-response] could not be saved:', e && e.message);
     res.status(500).json({ ok: false, error: 'Your response could not be saved. Please try again in a moment.' });
   }
-});
+}));
 
 // Public: only replies a person has approved, never the sender's address. Says whether it came from the developer's own domain.
-app.get('/api/developer-response/:reportRef', async (req, res) => {
+app.get('/api/developer-response/:reportRef', ah(async (req, res) => {
   const ref = String(req.params.reportRef || '');
   if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Unknown report reference.' });
   try {
@@ -1273,7 +1273,7 @@ app.get('/api/developer-response/:reportRef', async (req, res) => {
     console.error('[developer-response] could not be read:', e && e.message);
     res.status(500).json({ ok: false, error: 'Replies could not be loaded right now.' });
   }
-});
+}));
 
 
 // ============================================================
@@ -1316,7 +1316,8 @@ class PaymentEventError extends Error {}
    BEFORE the global express.json() parser for this path. */
 app.post('/api/payments/webhook',
   express.raw({ type: 'application/json', limit: '1mb' }),
-  async (req, res) => {
+  ah(async (req, res) => {
+    if (!Buffer.isBuffer(req.body)) return res.status(415).json({ ok: false, error: 'Unsupported content type' });
     const provider = String(req.get('x-sk-provider') || 'unknown');
     const signature = req.get('x-sk-signature') || '';
     const secret = process.env.PAYMENT_WEBHOOK_SECRET;
@@ -1422,7 +1423,7 @@ app.post('/api/payments/webhook',
     } finally {
       client.release();
     }
-  }
+  })
 );
 
 
@@ -1517,7 +1518,7 @@ function requireUuid(req, res, next) {
   next();
 }
 
-app.get('/api/admin/stats', adminAuth, async (req, res) => {
+app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
   try {
     // "Purchases" means PAID: a pending checkout is not a sale. Leads were
     // only ever created by the retired OTP routes, so they are no longer shown.
@@ -1537,7 +1538,7 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     console.error(e);
     res.status(500).json({ ok: false, error: 'Could not load stats.' });
   }
-});
+}));
 
 app.get('/api/admin/disputes', adminAuth, ah(async (req, res) => { res.json(await REVIEWS.openDisputes()); }));
 
@@ -1579,6 +1580,8 @@ app.post('/api/admin/held/:ref/approve', adminAuth, ah(async (req, res) => {
 // routes, so their errors never reached it. Registered last, it covers
 // every route, and never leaks a stack trace or database text.
 app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') return res.status(400).json({ ok: false, error: 'Malformed JSON' });
+  if (err && err.type === 'entity.too.large') return res.status(413).json({ ok: false, error: 'Request body too large' });
   console.error(err);
   if (err && err.message === 'Origin not allowed') return res.status(403).json({ ok: false, error: 'Origin not allowed' });
   res.status(500).json({ ok: false, error: 'Internal server error' });

@@ -37,6 +37,9 @@ async function run(fetchImpl = globalThis.fetch, env = process.env) {
     const post = s => fetchImpl(base + '/api/payments/razorpay/webhook', { method: 'POST', headers: { 'content-type': 'application/json', 'x-razorpay-signature': s }, body });
     const bad = await post('0'.repeat(64)); ok('a webhook with a wrong signature is refused (401)', bad.status === 401, `status ${bad.status}`);
     const good = await post(sig); ok('a webhook signed over the exact raw bytes is accepted (200)', good.status === 200, `status ${good.status}`);
+    const wt = await fetchImpl(base + '/api/payments/webhook', { method: 'POST', headers: { 'content-type': 'text/plain', 'x-sk-signature': '0'.repeat(64) }, body: 'hello' }).catch(() => null);
+    const alive = await get('/api/health').catch(() => null);
+    ok('a webhook with a non-JSON content type is refused (415) and the server stays up', Boolean(wt) && wt.status === 415 && Boolean(alive) && alive.status === 200, `status ${wt && wt.status}, health ${alive && alive.status}`);
   }
   // 5b. bot protection: the challenge route issues a signed puzzle (production turns the guard on)
   const ch = await get('/api/research/challenge'); const cj = ch.status === 200 ? await ch.json() : {};
@@ -44,6 +47,11 @@ async function run(fetchImpl = globalThis.fetch, env = process.env) {
   // 6. the rate limiter is the real one: it reports its limits
   const q = await fetchImpl(base + '/api/research/quote', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ref: 'SK-000000000000' }) });
   ok('the rate limiter is active (RateLimit headers present)', q.headers.get('ratelimit-limit') || q.headers.get('ratelimit') || q.headers.get('ratelimit-policy'), `status ${q.status}`);
+  const dr = await fetchImpl(base + '/api/developer-response', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reportRef: 'SK-AAAAAAAAAAAA', findingText: 'x', responseText: { toString: 1 }, contactEmail: 'a@b.co' }) }).catch(() => null);
+  const drAlive = await get('/api/health').catch(() => null);
+  ok('a reply with an object instead of text is refused (400) and the server stays up', Boolean(dr) && dr.status === 400 && Boolean(drAlive) && drAlive.status === 200, `status ${dr && dr.status}, health ${drAlive && drAlive.status}`);
+  const mj = await fetchImpl(base + '/api/research/quote', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{bad json' });
+  ok('malformed JSON is refused with 400, not 500', mj.status === 400, `status ${mj.status}`);
   return checks;
 }
 module.exports = { run };
