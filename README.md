@@ -2,7 +2,7 @@
 
 ShelterKart judges a new-build property project for a buyer before they pay the developer. A buyer names a project; several AI engines investigate it using official registers and web search; the buyer gets a free preview and pays for the full report: linked findings, each marked verified, reported or inferred, plus the questions to put to each team at the developer. The report never tells anyone whether to buy.
 
-This repository holds the API, the investigation engine, pricing and payments, the database migrations, the shared tooling and the current website files (kept here as test fixtures until the frontend repository takes them over). The product's rules are in [CONSTITUTION.md](CONSTITUTION.md).
+This repository holds the API, the investigation engine, pricing and payments, the database migrations, and the shared tooling. The website is in the separate frontend repository (ShelterKart-FE); the old static website was removed from this repository, and the git tag `static-site-last` is its last version (see [docs/frontend-migration.md](docs/frontend-migration.md)). The product's rules are in [CONSTITUTION.md](CONSTITUTION.md).
 
 ## Status
 
@@ -35,12 +35,11 @@ Never commit `.env` or any key. Only the `.env.example` files are committed.
 ## Test it
 
 ```
-python3 -m venv .venv && .venv/bin/pip install -r tools/requirements.txt
 cd backend && npm ci && npx playwright install chromium
-PATH="$PWD/../.venv/bin:$PATH" npm test
+npm test
 ```
 
-The chain runs the logic suites, the harness suites with stubbed services and the browser suites. It expects 859 checks and exit code 0.
+The chain runs the logic suites, the harness suites with stubbed services, the offline market acceptance check and the brand check (which needs only `python3`). It expects 625 checks and exit code 0. The Python packages in `tools/requirements.txt` are needed only to run the brand and guide builders.
 
 ## What is where
 
