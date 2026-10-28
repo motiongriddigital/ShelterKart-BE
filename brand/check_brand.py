@@ -17,14 +17,12 @@ ALLOWED_FIRST = BRAND_FONTS | {'inherit', 'var(--sk-font-text)', 'var(--sk-font-
 OLD_LOGO = [r'shelterkart-lockup(-on-dark)?\.svg', r'shelterkart-mark\.svg', r'M20 2L36 9V21', r'accent-part', r'M100 8 L182 36', r'Built on Evidence']   # the old shield, its large seal version, the two-colour wordmark, the old tagline
 
 SURFACES = {   # name -> files whose styling belongs to that surface
-  'website':        ['shelterkart-frontend.html'],
   'report (web and PDF)': ['backend/engine/dossierHtml.js', 'backend/engine/reportPages.js'],
   'guide':          ['guide/guide.css', 'guide/build_guide.py'],
   'sales-office card': ['guide/build_card.py'],
   'investor deck':  ['deck/build_deck_v2.py'],
-  'static pages':   [f for f in sorted(os.listdir(ROOT)) if f.endswith('.html') and f not in ('shelterkart-frontend.html',)],
 }
-MIGRATED = {s for s in ('guide', 'sales-office card', 'website') }
+MIGRATED = {s for s in ('guide', 'sales-office card') }
 
 def strip_embedded(text):
     # embedded data (the guide, the sample reports, dictionaries, fonts) is generated content, not this surface's styling
