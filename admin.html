@@ -423,8 +423,8 @@ const OFF_REASON = { registration_required: 'needs a tax registration first', re
   no_payment_route: 'international payments not yet activated', threshold_reached: 'threshold reached: register to resume', no_tax_profile: 'no tax profile' };
 function renderTax(t){
   const rows = (t.progress || []).slice().sort((x, y) => y.pct - x.pct).map(p => {
-    const th = p.thresholds.map(x => esc(x.currency + ' ' + x.amount.toLocaleString()) + (x.basis === 'worldwide' ? ' (worldwide)' : '')).join(' and ');
-    const sales = p.thresholds.map(x => esc(x.currency + ' ' + x.sales.toLocaleString())).join(' / ');
+    const th = p.thresholds.map(x => esc(x.currency + ' ' + x.amount.toLocaleString('en-US')) + (x.basis === 'worldwide' ? ' (worldwide)' : '')).join(' and ');
+    const sales = p.thresholds.map(x => esc(x.currency + ' ' + x.sales.toLocaleString('en-US'))).join(' / ');
     const level = p.registered ? 'registered' : p.level;
     return '<tr' + (['alert', 'reached'].includes(level) ? ' style="color:#B42318;font-weight:600"' : level === 'watch' ? ' style="color:#865E1D"' : '') + '><td>' + esc(p.name) + '</td><td>' + th + '</td><td>' + sales + '</td><td>' + Math.round(p.pct * 100) + '%</td><td>' + esc(TAX_LEVEL[level] || level) + '</td></tr>';
   });
