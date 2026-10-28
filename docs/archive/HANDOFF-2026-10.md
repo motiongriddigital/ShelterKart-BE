@@ -1,3 +1,5 @@
+> Historical document from the delivery of 2026-10-24. Parts are out of date (for example it describes a stubbed backend); the current state is in README.md, HANDOVER.md and LATEST.md.
+
 # ShelterKart — Where Things Actually Stand
 ### A complete, honest handoff for whoever you hire next
 
