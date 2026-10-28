@@ -10,9 +10,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
-      # There is no package-lock.json yet. The first run must generate one and commit it, then switch this to `npm ci`
-      # so every build installs exactly the same versions.
-      - run: npm install
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: pip install -r ../tools/requirements.txt
       - run: npm test
       - name: Copy integrity gate (spelling, house style, copy that matches the code)
         working-directory: .
@@ -43,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
-      - run: npm install
+      - run: npm ci
         working-directory: backend
       - name: Apply the nine migrations
         run: node tools/migrate.js
