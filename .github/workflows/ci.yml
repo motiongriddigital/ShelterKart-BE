@@ -60,3 +60,21 @@ jobs:
       - name: Server log on failure
         if: failure()
         run: cat /tmp/server.log
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: shelterkart-be:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Start the image and wait for its health route
+        run: |
+          docker run -d --name api -p 4000:4000 -e NODE_ENV=development shelterkart-be:ci
+          for i in $(seq 1 30); do curl -sf localhost:4000/api/health && exit 0; sleep 1; done
+          docker logs api
+          exit 1
