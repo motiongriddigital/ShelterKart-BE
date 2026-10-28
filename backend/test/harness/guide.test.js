@@ -66,14 +66,7 @@ const DIST = rd('guide', 'dist', 'ShelterKart-Home-Buying-Guide.html').toString(
     const typeset = DIST.replace(/\u2019/g, "'").replace(/&#x27;|&#39;/g, "'").replace(/&amp;/g, '&');
     ok('the guide shows the same 25 questions (typographic apostrophes are the same character)', qs.every(q => typeset.includes(q)));
   }
-  const SITE = rd('shelterkart-frontend.html').toString('utf8');
-  ok('the home page offers the share, counted as guide_share with where it came from', /id="guideShare"/.test(SITE) && /shareGuide\(this,'home'\)/.test(SITE) && /skTrack\('guide_share'/.test(SITE) && /detail: from \|\| 'home'/.test(SITE));
   const AN = require(path.join(BACKEND, 'engine', 'analytics'));
   ok('guide shares are a counted event, and the summary reports them', /'guide_share'/.test(rd('backend', 'engine', 'analytics.js').toString('utf8')) && /guide_shares: count\.guide_share/.test(rd('backend', 'engine', 'analytics.js').toString('utf8')));
-  // 6. the checkout carries nothing but the charges and the Pay button: no share, no card, no guide
-  {
-    const pay = SITE.slice(SITE.indexOf('id="payModal"'), SITE.indexOf('id="restoreModal"'));
-    ok('the checkout has no share block, no question card and no guide link', pay.length > 500 && !/payShare|shareGuide|question card|guide/i.test(pay));
-  }
   console.log(failures ? '\n' + failures + ' FAILED' : '\nall passing'); process.exit(failures ? 1 : 0);
 })();

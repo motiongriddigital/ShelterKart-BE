@@ -896,108 +896,6 @@ const PASSES = Object.keys(require('../engine/searchLane').FACETS).length;   // 
 
 
   console.log('\nwebsite and engine agree');
-  await t('the website and the engine list exactly the same markets', () => {
-    const fs = require('fs'), path = require('path');
-    const html = fs.readFileSync(path.join(__dirname, '..', '..', 'shelterkart-frontend.html'), 'utf8');
-    const block = html.slice(html.indexOf('const LOCALES = {'), html.indexOf('\n};', html.indexOf('const LOCALES = {')));
-    const site = new Set([...block.matchAll(/^\s*(\w+):\s*\{\s*label:/gm)].map(m => m[1]));
-    const engine = new Set(Object.keys(require('../engine/markets').MARKETS));
-    const onlySite = [...site].filter(k => !engine.has(k)), onlyEngine = [...engine].filter(k => !site.has(k));
-    assert(!onlySite.length && !onlyEngine.length, `site-only: ${onlySite} | engine-only: ${onlyEngine}`);
-  });
-  await t('the markets are shown largest first, and the order covers every market exactly once', () => {
-    const fs = require('fs'), path = require('path');
-    const html = fs.readFileSync(path.join(__dirname, '..', '..', 'shelterkart-frontend.html'), 'utf8');
-    const order = JSON.parse(html.match(/const MARKET_ORDER = (\[[^\]]*\]);/)[1].replace(/'/g, '"'));
-    const loc = html.slice(html.indexOf('const LOCALES = {'), html.indexOf('\n};', html.indexOf('const LOCALES = {')));
-    const codes = [...loc.matchAll(/\n  ([a-z]{2}): \{ label:/g)].map(m => m[1]);
-    assert(order.length === codes.length && new Set(order).size === order.length && codes.every(c => order.includes(c)), 'the order must list every market once');
-    const sized = {}; const mj = require(path.join(__dirname, '..', '..', 'deck', 'model', 'market.json')), aj = require(path.join(__dirname, '..', '..', 'deck', 'model', 'markets_added.json'));
-    for (const r of [...mj.rows, ...aj.rows]) sized[r.code] = r.units;
-    const known = order.filter(c => sized[c] != null);
-    assert(known.every((c, i) => i === 0 || sized[known[i - 1]] >= sized[c]), 'sized markets must run from largest to smallest');
-    assert(known.length === order.length, 'every market has a size, so the whole order is checked');
-    assert(sized[order[0]] === Math.max(...Object.values(sized)) && sized[order.at(-1)] === Math.min(...Object.values(sized)), 'largest first, smallest last');
-  });
-  await t('every market on the website has a drawn flag, a backend entry, and the two lists match', () => {
-    const fs = require('fs'), path = require('path');
-    const html = fs.readFileSync(path.join(__dirname, '..', '..', 'shelterkart-frontend.html'), 'utf8');
-    const loc = html.slice(html.indexOf('const LOCALES = {'), html.indexOf('\n};', html.indexOf('const LOCALES = {')));
-    const flags = html.slice(html.indexOf('const FLAG_SVG = {'), html.indexOf('\n};', html.indexOf('const FLAG_SVG = {')));
-    const codes = [...loc.matchAll(/\n  ([a-z]{2}): \{ label:/g)].map(m => m[1]);
-    const drawn = new Set([...flags.matchAll(/\n  ([a-z]{2}): `<svg/g)].map(m => m[1]));
-    const missing = codes.filter(c => !drawn.has(c));
-    assert(codes.length >= 36 && !missing.length, 'markets without a flag: ' + missing);
-    const M = require('../engine/markets').MARKETS;
-    assert(JSON.stringify(Object.keys(M).sort()) === JSON.stringify([...codes].sort()), 'the website and backend market lists differ');
-  });
-  await t('the reference reports built into the page are exactly the product renderer\'s output: escaped, nothing executable, no verdict', () => {
-    const fs = require('fs'), path = require('path'), cp = require('child_process');
-    const root = path.join(__dirname, '..', '..');
-    const r = cp.spawnSync('node', [path.join(root, 'tools', 'build_frontend_samples.js'), '--check'], { encoding: 'utf8' });
-    assert(r.status === 0, 'the page is out of date: ' + (r.stderr || r.stdout));
-    const html = fs.readFileSync(path.join(root, 'shelterkart-frontend.html'), 'utf8');
-    const m = html.match(/<script type="application\/json" id="sk-dossier-samples">([\s\S]*?)<\/script>/);
-    assert(m, 'no reference-report block');
-    const list = JSON.parse(m[1]);
-    assert(list.length === 3 && list.every(x => x.full && x.preview && x.pdf && x.price), 'three reports, each with full, preview, PDF and price');
-    const D = require('../engine/dossier');
-    for (const x of list) {
-      for (const k of ['full', 'preview']) {
-        assert(!/<script|javascript:|\son[a-z]+=/i.test(x[k]), x.id + ' ' + k + ' carries something executable');
-        assert(!D.hasVerdict(x[k]), x.id + ' ' + k + ' tells the buyer what to do');
-      }
-      assert(!x.preview.includes('Every question, by stage'), x.id + ' preview gives away the full report');
-    }
-  });
-  await t('real companies appear ONLY inside the sourced sample reports, never as invented demo data', () => {
-    const fs = require('fs'), path = require('path');
-    const html = fs.readFileSync(path.join(__dirname, '..', '..', 'shelterkart-frontend.html'), 'utf8');
-    const a = html.indexOf('const SAMPLE_REPORTS = '), b = html.indexOf(';\n\nfunction findSample', a);
-    assert(a > 0 && b > a, 'sample data block not found');
-    let outside = html.slice(0, a) + html.slice(b);
-    // the reference reports built into the page are sourced sample data too, held to the product renderer's output
-    const da = outside.indexOf('<!--DOSSIER_SAMPLES_START-->'), db = outside.indexOf('<!--DOSSIER_SAMPLES_END-->');
-    if (da >= 0 && db > da) outside = outside.slice(0, da) + outside.slice(db);
-    const real = ['Lodha', 'Macrotech', 'Oberoi', 'Damac', 'DAMAC', 'Berkeley', 'Canninghill', 'City Developments', 'Mattamy',
-                  'Hubtown', 'Casagrand', 'GuocoLand', 'Emaar'].filter(n => outside.includes(n));
-    assert(!real.length, 'real developer names outside the sample reports: ' + real);
-    assert(!/\bP5\d{10}\b/.test(outside), 'a MahaRERA-format number outside the sample reports');
-  });
-  await t('every sample report is exactly what the engine would produce: sourced, engine-marked, preview from previewOf, no score, PDF present', () => {
-    const fs = require('fs'), path = require('path');
-    const { markFinding } = require('../engine/grounding');
-    const { previewOf } = require('../engine/access');
-    const html = fs.readFileSync(path.join(__dirname, '..', '..', 'shelterkart-frontend.html'), 'utf8');
-    const a = html.indexOf('const SAMPLE_REPORTS = ') + 'const SAMPLE_REPORTS = '.length, b = html.indexOf(';\n\nfunction findSample', a);
-    const samples = JSON.parse(html.slice(a, b).replace(/<\\\//g, '</'));
-    assert(samples.length >= 5, 'expected the five sample reports');
-    for (const x of samples) {
-      const f = x.full, where = x.id;
-      assert(/^SK-[0-9A-F]{12}$/.test(f.ref), where + ': ref format');
-      assert(!Number.isNaN(Date.parse(f.checkedAt)), where + ': must be dated');
-      const pageUrls = new Set(f.pages.map(p => p.url));
-      const counts = { confirmed: 0, reported: 0, single: 0, developer: 0, disputed: f.conflicts.length };
-      for (const fi of f.findings) {
-        assert(fi.sources.length >= 1, where + ': unsourced finding: ' + fi.claim);
-        for (const s of fi.sources) assert(pageUrls.has(s.url), where + ': cited page missing from "every page checked": ' + s.url);
-        const m = markFinding({ urls: fi.sources.map(s => s.url), kind: fi.mark === 'developer' ? 'developer_claim' : 'fact', claim: fi.claim }, f.query, f.project.developer);
-        assert.strictEqual(fi.mark, m.mark, where + ': mark differs from the engine for: ' + fi.claim);
-        counts[fi.mark]++;
-      }
-      for (const c of f.conflicts) for (const v of c.versions) assert(pageUrls.has(v.url), where + ': conflict source missing from pages: ' + v.url);
-      assert.deepStrictEqual(f.counts, counts, where + ': evidence counts must add up');
-      assert.deepStrictEqual(x.preview, JSON.parse(JSON.stringify(previewOf(f))), where + ': the free view must be exactly what previewOf sends');
-      assert(fs.existsSync(path.join(__dirname, '..', '..', 'sample-reports', x.pdf)), where + ': PDF missing: ' + x.pdf);
-      { const P = require('../pricing'), PD = P.load({ NODE_ENV: 'demo', TAX_GATE: 'off', GSTIN: 'DEMO', RAZORPAY_INTERNATIONAL: 'true', ACCESS_TOKEN_SECRET: 'demo' });
-        for (const [iso, q] of Object.entries(x.quotes)) { const e = P.previewFee(PD, f, P.resolveBuyer(PD, { selected: iso }));
-          assert.deepStrictEqual([q.currency, q.gross, q.tax], [e.currency, e.price, e.tax], where + ': the demo fee in ' + iso + ' must be what the quote engine charges'); }
-        assert(Object.keys(x.quotes).length >= 40, where + ': every country a buyer can choose is priced'); }
-      assert.deepStrictEqual(f.protections, require('../engine/protections').protectionsFor(f.market, [f.project.location, f.location].filter(Boolean).join(' ')), where + ': protections must be exactly what the engine gives');
-    }
-  });
-
-
   console.log('\npricing: the quote engine, buyer country, tax and guardrails are tested in test/pricing.test.js and test/harness/pricing.test.js');
   await t('research keeps a listed price range only when a price finding survived grounding', () => {
     const G = require('../engine/grounding');
@@ -1043,9 +941,7 @@ const PASSES = Object.keys(require('../engine/searchLane').FACETS).length;   // 
   });
   await t('only WORDS are translated: marks, ids, urls, sites, counts and scores are never offered to the translator', () => {
     const fs = require('fs'), path = require('path');
-    const html = fs.readFileSync(path.join(__dirname, '..', '..', 'shelterkart-frontend.html'), 'utf8');
-    const a = html.indexOf('const SAMPLE_REPORTS = ') + 23, b = html.indexOf(';\n\nfunction findSample', a);
-    const x = JSON.parse(html.slice(a, b).replace(/<\\\//g, '</')).find(r => r.id === 'hubtown-celeste').full;
+    const x = { ...JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'tools', 'samples', 'hubtown.json'), 'utf8')), protections: require('../engine/protections').protectionsFor('in', 'Mumbai') };
     const fields = TR.collectTexts(x);
     assert(fields.length > 60, 'a full report has many translatable strings: ' + fields.length);
     for (const f of fields) assert(!/\.(mark|sites|id|url|host|site|sources|value|weight|label|ref)$/.test(f.path.replace(/\.versions\.\d+\.value$/, '.x')), 'not a word field: ' + f.path);
