@@ -113,4 +113,12 @@ async function alertOperator(env, subject, text, fetchImpl = globalThis.fetch) {
   catch (e) { console.error('[ops] could not send the alert:', e && e.message); return false; }
 }
 
-module.exports = { createDelivery, reportLink, messageOf, emailProvider, alertOperator };
+/** Send one plain e-mail with the configured provider. Resolves to whether it was sent; never throws. */
+async function sendEmail(env, { to, subject, text }, fetchImpl = globalThis.fetch) {
+  const provider = emailProvider(env); if (!provider || !to) return false;
+  const html = '<pre style="font-family:inherit;white-space:pre-wrap">' + String(text).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]) + '</pre>';
+  try { await EMAIL[provider].send({ to, msg: { subject, text, html } }, { env, fetchImpl }); return true; }
+  catch (e) { console.error('[email] could not send:', e && e.message); return false; }
+}
+
+module.exports = { createDelivery, reportLink, messageOf, emailProvider, alertOperator, sendEmail };

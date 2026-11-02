@@ -1,0 +1,542 @@
+{
+ "version": "2026-10.1",
+ "note": "The official pages opened in the Wave 1 research file (26 October 2026), plus Germany, France, Spain, Japan, Poland, Mexico, Switzerland and Saudi Arabia from Wave 2, and Brazil, Italy, the Netherlands and Portugal from Wave 3, as keeper seeds. One page per market, offered for each topic it can support: the keeper decides what the page actually states. Eighteen hosts are NOT classed as official by the research code and need a person to approve them as allowed hosts: the Consumer Code for Home Builders (an industry-led code, not a government body), the NHBRC (a statutory body, .org.za), Tarion (a non-profit that administers Ontario's statutory warranty, .com) and the Irish local government portal localgov.ie, gesetze-im-internet.de defensordelpueblo.es pref.chiba.lg.jp, parlament.ch, bj.admin.ch, consap.it, iplo.nl, aiccopn.pt, riigiteataja.ee, kkv.fi, boverket.se, svendborg.dk, stortinget.no and regjeringen.no (the Irish local government portal, the German federal law site, the Spanish Ombudsman, a Japanese prefecture, the Swiss Parliament, the Swiss Federal Office of Justice, CONSAP (the Italian state-controlled insurance concessionaire) IPLO (the Dutch government's information point for the living environment) AICCOPN (a Portuguese construction trade association that hosts a copy of the Official Gazette: NOT a public body) Riigi Teataja (the Estonian State Gazette) KKV (the Finnish Competition and Consumer Authority) Boverket (the Swedish National Board of Housing, Building and Planning) Svendborg Municipality in Denmark, the Norwegian Parliament and the Norwegian Government: mostly public bodies whose addresses the rule does not match). Scope: US federal loan paperwork, not builders; Irish building control certificates, not all Irish buyer protection; Dubai, not the UAE; Ontario freehold, not Canada; New South Wales, not Australia; Haryana, not all of India. A market may carry a 'focus' object: for a long document, words or phrases per address that tell the keeper which parts to read.",
+ "markets": {
+  "IN": {
+   "allowedHosts": [],
+   "scope": "Haryana RERA directions: read MahaRERA for Mumbai",
+   "topics": {
+    "t02": [
+     "https://www.haryanarera.gov.in/regulations/Directions_regarding_Compliance_of_Section_4_2_l_D.pdf"
+    ],
+    "t03": [
+     "https://www.haryanarera.gov.in/regulations/Directions_regarding_Compliance_of_Section_4_2_l_D.pdf"
+    ],
+    "t07": [
+     "https://www.haryanarera.gov.in/regulations/Directions_regarding_Compliance_of_Section_4_2_l_D.pdf"
+    ]
+   }
+  },
+  "GB": {
+   "allowedHosts": [
+    "consumercode.co.uk"
+   ],
+   "scope": "",
+   "topics": {
+    "t01": [
+     "https://consumercode.co.uk/?p=2926"
+    ],
+    "t02": [
+     "https://consumercode.co.uk/?p=2926"
+    ]
+   }
+  },
+  "AE": {
+   "allowedHosts": [],
+   "scope": "Dubai only",
+   "topics": {
+    "t02": [
+     "https://dlp.dubai.gov.ae/Legislation%20Reference/2007/Law%20No.%20%288%29%20of%202007.html"
+    ],
+    "t07": [
+     "https://dlp.dubai.gov.ae/Legislation%20Reference/2007/Law%20No.%20%288%29%20of%202007.html"
+    ],
+    "t08": [
+     "https://dlp.dubai.gov.ae/Legislation%20Reference/2007/Law%20No.%20%288%29%20of%202007.html"
+    ],
+    "t10": [
+     "https://dlp.dubai.gov.ae/Legislation%20Reference/2007/Law%20No.%20%288%29%20of%202007.html"
+    ],
+    "t11": [
+     "https://dlp.dubai.gov.ae/Legislation%20Reference/2007/Law%20No.%20%288%29%20of%202007.html"
+    ]
+   }
+  },
+  "SG": {
+   "allowedHosts": [],
+   "scope": "",
+   "topics": {
+    "t02": [
+     "https://sso.agc.gov.sg/SL/HDCLA1965-R1"
+    ],
+    "t03": [
+     "https://sso.agc.gov.sg/SL/HDCLA1965-R1"
+    ],
+    "t07": [
+     "https://sso.agc.gov.sg/SL/HDCLA1965-R1"
+    ],
+    "t08": [
+     "https://sso.agc.gov.sg/SL/HDCLA1965-R1"
+    ],
+    "t10": [
+     "https://sso.agc.gov.sg/SL/HDCLA1965-R1"
+    ]
+   }
+  },
+  "HK": {
+   "allowedHosts": [],
+   "scope": "Government paper dated 2018: re-read Cap. 621",
+   "topics": {
+    "t01": [
+     "https://www.legco.gov.hk/yr17-18/english/panels/hg/papers/hg20180410cb1-749-4-e.pdf"
+    ],
+    "t02": [
+     "https://www.legco.gov.hk/yr17-18/english/panels/hg/papers/hg20180410cb1-749-4-e.pdf"
+    ],
+    "t03": [
+     "https://www.legco.gov.hk/yr17-18/english/panels/hg/papers/hg20180410cb1-749-4-e.pdf"
+    ],
+    "t05": [
+     "https://www.legco.gov.hk/yr17-18/english/panels/hg/papers/hg20180410cb1-749-4-e.pdf"
+    ],
+    "t06": [
+     "https://www.legco.gov.hk/yr17-18/english/panels/hg/papers/hg20180410cb1-749-4-e.pdf"
+    ],
+    "t07": [
+     "https://www.legco.gov.hk/yr17-18/english/panels/hg/papers/hg20180410cb1-749-4-e.pdf"
+    ],
+    "t08": [
+     "https://www.legco.gov.hk/yr17-18/english/panels/hg/papers/hg20180410cb1-749-4-e.pdf"
+    ]
+   }
+  },
+  "ZA": {
+   "allowedHosts": [
+    "nhbrc.org.za"
+   ],
+   "scope": "1998 Act in force until the 2024 Act commences",
+   "topics": {
+    "t02": [
+     "https://nhbrc.org.za/why-enrol/"
+    ],
+    "t06": [
+     "https://nhbrc.org.za/why-enrol/"
+    ],
+    "t11": [
+     "https://nhbrc.org.za/why-enrol/"
+    ]
+   }
+  },
+  "PH": {
+   "allowedHosts": [],
+   "scope": "",
+   "topics": {
+    "t02": [
+     "https://www.hudcc.gov.ph/sites/default/files/styles/large/public/document/PD%20%20957.pdf"
+    ],
+    "t03": [
+     "https://www.hudcc.gov.ph/sites/default/files/styles/large/public/document/PD%20%20957.pdf"
+    ],
+    "t04": [
+     "https://www.hudcc.gov.ph/sites/default/files/styles/large/public/document/PD%20%20957.pdf"
+    ],
+    "t07": [
+     "https://www.hudcc.gov.ph/sites/default/files/styles/large/public/document/PD%20%20957.pdf"
+    ],
+    "t08": [
+     "https://www.hudcc.gov.ph/sites/default/files/styles/large/public/document/PD%20%20957.pdf"
+    ],
+    "t10": [
+     "https://www.hudcc.gov.ph/sites/default/files/styles/large/public/document/PD%20%20957.pdf"
+    ],
+    "t12": [
+     "https://www.hudcc.gov.ph/sites/default/files/styles/large/public/document/PD%20%20957.pdf"
+    ]
+   }
+  },
+  "CA": {
+   "allowedHosts": [
+    "tarion.com"
+   ],
+   "scope": "Ontario freehold homes only",
+   "topics": {
+    "t03": [
+     "https://tarion.com/sites/default/files/Warranty%20Information%20for%20Freehold%20Homes%20-%20effective%20May%201%202024.pdf"
+    ],
+    "t07": [
+     "https://tarion.com/sites/default/files/Warranty%20Information%20for%20Freehold%20Homes%20-%20effective%20May%201%202024.pdf"
+    ],
+    "t08": [
+     "https://tarion.com/sites/default/files/Warranty%20Information%20for%20Freehold%20Homes%20-%20effective%20May%201%202024.pdf"
+    ],
+    "t11": [
+     "https://tarion.com/sites/default/files/Warranty%20Information%20for%20Freehold%20Homes%20-%20effective%20May%201%202024.pdf"
+    ]
+   }
+  },
+  "AU": {
+   "allowedHosts": [],
+   "scope": "New South Wales only",
+   "topics": {
+    "t03": [
+     "https://www.nsw.gov.au/housing-and-construction/buying-and-selling-property/buying-property-nsw/buying-property-off-plan"
+    ],
+    "t07": [
+     "https://www.nsw.gov.au/housing-and-construction/buying-and-selling-property/buying-property-nsw/buying-property-off-plan"
+    ],
+    "t08": [
+     "https://www.nsw.gov.au/housing-and-construction/buying-and-selling-property/buying-property-nsw/buying-property-off-plan"
+    ],
+    "t10": [
+     "https://www.nsw.gov.au/housing-and-construction/buying-and-selling-property/buying-property-nsw/buying-property-off-plan"
+    ],
+    "t11": [
+     "https://www.nsw.gov.au/housing-and-construction/buying-and-selling-property/buying-property-nsw/buying-property-off-plan"
+    ]
+   }
+  },
+  "NZ": {
+   "allowedHosts": [],
+   "scope": "",
+   "topics": {
+    "t03": [
+     "https://www.building.govt.nz/projects-and-consents/why-contracts-are-valuable/implied-warranties-and-defects"
+    ],
+    "t06": [
+     "https://www.building.govt.nz/projects-and-consents/why-contracts-are-valuable/implied-warranties-and-defects"
+    ],
+    "t11": [
+     "https://www.building.govt.nz/projects-and-consents/why-contracts-are-valuable/implied-warranties-and-defects"
+    ],
+    "t12": [
+     "https://www.building.govt.nz/projects-and-consents/why-contracts-are-valuable/implied-warranties-and-defects"
+    ]
+   }
+  },
+  "IE": {
+   "allowedHosts": [
+    "localgov.ie"
+   ],
+   "scope": "Irish building control certificates only; the structural defects schemes are not researched",
+   "topics": {
+    "t01": [
+     "https://nbco.nbco.localgov.ie/sites/default/files/4567776/2025-10/Presentation%204%2020250923%20Certificate%20of%20Compliance%20on%20Completion_RB.pdf"
+    ],
+    "t02": [
+     "https://nbco.nbco.localgov.ie/sites/default/files/4567776/2025-10/Presentation%204%2020250923%20Certificate%20of%20Compliance%20on%20Completion_RB.pdf"
+    ],
+    "t03": [
+     "https://nbco.nbco.localgov.ie/sites/default/files/4567776/2025-10/Presentation%204%2020250923%20Certificate%20of%20Compliance%20on%20Completion_RB.pdf"
+    ],
+    "t06": [
+     "https://nbco.nbco.localgov.ie/sites/default/files/4567776/2025-10/Presentation%204%2020250923%20Certificate%20of%20Compliance%20on%20Completion_RB.pdf"
+    ],
+    "t11": [
+     "https://nbco.nbco.localgov.ie/sites/default/files/4567776/2025-10/Presentation%204%2020250923%20Certificate%20of%20Compliance%20on%20Completion_RB.pdf"
+    ]
+   }
+  },
+  "US": {
+   "allowedHosts": [],
+   "scope": "Federal loan paperwork for most mortgages only; builder, warranty and deposit rules by state are not researched. Page reviewed April 2024.",
+   "topics": {
+    "t03": [
+     "https://www.consumerfinance.gov/ask-cfpb/what-documents-should-i-receive-before-closing-on-a-mortgage-loan-en-181/"
+    ],
+    "t04": [
+     "https://www.consumerfinance.gov/ask-cfpb/what-documents-should-i-receive-before-closing-on-a-mortgage-loan-en-181/"
+    ],
+    "t09": [
+     "https://www.consumerfinance.gov/ask-cfpb/what-documents-should-i-receive-before-closing-on-a-mortgage-loan-en-181/"
+    ]
+   }
+  },
+  "DE": {
+   "allowedHosts": [
+    "gesetze-im-internet.de"
+   ],
+   "scope": "Wave 2. Germany, MaBV section 3, the standard payment route only; in German",
+   "topics": {
+    "t07": [
+     "https://www.gesetze-im-internet.de/gewo_34cdv/__3.html"
+    ],
+    "t10": [
+     "https://www.gesetze-im-internet.de/gewo_34cdv/__3.html"
+    ]
+   }
+  },
+  "FR": {
+   "allowedHosts": [],
+   "scope": "Wave 2. France, off-plan (VEFA) rules from a January 2018 guide: re-read the current Code de la construction et de l'habitation; in French",
+   "topics": {
+    "t02": [
+     "https://actionsociale.finances.gouv.fr/files/live/sites/actionsociale/files/Contributed/D%c3%a9l%c3%a9gation%20d%c3%a9partementales%20de%20l'action%20socale/61%20Orne/61_acheter_logement_neuf_plan.pdf"
+    ],
+    "t03": [
+     "https://actionsociale.finances.gouv.fr/files/live/sites/actionsociale/files/Contributed/D%c3%a9l%c3%a9gation%20d%c3%a9partementales%20de%20l'action%20socale/61%20Orne/61_acheter_logement_neuf_plan.pdf"
+    ],
+    "t07": [
+     "https://actionsociale.finances.gouv.fr/files/live/sites/actionsociale/files/Contributed/D%c3%a9l%c3%a9gation%20d%c3%a9partementales%20de%20l'action%20socale/61%20Orne/61_acheter_logement_neuf_plan.pdf"
+    ],
+    "t08": [
+     "https://actionsociale.finances.gouv.fr/files/live/sites/actionsociale/files/Contributed/D%c3%a9l%c3%a9gation%20d%c3%a9partementales%20de%20l'action%20socale/61%20Orne/61_acheter_logement_neuf_plan.pdf"
+    ],
+    "t10": [
+     "https://actionsociale.finances.gouv.fr/files/live/sites/actionsociale/files/Contributed/D%c3%a9l%c3%a9gation%20d%c3%a9partementales%20de%20l'action%20socale/61%20Orne/61_acheter_logement_neuf_plan.pdf"
+    ]
+   }
+  },
+  "ES": {
+   "allowedHosts": [
+    "defensordelpueblo.es"
+   ],
+   "scope": "Wave 2. Spain, the 2015 wording of the first additional provision of Ley 38/1999 as quoted by the Ombudsman in 2016: confirm it is in force on the BOE; in Spanish",
+   "topics": {
+    "t07": [
+     "https://www.defensordelpueblo.es/resoluciones/desarrollo-de-la-disposicion-adicional-primera-de-la-ley-de-ordenacion-de-la-edificacion/"
+    ],
+    "t08": [
+     "https://www.defensordelpueblo.es/resoluciones/desarrollo-de-la-disposicion-adicional-primera-de-la-ley-de-ordenacion-de-la-edificacion/"
+    ]
+   }
+  },
+  "JP": {
+   "allowedHosts": [
+    "pref.chiba.lg.jp"
+   ],
+   "scope": "Wave 2. Japan, the new-house defect warranty: scope from the Cabinet Order in English; ten-year period from MLIT (older Japanese encoding, needs the keeper character-set fix) and a Chiba Prefecture pamphlet in Japanese. Check the current Act after the 2020 Civil Code reform",
+   "topics": {
+    "t06": [
+     "https://www.japaneselawtranslation.go.jp/ja/laws/view/4730/en"
+    ],
+    "t11": [
+     "https://www.japaneselawtranslation.go.jp/ja/laws/view/4730/en",
+     "https://www.mlit.go.jp/jutakukentiku/house/torikumi/hinkakuhou/point01.htm",
+     "https://www.pref.chiba.lg.jp/juutaku/mochiie/hinshitsu/documents/pamphlet-law-point.pdf"
+    ]
+   }
+  },
+  "PL": {
+   "allowedHosts": [],
+   "scope": "Wave 2. Poland, the Act of 20 May 2021 and the Developer Guarantee Fund, from the Ministry of Development reply of 6 October 2025, in Polish. WARNING: the letter also discusses an enforcement case against a named company group and its managers; no fact may be drawn from that section and any draft naming a company or person must be rejected. Add the consolidated text of the Act as a cleaner seed when its address is found",
+   "topics": {
+    "t01": [
+     "https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDM8HKD/i11897-o1.pdf"
+    ],
+    "t06": [
+     "https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDM8HKD/i11897-o1.pdf"
+    ],
+    "t07": [
+     "https://api.sejm.gov.pl/sejm/term10/interpellations/attachment/ATTDM8HKD/i11897-o1.pdf"
+    ]
+   }
+  },
+  "MX": {
+   "allowedHosts": [],
+   "scope": "Wave 2. Mexico, the federal standard NOM-247-SE-2021 (Official Gazette 22 March 2022) on selling homes: national, in Spanish. State civil and condominium rules are not covered",
+   "topics": {
+    "t02": [
+     "https://platiica.economia.gob.mx/wp-content/uploads/sites/2/PDF_Normas_Publicas/247se2021.pdf"
+    ],
+    "t03": [
+     "https://platiica.economia.gob.mx/wp-content/uploads/sites/2/PDF_Normas_Publicas/247se2021.pdf"
+    ],
+    "t07": [
+     "https://platiica.economia.gob.mx/wp-content/uploads/sites/2/PDF_Normas_Publicas/247se2021.pdf"
+    ],
+    "t10": [
+     "https://platiica.economia.gob.mx/wp-content/uploads/sites/2/PDF_Normas_Publicas/247se2021.pdf"
+    ],
+    "t11": [
+     "https://platiica.economia.gob.mx/wp-content/uploads/sites/2/PDF_Normas_Publicas/247se2021.pdf"
+    ],
+    "t12": [
+     "https://platiica.economia.gob.mx/wp-content/uploads/sites/2/PDF_Normas_Publicas/247se2021.pdf"
+    ]
+   }
+  },
+  "CH": {
+   "allowedHosts": [
+    "parlament.ch",
+    "bj.admin.ch"
+   ],
+   "scope": "Wave 2. Switzerland, the Code of Obligations building-defects reform in force from 1 January 2026, for contracts concluded from that date; in German. Cantonal rules are not covered",
+   "topics": {
+    "t11": [
+     "https://www.parlament.ch/centers/eparl/curia/2022/20220066/Schlussabstimmungstext%201%20NS%20D.pdf",
+     "https://www.bj.admin.ch/de/haftung-fuer-baumaengel"
+    ],
+    "t01": [
+     "https://www.bj.admin.ch/de/haftung-fuer-baumaengel"
+    ]
+   }
+  },
+  "SA": {
+   "allowedHosts": [],
+   "scope": "Wave 2. Saudi Arabia, the Law of Selling and Leasing Off-Plan Real Estate Projects (Royal Decree, active, REGA page modified 13 May 2026), English text; the Arabic prevails and the Implementing Regulations are not covered. The PDF is seeded because it has no site menus",
+   "topics": {
+    "t02": [
+     "https://rega.gov.sa/media/lj3hhr42/law-of-selling-and-leasing-off-plan-real-estate-projects.pdf"
+    ],
+    "t03": [
+     "https://rega.gov.sa/media/lj3hhr42/law-of-selling-and-leasing-off-plan-real-estate-projects.pdf"
+    ],
+    "t07": [
+     "https://rega.gov.sa/media/lj3hhr42/law-of-selling-and-leasing-off-plan-real-estate-projects.pdf"
+    ],
+    "t08": [
+     "https://rega.gov.sa/media/lj3hhr42/law-of-selling-and-leasing-off-plan-real-estate-projects.pdf"
+    ],
+    "t10": [
+     "https://rega.gov.sa/media/lj3hhr42/law-of-selling-and-leasing-off-plan-real-estate-projects.pdf"
+    ]
+   }
+  },
+  "BR": {
+   "allowedHosts": [],
+   "scope": "Wave 3. Brazil, Law 13.786 of 2018 (summary box, 180-day delivery tolerance, cancellation, 7-day withdrawal) as published by the Presidency; the 2018 text, so check for later amendments; in Portuguese. The patrimonio de afetacao (Law 10.931) and the base Law 4.591 are not seeded yet",
+   "topics": {
+    "t03": [
+     "https://planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13786.htm"
+    ],
+    "t07": [
+     "https://planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13786.htm"
+    ],
+    "t08": [
+     "https://planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13786.htm"
+    ]
+   }
+  },
+  "IT": {
+   "allowedHosts": [
+    "consap.it"
+   ],
+   "scope": "Wave 3. Italy, Legislative Decree 122/2005 (guarantee on early payments, ten-year policy, the preliminary contract). WARNING: this PDF is the ORIGINAL 2005 text; the decree was reformed in 2019 and the crisis terms changed in 2022, so every draft must be checked against the current text on Normattiva. In Italian",
+   "topics": {
+    "t03": [
+     "https://www.consap.it/media/ys5pnb5g/dlgs-20050620-n122.pdf"
+    ],
+    "t07": [
+     "https://www.consap.it/media/ys5pnb5g/dlgs-20050620-n122.pdf"
+    ],
+    "t11": [
+     "https://www.consap.it/media/ys5pnb5g/dlgs-20050620-n122.pdf"
+    ]
+   }
+  },
+  "NL": {
+   "allowedHosts": [
+    "iplo.nl"
+   ],
+   "scope": "Wave 3. Netherlands, the Wkb handover dossier (consumentendossier) only; the contractor's liability after delivery and the builder guarantee schemes are not covered; the page is about contracts to build, and its reach to a purchase from a developer was not stated. In Dutch",
+   "topics": {
+    "t12": [
+     "https://iplo.nl/regelgeving/regels-voor-activiteiten/technische-bouwactiviteit/kwaliteitsborging/privaatrecht-wet-kwaliteitsborging/consumentendossier-opleverdossier-wkb/"
+    ],
+    "t01": [
+     "https://iplo.nl/regelgeving/regels-voor-activiteiten/technische-bouwactiviteit/kwaliteitsborging/privaatrecht-wet-kwaliteitsborging/consumentendossier-opleverdossier-wkb/"
+    ]
+   }
+  },
+  "PT": {
+   "allowedHosts": [
+    "aiccopn.pt"
+   ],
+   "scope": "Wave 3. Portugal, Decree-Law 84/2021 (10-year structural and 5-year general warranty on homes) in a PDF copy of the Official Gazette hosted by a construction trade association, not by the Gazette; the 2021 text, so check for later amendments; the PDF is the whole decree and also covers movable goods and digital content, which are out of scope. In Portuguese",
+   "topics": {
+    "t01": [
+     "https://www.aiccopn.pt/wp-content/uploads/2021/11/0000400029.pdf"
+    ],
+    "t03": [
+     "https://www.aiccopn.pt/wp-content/uploads/2021/11/0000400029.pdf"
+    ],
+    "t06": [
+     "https://www.aiccopn.pt/wp-content/uploads/2021/11/0000400029.pdf"
+    ],
+    "t10": [
+     "https://www.aiccopn.pt/wp-content/uploads/2021/11/0000400029.pdf"
+    ],
+    "t11": [
+     "https://www.aiccopn.pt/wp-content/uploads/2021/11/0000400029.pdf"
+    ],
+    "t12": [
+     "https://www.aiccopn.pt/wp-content/uploads/2021/11/0000400029.pdf"
+    ]
+   }
+  },
+  "EE": {
+   "allowedHosts": [
+    "riigiteataja.ee"
+   ],
+   "scope": "Wave 3. Estonia, the Law of Obligations Act in the State Gazette's English translation (a December 2022 consolidated version: check it is the current one). The Act is about 260 pages, so the seed carries FOCUS WORDS to steer the keeper to the consumer burden-of-proof and defect provisions. THE FOCUS WORDS ARE GUESSES, not checked against the text: read the run report's coverage and adjust them.",
+   "topics": {
+    "t11": [
+     "https://www.riigiteataja.ee/public-api/api/v1/en/akt/512122022006/blob-html"
+    ]
+   },
+   "focus": {
+    "https://www.riigiteataja.ee/public-api/api/v1/en/akt/512122022006/blob-html": [
+     "two years",
+     "presumed",
+     "consumer sales"
+    ]
+   }
+  },
+  "FI": {
+   "allowedHosts": [
+    "kkv.fi"
+   ],
+   "scope": "Wave 3. Finland, the three-layer collateral system for apartments sold during construction (RS projects), from the Finnish Competition and Consumer Authority's English page. The Housing Transactions Act is being amended in 2026 (a mandatory construction-work observer and a post-sale inspection were proposed): check the current Act. The Finlex English translation of the Act is a long document and is not seeded yet. In English",
+   "topics": {
+    "t07": [
+     "https://www.kkv.fi/en/consumer-affairs/housing/new-build-housing/collateral-for-new-build-housing/"
+    ],
+    "t11": [
+     "https://www.kkv.fi/en/consumer-affairs/housing/new-build-housing/collateral-for-new-build-housing/"
+    ]
+   }
+  },
+  "SE": {
+   "allowedHosts": [
+    "boverket.se"
+   ],
+   "scope": "Wave 3. Sweden, the economic plan and cost calculation for new tenant-ownership (bostadsratt) projects, from Boverket's handbook. Boverket's regulations are being replaced (new wording binding on certifiers from 1 January 2027): check the current handbook. The completion protection for buyers was not found. In Swedish. The pages have a very long navigation menu, so they test the keeper's main-content extraction",
+   "topics": {
+    "t03": [
+     "https://www.boverket.se/sv/ekonomiska-planer/introduktion/bostadsrattsforeningar/",
+     "https://www.boverket.se/sv/ekonomiska-planer/kostnadskalkyl/"
+    ],
+    "t01": [
+     "https://www.boverket.se/sv/ekonomiska-planer/aktuellt/foreningarnas-mojlighet-att-valja/"
+    ]
+   }
+  },
+  "DK": {
+   "allowedHosts": [
+    "svendborg.dk"
+   ],
+   "scope": "Wave 3. Denmark, the mandatory construction-damage insurance (Building Act sections 25 A to F), from a single municipality's fact sheet in a PDF, not the national authority's page or the Act; replace or supplement it with the Housing and Planning Authority page and AB-Forbruger when opened. In Danish",
+   "topics": {
+    "t01": [
+     "https://www.svendborg.dk/sites/default/files/erklaering_ved_fravalg_af_byggeskadeforsikring.pdf"
+    ],
+    "t07": [
+     "https://www.svendborg.dk/sites/default/files/erklaering_ved_fravalg_af_byggeskadeforsikring.pdf"
+    ],
+    "t11": [
+     "https://www.svendborg.dk/sites/default/files/erklaering_ved_fravalg_af_byggeskadeforsikring.pdf"
+    ]
+   }
+  },
+  "NO": {
+   "allowedHosts": [
+    "stortinget.no",
+    "regjeringen.no"
+   ],
+   "scope": "Wave 3. Norway, the contractor's guarantee under the Housing Construction Act (1997), from the Parliament's amendment texts and a Ministry consultation notice, NOT the consolidated Act (not found on Lovdata). The guarantee percentages differ between sources and the 2010 text was amended in 2017 and 2018: take NO numbers only from the current Act. In Norwegian (Nynorsk)",
+   "topics": {
+    "t07": [
+     "https://stortinget.no/no/Saker-og-publikasjoner/Publikasjoner/Referater/Stortinget/2010-2011/101123/5",
+     "https://stortinget.no/no/Saker-og-publikasjoner/Vedtak/Beslutninger/Lovvedtak/2016-2017/vedtak-201617-020/",
+     "https://stortinget.no/no/Saker-og-publikasjoner/Publikasjoner/Innstillinger/Stortinget/2016-2017/inns-201617-082l/?all=true"
+    ],
+    "t03": [
+     "https://www.regjeringen.no/no/dokumenter/horing---forslag-til-endringer-i-reglene-om-tidspunktet-for-garantistillelse-etter-bustadoppforingslova--12/id2459323/"
+    ],
+    "t11": [
+     "https://stortinget.no/no/Saker-og-publikasjoner/Publikasjoner/Representantforslag/2010-2011/dok8-201011-037/1/"
+    ]
+   }
+  }
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "version": "2026-10.1",
+ "note": "The line every post carries (in its body or on its card). Written by an AI and NOT yet checked by a native speaker: that check is part of the dry run.",
+ "disclaimers": {
+  "en": "Education from public sources, not advice.",
+  "hi": "सार्वजनिक स्रोतों से जानकारी, सलाह नहीं।",
+  "ar": "معلومات تعليمية من مصادر عامة، وليست نصيحة.",
+  "fr": "Information issue de sources publiques, pas un conseil.",
+  "pl": "Edukacja oparta na źródłach publicznych, nie porada.",
+  "zh-Hant": "根據公開來源的教育資訊，並非建議。",
+  "es": "Información de fuentes públicas, no un consejo.",
+  "de": "Information aus öffentlichen Quellen, keine Beratung.",
+  "ja": "公開情報に基づく解説であり、助言ではありません。",
+  "pt": "Informação de fontes públicas, não é aconselhamento.",
+  "it": "Informazione da fonti pubbliche, non una consulenza.",
+  "nl": "Informatie uit openbare bronnen, geen advies.",
+  "th": "ข้อมูลจากแหล่งสาธารณะ ไม่ใช่คำแนะนำ",
+  "sv": "Information från offentliga källor, inte rådgivning.",
+  "da": "Information fra offentlige kilder, ikke rådgivning.",
+  "no": "Informasjon fra offentlige kilder, ikke rådgivning.",
+  "fi": "Tietoa julkisista lähteistä, ei neuvontaa.",
+  "cs": "Informace z veřejných zdrojů, nikoli poradenství.",
+  "et": "Teave avalikest allikatest, mitte nõuanne.",
+  "lv": "Informācija no publiskiem avotiem, nevis padoms.",
+  "lt": "Informacija iš viešų šaltinių, o ne patarimas."
+ }
+}

@@ -1,0 +1,168 @@
+{
+ "version": "2026-10.1",
+ "note": "The hosts the research file uses that the keeper's official-site rule does not match, with what each is and why it is or is not official. NOTHING IS APPROVED BY DEFAULT: the loader (tools/social_seed.js --allow-hosts) sends a host only when a person has set approved to true here. Recommendations are advice, not approval. A host can be approved for one market only; the entry names the market.",
+ "hosts": [
+  {
+   "market": "GB",
+   "host": "consumercode.co.uk",
+   "name": "Consumer Code for Home Builders",
+   "what": "Industry-led code of practice, run by the home-building industry and its warranty providers. NOT a government body.",
+   "recommendation": "Decide: it is the code UK new-build buyers are protected by, but it is an industry document, not law. Approve only if you accept an industry code as a source; otherwise wait for the New Homes Quality Board or a gov.uk page.",
+   "recommendation_class": "decide",
+   "approved": false
+  },
+  {
+   "market": "ZA",
+   "host": "nhbrc.org.za",
+   "name": "National Home Builders Registration Council",
+   "what": "Statutory council set up by South African law to enrol new homes and run the warranty scheme (a national public entity).",
+   "recommendation": "Approve: a statutory body speaking about its own rules.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "CA",
+   "host": "tarion.com",
+   "name": "Tarion Warranty Corporation",
+   "what": "Non-profit corporation that administers Ontario's statutory new-home warranty under the Ontario New Home Warranties Plan Act. Not a ministry.",
+   "recommendation": "Approve with care: it is the warranty authority and its sheet is the working text, but its figures are dated and it is a corporation, not a ministry. The keeper must re-read it for current limits.",
+   "recommendation_class": "approve_with_care",
+   "approved": false
+  },
+  {
+   "market": "IE",
+   "host": "localgov.ie",
+   "name": "Irish local government portal (National Building Control and Market Surveillance Office)",
+   "what": "Government site hosting the National Building Control Office's publications. The address does not end in gov.ie.",
+   "recommendation": "Approve: a government office quoting the Regulations.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "DE",
+   "host": "gesetze-im-internet.de",
+   "name": "Gesetze im Internet (Federal Ministry of Justice and Federal Office of Justice)",
+   "what": "Germany's official free consolidated federal law site.",
+   "recommendation": "Approve: the official law text.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "ES",
+   "host": "defensordelpueblo.es",
+   "name": "Defensor del Pueblo (Spanish Ombudsman)",
+   "what": "High commissioner of the Spanish Parliament (Cortes Generales). Its pages quote and comment on the law; they are not the law itself.",
+   "recommendation": "Approve with care: official, but a commentary that quotes the provision, dated 2016. The BOE text should replace it.",
+   "recommendation_class": "approve_with_care",
+   "approved": false
+  },
+  {
+   "market": "JP",
+   "host": "pref.chiba.lg.jp",
+   "name": "Chiba Prefecture",
+   "what": "A Japanese prefectural government. Its pamphlet explains the national Act.",
+   "recommendation": "Approve with care: a local government explaining a national law; MLIT and the Ministry of Justice pages are better where reachable.",
+   "recommendation_class": "approve_with_care",
+   "approved": false
+  },
+  {
+   "market": "CH",
+   "host": "parlament.ch",
+   "name": "Swiss Parliament",
+   "what": "The Federal Assembly's own site, publishing the final-vote texts of laws.",
+   "recommendation": "Approve: the Parliament's own published text.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "CH",
+   "host": "bj.admin.ch",
+   "name": "Swiss Federal Office of Justice",
+   "what": "A federal government office; it announced the entry into force of the building-defects reform.",
+   "recommendation": "Approve: a federal office speaking for itself.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "IT",
+   "host": "consap.it",
+   "name": "CONSAP (Concessionaria Servizi Assicurativi Pubblici)",
+   "what": "A joint-stock company controlled by the Italian Ministry of Economy and Finance, which manages the buyers' solidarity fund on its behalf. The seeded PDF is a copy of the 2005 Official Gazette text of the decree, not the current consolidated version.",
+   "recommendation": "Approve with care: a state-controlled body hosting the decree, but the copy is the ORIGINAL 2005 text. Replace it with the current Normattiva text as soon as an address is found, and treat every draft as needing a check against the current law.",
+   "recommendation_class": "approve_with_care",
+   "approved": false
+  },
+  {
+   "market": "NL",
+   "host": "iplo.nl",
+   "name": "IPLO (Informatiepunt Leefomgeving)",
+   "what": "The Dutch government's knowledge centre for the physical living environment, published by Rijkswaterstaat for the ministries, with the Rijksoverheid, water boards, municipalities and provinces behind it. It explains the law; it is not the law itself.",
+   "recommendation": "Approve: a government information point speaking for the ministries. The page is explanatory, so quotes should be checked against the Civil Code text on wetten.overheid.nl when it is located.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "PT",
+   "host": "aiccopn.pt",
+   "name": "AICCOPN (Associação dos Industriais da Construção Civil e Obras Públicas)",
+   "what": "A Portuguese construction-industry trade association. It hosts a PDF copy of the Official Gazette issue containing Decree-Law 84/2021. It is NOT a public body and not the Gazette.",
+   "recommendation": "Decide: the PDF is a faithful copy of the Gazette text, but the host is an industry body. Approve only if you accept a trade-association copy as a stopgap, and replace it with the Gazette's own address (data.dre.pt or diariodarepublica.pt) as soon as one can be opened.",
+   "recommendation_class": "decide",
+   "approved": false
+  },
+  {
+   "market": "EE",
+   "host": "riigiteataja.ee",
+   "name": "Riigi Teataja (the Estonian State Gazette)",
+   "what": "Estonia's official gazette and legal database, published by the Ministry of Justice and Digital Affairs. It publishes consolidated Estonian laws with official English translations; the translations are for information.",
+   "recommendation": "Approve: the official publisher of Estonian law. Check that the seeded translation is the current consolidated version, and treat the Estonian text as the authoritative one.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "FI",
+   "host": "kkv.fi",
+   "name": "KKV (Kilpailu- ja kuluttajavirasto, the Finnish Competition and Consumer Authority)",
+   "what": "The Finnish government agency that enforces competition and consumer law. Its English pages explain the Housing Transactions Act for new-build buyers in plain language; they are guidance, not the Act.",
+   "recommendation": "Approve: the government consumer authority, in English, describing the current rules. Check any quote against the Act on Finlex, especially because the Act is being amended in 2026.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "SE",
+   "host": "boverket.se",
+   "name": "Boverket (the Swedish National Board of Housing, Building and Planning)",
+   "what": "The Swedish government agency for housing, building and planning. It authorises the certifiers and publishes the handbook on economic plans for tenant-owner associations. The handbook explains the Tenant-Ownership Act and Boverket's regulations; it is guidance.",
+   "recommendation": "Approve: a government agency, publishing the handbook for the sector. Its regulations are being replaced (new wording from 1 January 2027), so check quotes against the current version.",
+   "recommendation_class": "approve",
+   "approved": false
+  },
+  {
+   "market": "DK",
+   "host": "svendborg.dk",
+   "name": "Svendborg Kommune (a Danish municipality)",
+   "what": "A Danish local government. The seeded PDF is a form homeowners sign when applying for a building permit, with a fact sheet on the mandatory construction-damage insurance that cites the Building Act. It is one municipality's explanation, not the national authority's page and not the Act.",
+   "recommendation": "Approve with care: a government body quoting the Building Act, but a single municipality's document. Replace or supplement it with the national Housing and Planning Authority's page (sbst.dk) and the Act on retsinformation.dk, which need their own host approvals when seeded.",
+   "recommendation_class": "approve_with_care",
+   "approved": false
+  },
+  {
+   "market": "NO",
+   "host": "stortinget.no",
+   "name": "Stortinget (the Norwegian Parliament)",
+   "what": "Norway's Parliament. It publishes its debates, decisions and committee reports. The seeded pages are amendments to the Housing Construction Act and committee reports quoting it, not the consolidated Act.",
+   "recommendation": "Approve with care: the Parliament's own texts, but amendments and debates rather than the Act in force. Use them to find the provisions, and take figures only from the current consolidated Act on Lovdata once it is located.",
+   "recommendation_class": "approve_with_care",
+   "approved": false
+  },
+  {
+   "market": "NO",
+   "host": "regjeringen.no",
+   "name": "Regjeringen (the Norwegian Government)",
+   "what": "The Norwegian Government's official site. The seeded page is the Ministry of Justice and Public Security's consultation notice on the Housing Construction Act's guarantee rules.",
+   "recommendation": "Approve: the Government speaking about its own legislation. The page is a consultation notice, so it describes proposals and the law as it then stood.",
+   "recommendation_class": "approve",
+   "approved": false
+  }
+ ]
+}

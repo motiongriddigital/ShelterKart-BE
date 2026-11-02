@@ -60,7 +60,7 @@ function questionCompact(q) {
 }
 function fact(f, ref) {
   const st = f.inConflict ? 'conflict' : f.status;
-  return `<li class="f st-${st}"><p class="f-text">${ID(f.id)} ${esc(f.claim)}</p><p class="f-status">${esc(LABEL[st])}${f.foundBy && f.foundBy.length > 1 ? `, found by ${f.foundBy.length} engines` : ''}</p>${sourcesLine(f.sources)}<p class="f-reply"><a href="#" data-reply="${esc(f.id)}" data-ref="${esc(ref || '')}" data-claim="${esc(f.claim)}">Developer Right of Reply</a></p></li>`;
+  return `<li class="f st-${st}"><p class="f-text">${ID(f.id)} ${esc(f.claim)}</p><p class="f-status">${esc(LABEL[st])}${f.foundBy && f.foundBy.length > 1 ? `, found by ${f.foundBy.length} engines` : ''}</p>${sourcesLine(f.sources)}<p class="f-reply"><a href="#" data-reply="${esc(f.id)}" data-ref="${esc(ref || '')}" data-claim="${esc(f.claim)}">Respond or correct</a></p></li>`;
 }
 const promiseCard = p => `<div class="pr"><p class="pr-label">${esc(p.label)}</p><div class="pr-grid"><div class="pr-a"><span>Promised or marketed</span><p>${esc(p.promise)}</p></div><div class="pr-b"><span>The record shows</span><p>${esc(p.record)}</p></div></div>${p.note ? `<p class="pr-note">${esc(p.note)}</p>` : ''}</div>`;
 
@@ -138,6 +138,7 @@ table.tk{font-size:.82rem}table.tk td.n{white-space:nowrap}table.tk .bx{white-sp
 .guide-box{border:1px solid var(--rule,#E4DDD1);border-left:4px solid #D3A245;background:#FBF6EA;padding:1rem 1.2rem;margin:1.4rem 0;break-inside:avoid}
 .guide-box .gk{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:#8A6321;font-weight:700;margin:0 0 .3rem}
 .guide-box h3{margin:0 0 .3rem;font-size:1.1rem}.guide-box p{margin:.25rem 0}.guide-box a{color:var(--ink);font-weight:600}
+.f-resp{margin:8px 0 0;padding:8px 12px;border-left:3px solid var(--gold);background:var(--gold-wash);font-size:.88rem;line-height:1.5}.f-resp b{display:block;margin:0 0 2px;font-size:.76rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2)}
 .f-reply{margin:6px 0 0;font-size:.82rem}.f-reply a{color:var(--ink-2);text-decoration:underline;text-underline-offset:2px}
 .unlock{background:var(--ink);color:#fff;padding:1.4rem 1.6rem;margin:1.6rem 0;break-inside:avoid}
 .unlock h3{color:#fff;margin:0 0 .4rem;font-size:1.3rem}.unlock p{color:#dfe5ee;margin:.3rem 0}

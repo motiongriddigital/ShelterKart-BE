@@ -21,8 +21,8 @@ const crypto = require('crypto');
 
 /* Events a browser may send. Everything else is server-side only, so a
    script cannot inflate searches, purchases or revenue. */
-const CLIENT_EVENTS = new Set(['page_view', 'unlock_click', 'save_pdf', 'share_whatsapp', 'guide_open', 'guide_download', 'guide_share']);   // the last two: the free Home Buying Guide (detail = the chapter or place it was opened from)
-const SERVER_EVENTS = new Set(['search', 'report_open', 'checkout_started', 'purchase_paid', 'document_check', 'access_recovered']);
+const CLIENT_EVENTS = new Set(['page_view', 'unlock_click', 'save_pdf', 'share_whatsapp', 'guide_open', 'guide_download', 'guide_share', 'respond_open']);   // the last two: the free Home Buying Guide (detail = the chapter or place it was opened from)
+const SERVER_EVENTS = new Set(['search', 'report_open', 'checkout_started', 'purchase_paid', 'document_check', 'access_recovered', 'respond_submit']);
 
 const BOT_RE = /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|slack|discord|linkedinbot|embedly|pinterest|headless|lighthouse|monitor|curl|wget|python-requests|axios|node-fetch|go-http|java\//i;
 const isBot = ua => !ua || BOT_RE.test(String(ua));
@@ -35,6 +35,14 @@ function deviceOf(ua) {
 }
 
 const clip = (v, n) => (v == null ? '' : String(v)).replace(/[\u0000-\u001f]/g, '').trim().slice(0, n);
+/** Where a buyer came from, as the browser reports it at checkout (the first page of the visit): UTM tags and the referring page.
+ *  Cleaned and clipped like any other event field; null when the browser sent nothing. `captured` marks that the browser did report it,
+ *  so a paid report with no tags and no referrer is known to be a direct visit rather than an unknown one. */
+function sourceOf(src) {
+  if (!src || typeof src !== 'object') return null;
+  const u = src.utm && typeof src.utm === 'object' ? src.utm : {}, ref = String(src.referrer || '');
+  return { captured: true, utm: { source: clip(u.source, 60), medium: clip(u.medium, 60), campaign: clip(u.campaign, 100) }, referrer: /^https?:\/\//i.test(ref) ? clip(ref, 200) : '' };
+}
 function hostOf(u) {
   try { return new URL(u).hostname.toLowerCase().replace(/^www\.|^m\.|^l\.|^lm\./, ''); } catch { return ''; }
 }
@@ -93,6 +101,22 @@ function attachStore(s) { store = s; onNewSalt = s && s.saveSalt ? (day, salt) =
  * Build a stored event from request context. Returns null for bots and
  * unknown event names. Never throws.
  */
+/** The visitor's country from a header the hosting edge sets (Cloudflare, Vercel, CloudFront, Fly); '' when there is none ("unknown"). */
+function countryOf(headers = {}) {
+  const c = clip(headers['cf-ipcountry'] || headers['x-vercel-ip-country'] || headers['cloudfront-viewer-country'] || headers['fly-client-country'] || '', 2).toUpperCase();
+  return /^[A-Z]{2}$/.test(c) && c !== 'XX' ? c : '';
+}
+/** Countries where storing anything on a visitor's device, even a note that clears when the tab closes, needs the visitor's agreement first:
+ *  the European Economic Area, the United Kingdom and Switzerland. */
+const CONSENT_COUNTRIES = new Set('AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO GB CH'.split(' '));
+/** Does keeping the visit's source on the visitor's device need an explicit yes? 'required' or 'notice'.
+ *  SK_SOURCE_CONSENT: 'eu' (the default: the countries above, and any visitor whose country is unknown, because the safe default is to ask),
+ *  'all' (ask everywhere) or 'none' (never ask: notice only). */
+function sourceConsentMode(headers = {}, env = {}) {
+  const policy = String(env.SK_SOURCE_CONSENT || 'eu').toLowerCase();
+  if (policy === 'none') return 'notice'; if (policy === 'all') return 'required';
+  const c = countryOf(headers); return !c || CONSENT_COUNTRIES.has(c) ? 'required' : 'notice';
+}
 function makeEvent(event, { ip, ua, headers = {}, body = {}, ownHost = '', now = new Date() } = {}) {
   if (!CLIENT_EVENTS.has(event) && !SERVER_EVENTS.has(event)) return null;
   const serverSide = ua === 'server';             // e.g. a payment confirmed by Razorpay's webhook
@@ -101,7 +125,7 @@ function makeEvent(event, { ip, ua, headers = {}, body = {}, ownHost = '', now =
   const utm = body.utm && typeof body.utm === 'object' ? body.utm : {};
   // Country comes from a header set by the hosting edge (Cloudflare,
   // Vercel, CloudFront, Fly); without one it is honestly "unknown".
-  const country = clip(headers['cf-ipcountry'] || headers['x-vercel-ip-country'] || headers['cloudfront-viewer-country'] || headers['fly-client-country'] || '', 2).toUpperCase();
+  const country = countryOf(headers);
   return {
     at: now.toISOString(), day: today(now), event,
     visitor: serverSide ? 'server' : visitorId(ip, ua, now),
@@ -109,7 +133,7 @@ function makeEvent(event, { ip, ua, headers = {}, body = {}, ownHost = '', now =
     channel: channelOf({ utmSource: utm.source, referrerHost, ownHost }),
     referrer: referrerHost && referrerHost !== ownHost ? clip(referrerHost, 100) : '',
     utm_source: clip(utm.source, 60), utm_medium: clip(utm.medium, 60), utm_campaign: clip(utm.campaign, 100),
-    country: /^[A-Z]{2}$/.test(country) && country !== 'XX' ? country : '',
+    country,
     device: deviceOf(ua),
     market: clip(body.market, 4), ref: clip(body.ref, 20), query: clip(body.query, 120),
     value: Number.isFinite(Number(body.value)) ? Number(body.value) : null, currency: clip(body.currency, 3).toUpperCase(),
@@ -224,6 +248,7 @@ function aggregate(rows, { days = 30, now = new Date(), truncated = false } = {}
 }
 
 module.exports = {
+  CHANNEL_NAMES: CHANNELS.map(c => c[0]), sourceOf, countryOf, sourceConsentMode, CONSENT_COUNTRIES,
   CLIENT_EVENTS, SERVER_EVENTS, isBot, deviceOf, channelOf, hostOf, visitorId, saltFor, loadSalt, today,
   makeEvent, record, loadRows, aggregate, attachStore, _memory: memory, _salts: salts,
 };

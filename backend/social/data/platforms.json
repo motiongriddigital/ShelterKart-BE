@@ -1,0 +1,107 @@
+{
+ "version": "2026-10.1",
+ "note": "Starting defaults to be tuned from the first four weeks of data. Limits are from the platforms documentation as researched in October 2026 and must be rechecked before each connection is built.",
+ "platforms": {
+  "X": {
+   "name": "X",
+   "slot": "08:30",
+   "weekdaysOnly": false,
+   "maxHashtags": 2,
+   "maxChars": 280,
+   "maxLinks": 0,
+   "requiresMedia": false,
+   "series": "myth_or_fact",
+   "ayrshare": "twitter"
+  },
+  "FB": {
+   "name": "Facebook",
+   "slot": "19:00",
+   "weekdaysOnly": false,
+   "maxHashtags": 2,
+   "maxChars": 2000,
+   "maxLinks": 1,
+   "requiresMedia": true,
+   "series": "explainer_question",
+   "ayrshare": "facebook"
+  },
+  "IG": {
+   "name": "Instagram",
+   "slot": "19:30",
+   "weekdaysOnly": false,
+   "maxHashtags": 5,
+   "maxChars": 2200,
+   "maxLinks": 0,
+   "requiresMedia": true,
+   "series": "ask_this",
+   "ayrshare": "instagram"
+  },
+  "LI": {
+   "name": "LinkedIn",
+   "slot": "08:00",
+   "weekdaysOnly": true,
+   "maxHashtags": 5,
+   "maxChars": 3000,
+   "maxLinks": 0,
+   "requiresMedia": false,
+   "series": "what_it_means",
+   "ayrshare": "linkedin"
+  },
+  "YT": {
+   "name": "YouTube Shorts",
+   "slot": "18:00",
+   "weekdaysOnly": false,
+   "maxHashtags": 5,
+   "maxChars": 5000,
+   "maxLinks": 0,
+   "requiresMedia": true,
+   "mediaKind": "video",
+   "series": "read_the_record",
+   "ayrshare": "youtube"
+  },
+  "TT": {
+   "name": "TikTok",
+   "slot": "20:00",
+   "weekdaysOnly": false,
+   "maxHashtags": 5,
+   "maxChars": 2200,
+   "maxLinks": 0,
+   "requiresMedia": true,
+   "mediaKind": "video",
+   "series": "one_trap",
+   "ayrshare": "tiktok"
+  },
+  "TH": {
+   "name": "Threads",
+   "slot": "12:30",
+   "weekdaysOnly": false,
+   "maxHashtags": 1,
+   "maxChars": 500,
+   "maxLinks": 0,
+   "requiresMedia": false,
+   "series": "quick_tip",
+   "ayrshare": "threads"
+  },
+  "TG": {
+   "name": "Telegram",
+   "slot": "09:00",
+   "weekdaysOnly": false,
+   "maxHashtags": 5,
+   "maxChars": 1024,
+   "maxLinks": 1,
+   "requiresMedia": true,
+   "series": "weekly_card",
+   "ayrshare": "telegram"
+  },
+  "LN": {
+   "name": "LINE",
+   "slot": "12:00",
+   "weekdaysOnly": false,
+   "maxHashtags": 0,
+   "maxChars": 1000,
+   "maxLinks": 1,
+   "requiresMedia": true,
+   "series": "weekly_card",
+   "ayrshare": null
+  }
+ }
+}
