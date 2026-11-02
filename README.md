@@ -1,3 +1,5 @@
+> **Developers: start with [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)** (how the website works, where each piece of code lives, how to change it safely).
+
 # ShelterKart backend
 
 ShelterKart judges a new-build property project for a buyer before they pay the developer. A buyer names a project; several AI engines investigate it using official registers and web search; the buyer gets a free preview and pays for the full report: linked findings, each marked verified, reported or inferred, plus the questions to put to each team at the developer. The report never tells anyone whether to buy.

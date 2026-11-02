@@ -22,7 +22,7 @@
 
 **1.8 Conflicts.** Each owner, director, employee, contractor and adviser of ShelterKart discloses in writing any employment, paid engagement, shareholding or family interest in a company that may be researched. A person with such an interest does not research, write, review or approve a report on that company. ShelterKart keeps a register of disclosures. [Counsel to confirm the disclosure wording and whether any disclosure must be published.]
 
-**1.9 Right of reply.** A party named in a report may respond to a finding. Responses are shown beside the finding they answer, labelled as the party's response, and dated. A response does not change the finding.
+**1.9 Right of reply.** A party named in a report may respond to a finding. Responses are shown beside the finding they answer, labelled as the party's response, and dated. A response does not change the finding. A correction changes a finding only with evidence, and is dated and public.
 
 ---
 
@@ -80,6 +80,8 @@
 (a) At checkout: e-mail address; WhatsApp number, if given; billing country; the property searched; and the payment reference from the payment provider.
 (b) On the site: technical data needed to run the service, and usage events (such as a visit or a click). Usage events do not contain personal details. [Confirm against the live code before publication.]
 (c) When you contact us: the content of your message and your contact details.
+(d) When you respond to or correct a report: your e-mail address (never published), your name or organization if you give one, and your message (published only if it is a reply).
+(e) If you ask for your report to be delivered by e-mail: that address, kept with the report’s reference, so we can tell you if a finding in it is corrected. It is used for that one purpose.
 
 ShelterKart does not knowingly collect personal data from anyone under 18. Do not use the service if you are under 18.
 
@@ -105,7 +107,7 @@ ShelterKart does not knowingly collect personal data from anyone under 18. Do no
 
 ## 5. Right of reply and corrections
 
-**5.1 Right of reply.** A party named in a report may respond to any finding using the "Developer Right of Reply" link beside it. Before publication, a response is checked only for content that is unlawful, such as defamation of a named individual, personal data, or threats.
+**5.1 Right of reply.** A party named in a report may respond to any finding using the "Respond or correct" link beside it. Before publication, a response is screened automatically for content that is unlawful, such as defamation of a named individual, personal data, or threats; a response that is flagged, and every legal or privacy notice, is looked at by a person before anything is published. The sender must first confirm their e-mail address.
 
 **5.2 Display.** A response appears beside the finding it answers, labelled as the party's response, with its date. It does not replace the finding and does not change any finding.
 
