@@ -140,6 +140,18 @@ const RESPONSES = makeResponses({
   alert: (subject, text) => require('./engine/delivery').alertOperator(process.env, subject, text),
   siteBase: () => SITE_BASE(), refOk: ref => REF_RE.test(ref),
 });
+const { createAccounts } = require('./accounts');
+const { makeAccountStore } = require('./accounts/store');
+const ACCOUNTS = createAccounts({
+  env: process.env, store: makeAccountStore(process.env.DATABASE_URL ? pool : null), bot: BOT, rateLimit,
+  mail: m => require('./engine/delivery').sendEmail(process.env, m),
+  mailConfigured: Boolean(require('./engine/delivery').emailProvider(process.env)),
+  alert: (subject, text) => require('./engine/delivery').alertOperator(process.env, subject, text),
+  entitled: async (userId, ref) => (await pool.query(`SELECT 1 FROM report_purchases WHERE user_id=$1 AND report_ref=$2 AND status='paid' LIMIT 1`, [userId, ref])).rows.length > 0,
+  purchasesOf: async userId => (await pool.query(`SELECT report_ref, amount, currency, status, created_at FROM report_purchases WHERE user_id=$1 ORDER BY created_at DESC LIMIT 500`, [userId]))
+    .rows.map(r => ({ ref: r.report_ref, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.created_at })),
+  briefInfo: async ref => { const b = await getByRefAsync(ref); return b ? { projectName: b.project && b.project.name, market: b.market } : null; },
+});
 const { makePgStore } = require('./engine/persistence');
 // With a database configured, reports, aliases and the daily ceiling are
 // durable: a deploy or crash no longer erases what buyers paid for.
@@ -205,7 +217,9 @@ async function markPurchasePaid(db, { purchaseId, ref, provider, paymentId }, ct
     await db.query(`INSERT INTO audit_log (actor, action, object_type, object_id, reason) VALUES ('system','RESEARCH_PURCHASE_PAID','report_purchase',$1,$2)`,
       [purchaseId, `${provider} payment ${paymentId}`]);
     await recordSale(r.rows[0]);
-    try { onReportPaid(ref); } catch (e) { console.error('[investigate] could not continue a paid report:', e && e.message); }
+    let payer = null;
+    if (ACCOUNTS.enabled) { try { const u = await db.query(`SELECT u.email FROM report_purchases p JOIN users u ON u.id = p.user_id WHERE p.id=$1`, [purchaseId]); payer = (u.rows[0] && u.rows[0].email) || null; } catch { payer = null; } }
+    try { onReportPaid(ref, payer); } catch (e) { console.error('[investigate] could not continue a paid report:', e && e.message); }
   }
   return r.rows.length === 1;
 }
@@ -249,8 +263,8 @@ async function gateBrief(brief, req) {
   const fee = PRICING.previewFee(pricingData, brief, await buyerOf(req));
   const paywall = active ? { active: true, price: fee.price, currency: fee.currency, depth: fee.depth, depthLabel: fee.depthLabel, basis: fee.basis,
     fee: { net: fee.net, tax: fee.tax, taxName: fee.taxName, taxRateBps: fee.taxRateBps, taxInclusive: fee.taxInclusive }, buyer: fee.buyer, priceBookVersion: fee.priceBookVersion } : { active: false };
-  if (!active || verifyToken(req.get('x-report-access'), brief.ref, process.env.ACCESS_TOKEN_SECRET))
-    return { brief: { ...brief, locked: false }, paywall };
+  const open = !active || (ACCOUNTS.enabled ? await ACCOUNTS.entitled(req, brief.ref) : verifyToken(req.get('x-report-access'), brief.ref, process.env.ACCESS_TOKEN_SECRET));
+  if (open) return { brief: { ...brief, locked: false }, paywall };
   return { brief: previewOf(brief), paywall };
 }
 const { MARKETS, depthOf } = require('./engine/markets');
@@ -347,7 +361,7 @@ async function reconcileMor(purchaseId, ref, row) {
   return markPurchasePaid(pool, { purchaseId, ref, provider: 'mor', paymentId: s.payment_id });
 }
 
-app.post('/api/research/checkout', checkoutResearchLimiter, ah(async (req, res) => {
+app.post('/api/research/checkout', ACCOUNTS.guard, checkoutResearchLimiter, ah(async (req, res) => {
   if (!paywallActive(process.env)) return res.status(503).json({ ok: false, error: 'Payments are not enabled yet.' });
   const { ref, idempotencyKey, quoteId, billingCountry, buyerKind, taxId } = req.body || {};
   if (!REF_RE.test(String(ref || ''))) return res.status(400).json({ ok: false, error: 'Unknown report reference.' });
@@ -419,6 +433,10 @@ app.post('/api/research/checkout', checkoutResearchLimiter, ah(async (req, res) 
       [ref, quote.gross, quote.currency, adapter.id, idempotencyKey, quote.id, quote.buyer.country, billing, quote.net, quote.tax, quote.taxRateBps, quote.taxMode, quote.priceBookVersion,
        buyerKind === 'business' ? 'business' : 'individual', String(taxId || '').toUpperCase().split(/[^A-Z0-9 .\-]/)[0].replace(/[^A-Z0-9]/g, '').slice(0, 20) || null]);   // ends at the first character a tax ID can't contain
     purchaseId = r.rows[0].id;
+    if (ACCOUNTS.enabled) {
+      try { const owner = await ACCOUNTS.user(req); await pool.query(`UPDATE report_purchases SET user_id=$2 WHERE id=$1`, [purchaseId, owner.id]); }
+      catch (e2) { console.error('[accounts] purchase owner not saved:', e2 && e2.message); return res.status(503).json({ ok: false, error: 'Payment could not be started right now. Please try again.' }); }
+    }
   } catch (e) {
     // A concurrent request with the same key beat this one to the insert
     // -- the unique index caught it. Treat it the same as the read-first
@@ -472,7 +490,7 @@ app.get('/api/pricing/countries', (req, res) => {
 
 /* Issue a signed quote for this report and buyer, locked for 30 minutes. Any earlier open quote for the same
    report and session is superseded, so a buyer who changes country is never left holding two live prices. */
-app.post('/api/research/quote', researchLimiter, ah(async (req, res) => {
+app.post('/api/research/quote', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
   const { ref, previousQuoteId } = req.body || {};
   if (!REF_RE.test(String(ref || ''))) return res.status(400).json({ ok: false, error: 'Unknown report reference.' });
   const brief = await getByRefAsync(ref);
@@ -633,6 +651,9 @@ function persistJob(job) {
     updatedAt: Date.now(), saved: job.inv ? job.inv.exportState() : (job.saved || null) });
 }
 const tokenOk = (t, ref) => Boolean(t) && verifyToken(String(t), ref, process.env.ACCESS_TOKEN_SECRET);
+const fullAccess = (req, ref, token) => (ACCOUNTS.enabled ? ACCOUNTS.entitled(req, ref) : Promise.resolve(tokenOk(token, ref)));
+const ownsPurchase = async (req, purchaseId) => { const u = await ACCOUNTS.user(req); return Boolean(u) && (await pool.query(`SELECT 1 FROM report_purchases WHERE id=$1 AND user_id=$2`, [purchaseId, u.id])).rows.length > 0; };
+const grantOf = ref => (ACCOUNTS.enabled ? { ok: true, entitled: true } : { ok: true, token: issueToken(ref, process.env.ACCESS_TOKEN_SECRET) });
 const investigateCap = () => { const v = process.env.INVESTIGATE_DAILY_CAP; return v === undefined || v === '' ? 100 : Number(v); };
 const publicEvent = e => ({ type: e.type, stage: e.stage, phase: e.phase, counts: e.counts, ...(e.stage === 'sweep' || e.type === 'error' ? { message: e.message } : {}) });
 
@@ -666,9 +687,9 @@ function deliverReport(job) {
   const brief = getByRef(job.ref); const contact = (brief && brief.contact) || job.contact;
   if (!contact || job.delivered || !process.env.ACCESS_TOKEN_SECRET) return null;
   job.delivered = true;
-  const token = issueToken(job.ref, process.env.ACCESS_TOKEN_SECRET), link = reportLink(process.env, job.ref, token);
+  const token = issueToken(job.ref, process.env.ACCESS_TOKEN_SECRET), link = ACCOUNTS.enabled ? reportLink(process.env, job.ref, '').replace(/\?t=$/, '') : reportLink(process.env, job.ref, token);
   if (contact.email) RESPONSES.watch(job.ref, contact.email).catch(() => {});   // told if a finding in this report is corrected: that one purpose only
-  return DELIVERY.send({ ref: job.ref, project: (brief && brief.project && brief.project.name) || job.input.query, email: contact.email, phone: contact.phone, link, pdfLink: link.replace(/\?t=/, '/pdf?t=') });
+  return DELIVERY.send({ ref: job.ref, project: (brief && brief.project && brief.project.name) || job.input.query, email: contact.email, phone: contact.phone, link, pdfLink: ACCOUNTS.enabled ? link + '/pdf' : link.replace(/\?t=/, '/pdf?t=') });
 }
 /** Run the paid part. Never twice. After a restart it resumes from the saved state, so the research is not paid for again. */
 function completeLive(job) {
@@ -699,12 +720,14 @@ function completeLive(job) {
     .finally(() => { for (const l of job.listeners) { try { l.res.end(); } catch { /* gone */ } } job.listeners.clear(); });
 }
 /** Called whenever a purchase is settled (the browser's verification or Razorpay's webhook). A no-op for other reports. */
-function onReportPaid(ref) {
+function onReportPaid(ref, payerEmail) {
   const brief = getByRef(ref);
   if (!brief || brief.kind !== 'dossier') return;
   let job = liveJobs.get(ref);
   if (!job) { job = newLiveJob(ref, { query: brief.project.name, location: brief.location, country: brief.market.toUpperCase(), market: brief.marketLabel }); job.swept = false; job.status = 'preview'; }
+  if (ACCOUNTS.enabled && payerEmail) { job.contact = { email: payerEmail }; if (job.status === 'done') job.delivered = false; }
   job.paid = true; job.capUsd = aiCapFor(brief); persistJob(job);
+  if (job.status === 'done' && ACCOUNTS.enabled && payerEmail) { try { const p = deliverReport(job); if (p && typeof p.catch === 'function') p.catch(e => console.error('[investigate] delivery failed for ' + job.ref + ':', e && e.message)); } catch (e) { console.error('[investigate] delivery failed for ' + job.ref + ':', e && e.message); } }
   if (job.status === 'preview' || job.status === 'interrupted') completeLive(job);   // a sweep still running continues into completion when it ends
 }
 
@@ -733,7 +756,7 @@ app.get('/assets/report-live.js', (req, res) => { res.set({ 'Content-Type': 'app
 const SEARCH = require('./search/service').createSearch({ env: process.env });
 SEARCH.mount(app, { adminAuth, ah, jsonParser: express.json({ limit: '2mb' }), limiter: researchLimiter, stripPII, markets: MARKETS });
 
-app.post('/api/investigate', researchLimiter, ah(async (req, res) => {
+app.post('/api/investigate', ACCOUNTS.guardStart, researchLimiter, ah(async (req, res) => {
   const b = req.body || {};
   const query = String(b.query || '').trim(), location = String(b.location || '').trim().slice(0, 120), country = PRICING.cleanCode(b.country) || '';
   if (query.length < 3 || query.length > 120) return res.status(400).json({ ok: false, error: 'Name the project, in 3 to 120 characters.' });
@@ -742,6 +765,7 @@ app.post('/api/investigate', researchLimiter, ah(async (req, res) => {
   const key = DOSSIER_BRIEF.keyOf(query, location, country), seen = liveIndex.get(key);
   if (seen && Date.now() - seen.at < 30 * 24 * 3600 * 1000 && (liveJobs.has(seen.ref) || await getByRefAsync(seen.ref))) {
     try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: true }); } catch {}
+    ACCOUNTS.touch(req, seen.ref);
     return res.json({ ok: true, ref: seen.ref, reused: true });
   }
   if (BOT.enabled(process.env)) { const v = BOT.verify(b.pow, process.env); if (!v.ok) return res.status(428).json({ ok: false, code: 'challenge', error: 'Please complete the quick check and try again.' }); }
@@ -755,6 +779,7 @@ app.post('/api/investigate', researchLimiter, ah(async (req, res) => {
   if (running >= (Number(process.env.INVESTIGATE_CONCURRENCY) || 2) * 2) return res.status(429).json({ ok: false, error: 'Many investigations are running. Please try again in a few minutes.' });
   investigateDaily.count++; investigateDaily.byMarket[mk] = (investigateDaily.byMarket[mk] || 0) + 1;
   const ref = DOSSIER_BRIEF.newRef(), input = { query, location, country, market: String(b.market || '').slice(0, 60) };
+  ACCOUNTS.touch(req, ref);
   registerBrief(DOSSIER_BRIEF.briefOf({ ref, query, location, country, marketLabel: input.market, phase: 'starting' }));
   liveIndex.set(key, { ref, at: Date.now() });
   const job = newLiveJob(ref, input); job.key = key;
@@ -765,34 +790,37 @@ app.post('/api/investigate', researchLimiter, ah(async (req, res) => {
   res.status(202).json({ ok: true, ref });
 }));
 
-app.get('/api/investigate/:ref/events', (req, res) => {
+app.get('/api/investigate/:ref/events', ACCOUNTS.guard, ah(async (req, res) => {
   const ref = String(req.params.ref || ''); if (!REF_RE.test(ref)) return res.status(400).json({ ok: false });
-  const job = liveJobs.get(ref), full = tokenOk(req.query && req.query.t, ref);
+  ACCOUNTS.touch(req, ref);
+  const job = liveJobs.get(ref), full = await fullAccess(req, ref, req.query && req.query.t);
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   if (res.flushHeaders) res.flushHeaders();
   for (const e of (job ? job.events : [])) res.write(`event: ${e.type}\ndata: ${JSON.stringify(full ? e : publicEvent(e))}\n\n`);
   const open = job && (job.status === 'sweeping' || (full && job.status === 'completing'));
   if (!open) return res.end();
   const l = { res, full }; job.listeners.add(l); req.on('close', () => job.listeners.delete(l));
-});
+}));
 
-app.post('/api/investigate/:ref/contact', checkoutResearchLimiter, ah(async (req, res) => {
+app.post('/api/investigate/:ref/contact', ACCOUNTS.guard, checkoutResearchLimiter, ah(async (req, res) => {
   const ref = String(req.params.ref || ''); if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Unknown report reference.' });
   const brief = await getByRefAsync(ref); if (!brief || brief.kind !== 'dossier') return res.status(404).json({ ok: false, error: 'Unknown report.' });
+  if (ACCOUNTS.enabled) return res.json({ ok: true });
   const c = DOSSIER_BRIEF.cleanContact(req.body || {}); if (c.error) return res.status(400).json({ ok: false, error: c.error });
   const job = liveJobs.get(ref); if (job) { job.contact = c.contact; persistJob(job); }
   registerBrief({ ...brief, contact: c.contact });
   res.json({ ok: true });
 }));
 
-app.get('/r/:ref', ah(async (req, res) => {
+app.get('/r/:ref', ACCOUNTS.guardPage, ah(async (req, res) => {
   const ref = String(req.params.ref || '');
   res.set({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
   const brief = REF_RE.test(ref) ? await getByRefAsync(ref) : null;
   if (!brief || brief.kind !== 'dossier') return res.status(404).send(PAGES.startPage({ botGuard: BOT.enabled(process.env) }).replace('Know who you are paying, before you pay.', 'That report was not found. Start a new one.'));
   if (!brief.dossier) return res.send(PAGES.workingPage({ ref, query: brief.project.name }));
+  ACCOUNTS.touch(req, ref);
   const t = String((req.query && req.query.t) || '');
-  if (tokenOk(t, ref)) {
+  if (await fullAccess(req, ref, t)) {
     if (brief.dossier.phase !== 'complete') onReportPaid(ref);   // a paid report that is not yet complete (for example after a restart) continues
     return res.send(PAGES.fullPage(brief.dossier, { ref, token: t, pdf: PDF.available() }));
   }
@@ -804,9 +832,9 @@ app.get('/r/:ref', ah(async (req, res) => {
   res.send(PAGES.previewPage(brief.dossier, { ref, price, country: buyer.country, held: REVIEW.isHeld(brief), payments: paywallActive(process.env) }));
 }));
 
-app.get('/r/:ref/pdf', ah(async (req, res) => {
+app.get('/r/:ref/pdf', ACCOUNTS.guard, ah(async (req, res) => {
   const ref = String(req.params.ref || ''); const t = String((req.query && req.query.t) || '');
-  if (!REF_RE.test(ref) || !tokenOk(t, ref)) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
+  if (!REF_RE.test(ref) || !(await fullAccess(req, ref, t))) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
   const brief = await getByRefAsync(ref); if (!brief || !brief.dossier) return res.status(404).json({ ok: false, error: 'No report yet.' });
   try {
     const pdf = await PDF.renderPdf(renderDossier(brief.dossier), { footer: `ShelterKart report: ${brief.project.name}. ${ref}. Research, not advice.` });
@@ -905,17 +933,18 @@ app.get('/api/admin/tax', adminAuth, ah(async (req, res) => {
 /* The checkout's success handler. Instant unlock: the signature is
    checked against the order id stored on OUR server for this purchase,
    so a browser cannot pair a real payment with someone else's order. */
-app.post('/api/research/razorpay/verify', checkoutResearchLimiter, ah(async (req, res) => {
+app.post('/api/research/razorpay/verify', ACCOUNTS.guard, checkoutResearchLimiter, ah(async (req, res) => {
   if (!paywallActive(process.env)) return res.status(503).json({ ok: false, error: 'Payments are not enabled yet.' });
   const { ref, purchaseId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body || {};
   if (!REF_RE.test(String(ref || '')) || !/^[0-9a-f-]{36}$/i.test(String(purchaseId || '')) || !/^pay_\w+$/.test(String(paymentId || '')))
     return res.status(400).json({ ok: false, error: 'Invalid request.' });
   const q = await pool.query(`SELECT status, provider_order_id FROM report_purchases WHERE id=$1 AND report_ref=$2`, [purchaseId, ref]);
   if (!q.rows.length || !q.rows[0].provider_order_id) return res.status(404).json({ ok: false, error: 'Purchase not found.' });
+  if (ACCOUNTS.enabled && !(await ownsPurchase(req, purchaseId))) return res.status(403).json({ ok: false, code: 'not_entitled', error: 'This purchase belongs to another account.' });
   const valid = rzp.verifyCheckoutSignature({ serverOrderId: q.rows[0].provider_order_id, paymentId, signature, keySecret: process.env.RAZORPAY_KEY_SECRET });
   if (!valid) return res.status(400).json({ ok: false, error: 'This payment could not be verified. If you were charged, write to us with your receipt.' });
   if (q.rows[0].status !== 'paid') await markPurchasePaid(pool, { purchaseId, ref, provider: 'razorpay', paymentId }, { req });
-  res.json({ ok: true, token: issueToken(ref, process.env.ACCESS_TOKEN_SECRET) });
+  res.json(grantOf(ref));
 }));
 
 /* Razorpay's webhook: the backstop if the buyer closes the tab before
@@ -1006,7 +1035,7 @@ app.post('/api/payments/mor/webhook', express.raw({ type: 'application/json', li
 
 /* Exchange a paid purchase for an access token. The purchase id is a
    random UUID known only to the buyer who started it. */
-app.post('/api/research/access', checkoutResearchLimiter, ah(async (req, res) => {
+app.post('/api/research/access', ACCOUNTS.guard, checkoutResearchLimiter, ah(async (req, res) => {
   if (!paywallActive(process.env)) return res.status(503).json({ ok: false, error: 'Payments are not enabled yet.' });
   const { ref, purchaseId } = req.body || {};
   if (!REF_RE.test(String(ref || '')) || !/^[0-9a-f-]{36}$/i.test(String(purchaseId || '')))
@@ -1016,12 +1045,13 @@ app.post('/api/research/access', checkoutResearchLimiter, ah(async (req, res) =>
     try { if (await reconcileMor(purchaseId, ref, r.rows[0])) r.rows[0].status = 'paid'; } catch (e) { console.error('[mor] could not confirm the payment yet:', e && e.message); }
   }
   if (!r.rows.length || r.rows[0].status !== 'paid') return res.status(402).json({ ok: false, error: 'Payment has not been confirmed yet.' });
-  res.json({ ok: true, token: issueToken(ref, process.env.ACCESS_TOKEN_SECRET) });
+  if (ACCOUNTS.enabled && !(await ownsPurchase(req, purchaseId))) return res.status(403).json({ ok: false, code: 'not_entitled', error: 'This purchase belongs to another account.' });
+  res.json(grantOf(ref));
 }));
 
 /* The buyer's own document, checked against the research. Never stored,
    never logged, never cached: it exists only for this request. */
-app.post('/api/research/document-check', documentLimiter, express.json({ limit: '12mb' }), ah(async (req, res) => {
+app.post('/api/research/document-check', ACCOUNTS.guard, documentLimiter, express.json({ limit: '12mb' }), ah(async (req, res) => {
   const { query, location, market, file, mediaType } = req.body || {};
   try {
     const brief = await runResearch({ query: stripPII(query), location: stripPII(location), market }, { env: process.env, http: registryHttp });
@@ -1047,11 +1077,12 @@ app.get('/api/languages', (req, res) => {
   res.json({ ok: true, languages: languageList(), markets: Object.fromEntries(Object.keys(MARKETS).map(m => [m, languagesForMarket(m)])) });
 });
 
-app.get('/api/research/by-ref/:ref', researchLimiter, ah(async (req, res) => {
+app.get('/api/research/by-ref/:ref', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
   const ref = req.params.ref;
   if (!REF_RE.test(String(ref || ''))) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
   const brief = await getByRefAsync(ref);   // memory first, then storage
   if (!brief) return res.status(404).json({ ok: false, error: 'This report is no longer available. Search again for the latest information.' });
+  ACCOUNTS.touch(req, ref);
   track('report_open', req, { ref, market: brief.market, lang: pickLanguage(req.query && req.query.lang) });
   res.set('X-Robots-Tag', 'noindex, nofollow');
   res.set('Cache-Control', 'no-store');
@@ -1097,6 +1128,7 @@ app.post('/api/track', trackLimiter, (req, res) => {
    their access back with the payment ID from Razorpay's receipt email.
    Payment IDs are long and random, and this route is rate-limited. */
 app.post('/api/research/recover', checkoutResearchLimiter, ah(async (req, res) => {
+  if (ACCOUNTS.enabled) return res.status(410).json({ ok: false, code: 'use_account', error: 'Sign in with the e-mail you bought with. Your reports are under My reports.' });
   if (!paywallActive(process.env)) return res.status(503).json({ ok: false, error: 'Payments are not enabled yet.' });
   const paymentId = String((req.body || {}).paymentId || '').trim();
   if (!/^pay_[A-Za-z0-9]{8,30}$/.test(paymentId))
@@ -1157,7 +1189,7 @@ app.get('/api/research/challenge', trackLimiter, (req, res) => {
   res.json({ ok: true, ...BOT.issue(process.env, { usage }) });
 });
 
-app.post('/api/research', researchLimiter, ah(async (req, res) => {
+app.post('/api/research', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
   const { query, location, market } = req.body || {};
   // New research costs money; a report already researched does not. Only the first needs the browser's proof of work.
   if (BOT.enabled(process.env) && !isAnswerable({ query: stripPII(query), location: stripPII(location), market })) {
@@ -1169,6 +1201,7 @@ app.post('/api/research', researchLimiter, ah(async (req, res) => {
     try { SEARCH.afterResearch({ query: stripPII(query), location: stripPII(location), market, brief }); } catch {}   // shadow comparison; the project becomes findable
     res.set('X-Robots-Tag', 'noindex, nofollow'); // some sources forbid search-engine indexing of reused data
     res.set('Cache-Control', 'no-store');         // a paid brief must never sit in a shared cache
+    ACCOUNTS.touch(req, brief.ref);
     track('search', req, { market, query: stripPII(query), ref: brief.ref, lang: pickLanguage(req.body && req.body.lang), detail: brief.matchedAs ? 'matched' : brief.cached ? 'cached' : 'fresh' });
     res.json({ ok: true, ...(await localize(await gateBrief(CREDITS.attach(REVIEW.forBuyer(brief)), req), req)) });
   } catch (e) {
@@ -1292,6 +1325,8 @@ app.post('/api/admin/response-queue/:id/resolve', adminAuth, ah(async (req, res)
   const r = await RESPONSES.resolve(req.params.id, req.body || {});
   res.status(r.status).json(r.ok ? { ok: true, publicRef: r.publicRef, outcome: r.outcome, notified: r.notified } : { ok: false, error: r.error });
 }));
+
+ACCOUNTS.mount(app);
 
 app.post('/api/dispute', disputeLimiter, ah(async (req, res) => {
   const { contact, note, reportRef } = req.body || {};
@@ -1697,6 +1732,11 @@ if (require.main === module) {
       HEALTH.startSchedule(runSourceHealth, { hours: Number(process.env.SOURCE_HEALTH_HOURS) || 24 });
       console.log('[source-health] scheduled: first run in a minute, then every ' + (Number(process.env.SOURCE_HEALTH_HOURS) || 24) + 'h');
     }
+    if (ACCOUNTS.problems.length) {
+      console.error('[accounts] configuration problems:\n - ' + ACCOUNTS.problems.join('\n - '));
+      if (process.env.NODE_ENV === 'production') process.exit(1);
+    }
+    if (ACCOUNTS.enabled) setInterval(() => ACCOUNTS.cleanup().catch(e => console.error('[accounts] clean-up failed:', e && e.message)), 6 * 3600 * 1000).unref();
     app.listen(PORT, () => console.log(`ShelterKart API listening on port ${PORT}`));
   })();
 }

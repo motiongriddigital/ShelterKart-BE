@@ -134,7 +134,7 @@ const SCRIPT = `(function () {
         description: 'Due-diligence report ' + ref, prefill: { email: uf.email.value, contact: uf.phone.value },
         handler: function (resp) { msg.textContent = 'Confirming your payment';
           post('/api/research/razorpay/verify', { ref: ref, purchaseId: co.purchaseId, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature })
-            .then(function (v) { if (v.ok && v.token) location.href = '/r/' + encodeURIComponent(ref) + '?t=' + encodeURIComponent(v.token); else fail(v.error || 'We could not confirm the payment. If you were charged, write to us with your receipt.'); }); },
+            .then(function (v) { if (v.ok && (v.token || v.entitled)) location.href = '/r/' + encodeURIComponent(ref) + (v.token ? '?t=' + encodeURIComponent(v.token) : ''); else fail(v.error || 'We could not confirm the payment. If you were charged, write to us with your receipt.'); }); },
         modal: { ondismiss: function () { fail('Payment cancelled. You have not been charged.'); } } }).open(); })
       .catch(function (err) { fail(err && err.message); });
   });
