@@ -287,7 +287,7 @@ Review checklist before enabling in production: the tests in section 12 pass; a 
 - Audit: `auth.login`, `auth.login_failed` (after the attempts limit), `auth.logout`, `account.delete`, `account.export` in the existing `audit_log`, actor `user:<id>` or `anonymous`.
 - Clean-up: `cleanup()` runs once a day with the existing daily schedule: delete `auth_codes` older than 24 hours and sessions expired or revoked more than 7 days ago.
 - Alerts (existing `alertOperator`): e-mail send failure rate above 20 percent in 10 minutes; more than 50 `too_many_attempts` in an hour.
-- Metrics from existing analytics events, no user ids: the events `signin_wall`, `signin_code_requested` and `signin_verified` (server side, no personal data) are planned for `SERVER_EVENTS` and are not built yet (plan slice S5).
+- Metrics from existing analytics events, no user ids: the events `signin_wall` (sent by the browser through `/api/track` when the dialog opens, because only the browser knows that), `signin_code_requested` (detail `sent` or `failed`) and `signin_verified` (detail `new` or `returning`), the last two recorded by the server. None carries a user id or an address. The analytics summary returns them as `signin_funnel` (wall, code, signed in, each with its share of the step before) and in `totals`.
 
 ## 12. Tests
 
@@ -316,7 +316,7 @@ Review checklist before enabling in production: the tests in section 12 pass; a 
 | `backend/server.js` | Create the module, add guards, `gateBrief`, `/r/:ref`, pdf, events, verify, access, recover, checkout user link, `deliverReport`, startup check, daily clean-up |
 | `backend/engine/delivery.js` | Report link without token when accounts are on |
 | `backend/engine/reportPages.js` | The full page works without a token in the URL |
-| `backend/engine/analytics.js` | The three funnel events |
+| `backend/engine/analytics.js` | The three funnel events and `signin_funnel` |
 | `backend/.env.example`, `docs/api/openapi.yaml`, `docs/architecture.md`, `README.md` | Documented |
 | `backend/test/harness/stubs/pg/index.js` | Handles the new queries |
 

@@ -21,8 +21,8 @@ const crypto = require('crypto');
 
 /* Events a browser may send. Everything else is server-side only, so a
    script cannot inflate searches, purchases or revenue. */
-const CLIENT_EVENTS = new Set(['page_view', 'unlock_click', 'save_pdf', 'share_whatsapp', 'guide_open', 'guide_download', 'guide_share', 'respond_open']);   // the last two: the free Home Buying Guide (detail = the chapter or place it was opened from)
-const SERVER_EVENTS = new Set(['search', 'report_open', 'checkout_started', 'purchase_paid', 'document_check', 'access_recovered', 'respond_submit']);
+const CLIENT_EVENTS = new Set(['page_view', 'unlock_click', 'save_pdf', 'share_whatsapp', 'guide_open', 'guide_download', 'guide_share', 'respond_open', 'signin_wall']);   // the last two: the free Home Buying Guide (detail = the chapter or place it was opened from)
+const SERVER_EVENTS = new Set(['search', 'report_open', 'checkout_started', 'purchase_paid', 'document_check', 'access_recovered', 'respond_submit', 'signin_code_requested', 'signin_verified']);
 
 const BOT_RE = /bot|crawl|spider|slurp|preview|facebookexternalhit|whatsapp|telegram|slack|discord|linkedinbot|embedly|pinterest|headless|lighthouse|monitor|curl|wget|python-requests|axios|node-fetch|go-http|java\//i;
 const isBot = ua => !ua || BOT_RE.test(String(ua));
@@ -233,9 +233,12 @@ function aggregate(rows, { days = 30, now = new Date(), truncated = false } = {}
       unlock_clicks: count.unlock_click, checkouts_started: count.checkout_started, purchases: count.purchase_paid,
       pdf_saves: count.save_pdf, whatsapp_shares: count.share_whatsapp, guide_opens: count.guide_open, guide_downloads: count.guide_download, guide_shares: count.guide_share, document_checks: count.document_check,
       access_recovered: count.access_recovered,
+      signin_walls: count.signin_wall, signin_codes_requested: count.signin_code_requested, signins: count.signin_verified,
       revenue: [...revenue.entries()].map(([currency, amount]) => ({ currency, amount: Math.round(amount * 100) / 100 })),
     },
     funnel,
+    signin_funnel: [['Wall shown', count.signin_wall], ['Code requested', count.signin_code_requested], ['Signed in', count.signin_verified]]
+      .map(([label, n], i, arr) => ({ label, count: n, ofPrevious: i === 0 || arr[i - 1][1] === 0 ? null : Math.round(1000 * n / arr[i - 1][1]) / 10 })),
     daily: dayList.map(d => { const x = byDay.get(d); return { day: d, visitors: x.visitors.size, page_views: x.page_views, searches: x.searches, report_opens: x.report_opens, purchases: x.purchases }; }),
     channels: top(channels), referrers: top(referrers), campaigns: top(campaigns), countries: top(countries),
     devices: top(devices), markets: top(markets, 25), top_searches: top(queries, 15), search_outcomes: top(outcomes),

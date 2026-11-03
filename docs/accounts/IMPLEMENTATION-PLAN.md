@@ -10,12 +10,13 @@ Written 3 November 2026. Epic SHEL-50 on the board. Design in `TDD.md`, requirem
 | S2 | Sign-in, session and account routes (`index.js`), cookie, guards, clean-up | Built and tested, including against a real database with `tools/smoke_accounts.js`. |
 | S3 | The wall in `server.js`: guards, entitlement by purchase, purchase owner, no-token report pages, recover retired, account e-mail for delivery | Built. `test/harness/accounts.test.js` covers every guarded and public route, ownership, refund and sign-out. |
 | S4 | Documentation: OpenAPI (tag Accounts), `.env.example`, this folder | Built. |
-| S5 | Funnel events (`signin_wall`, `signin_code_requested`, `signin_verified`) in analytics | Not built. Needs the owner to confirm the funnel in `PRD.md` section 9. |
+| S5 | Funnel events (`signin_wall`, `signin_code_requested`, `signin_verified`) in analytics | Built, as the funnel in `PRD.md` section 9 describes it (still to be confirmed by the owner). `signin_wall` must be sent by the website through `/api/track` when it opens the dialog. Covered in `test/harness/accounts.test.js`. |
 | S6 | Hardening: configurable proxy trust (SHEL-35), startup check for the whole configuration (SHEL-43), security review, e-mail alerts on send failure rate | Partly: the accounts part of the startup check and the single-failure alert exist. SHEL-35 and SHEL-43 stay open. |
 | S7 | Remove the old access-token code | Not before the flag has been on in production for 30 days. |
 
 ## What was verified
 
+- The delivery e-mail to the paying account is covered by a harness test (a webhook settles a purchase of an investigated project and the report link, without a token, goes to the buyer's address only).
 - `npm test`: the previous 907 checks unchanged with accounts off, plus the new unit and harness suites.
 - Real Postgres 16 in a throwaway container: 13 migrations apply, a second run applies none, the existing smoke test passes in production mode with accounts off, and `tools/smoke_accounts.js` passes against a second server with accounts on (17 checks). Afterwards the database held the user, the revoked session, the used code and two audit rows.
 - CI runs both smoke tests in the `real-run` job (second server on port 3001).
@@ -24,7 +25,6 @@ Written 3 November 2026. Epic SHEL-50 on the board. Design in `TDD.md`, requirem
 
 - Real e-mail delivery: no provider is configured here. The code reaches the user only through `sendEmail`, which is covered by its own tests, and through the dev echo in tests.
 - A browser. The cookie attributes are checked as strings, not in Chrome. Do this on staging (checklist below).
-- The delivery e-mail to the paying account (`onReportPaid` with the buyer's address). It is built, but the test stub does not return the buyer's address, so no test covers it yet.
 - The website side. Nothing in the frontend repository has changed.
 
 ## Staging checklist before switching on in production

@@ -143,7 +143,7 @@ const RESPONSES = makeResponses({
 const { createAccounts } = require('./accounts');
 const { makeAccountStore } = require('./accounts/store');
 const ACCOUNTS = createAccounts({
-  env: process.env, store: makeAccountStore(process.env.DATABASE_URL ? pool : null), bot: BOT, rateLimit,
+  env: process.env, store: makeAccountStore(process.env.DATABASE_URL ? pool : null), bot: BOT, rateLimit, track: (event, req, body) => track(event, req, body),
   mail: m => require('./engine/delivery').sendEmail(process.env, m),
   mailConfigured: Boolean(require('./engine/delivery').emailProvider(process.env)),
   alert: (subject, text) => require('./engine/delivery').alertOperator(process.env, subject, text),

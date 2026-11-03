@@ -28,6 +28,7 @@ function createAccounts(deps = {}) {
   const purchasesOf = deps.purchasesOf || (async () => []);
   const entitledFn = deps.entitled || (async () => false);
   const briefInfo = deps.briefInfo || (async () => null);
+  const track = (event, req, body) => { try { if (deps.track) deps.track(event, req, body || {}); } catch (e) { console.error('[accounts] track failed:', e && e.message); } };
   const rateLimit = deps.rateLimit || (() => (req, res, next) => next());
   const problems = validate(env, { hasDatabase: store.kind === 'postgres', mailConfigured: Boolean(deps.mailConfigured) });
 
@@ -123,6 +124,7 @@ function createAccounts(deps = {}) {
       const sent = await mail({ to: email, subject: 'Your ShelterKart sign-in code',
         text: `Your ShelterKart sign-in code is ${code}\n\nIt works for ${cfg.codeMinutes} minutes. If you did not ask for it, ignore this e-mail: nobody can sign in without the code.` }).catch(() => false);
       if (!sent) { console.error('[accounts] the sign-in code could not be sent'); alert('sign-in codes are not being sent', 'The e-mail provider refused or is not configured.').catch(() => {}); }
+      track('signin_code_requested', req, { detail: sent ? 'sent' : 'failed' });
       const out = { ok: true, cooldownSeconds: 60, codeLength: 6 };
       if (cfg.devEcho && !cfg.production) out.devCode = code;
       res.status(202).json(out);
@@ -154,6 +156,7 @@ function createAccounts(deps = {}) {
       await store.createSession({ tokenHash: S.hashToken(token), userId: u.id, expiresAt: new Date(t + cfg.sessionDays * DAY), ipHash: S.hashIp(cfg.pepper, req.ip), userAgent: clip(req.get && req.get('user-agent'), 200), now: at() });
       setCookie(res, token, cfg.sessionDays * DAY / 1000);
       await audit('user:' + u.id, 'auth.login', u.id, isNewUser ? 'new account' : null);
+      track('signin_verified', req, { detail: isNewUser ? 'new' : 'returning' });
       res.json({ ok: true, isNewUser, user: publicUser({ ...u, lastLoginAt: at() }) });
     }));
 

@@ -39,6 +39,8 @@ When to show the wall is your design decision with the owner: on pressing search
 
 The server-rendered pages `/r/:ref` and `/r/:ref/pdf` redirect or refuse an unsigned visitor. `/r/:ref` answers 302 to `/signin?next=<path>`. Build `/signin` to read `next`, show the dialog, and after success go to `next` only if it starts with a single `/`.
 
+When the dialog opens, send one analytics event: `POST /api/track` with `{ "event": "signin_wall", "path": "/" }`, like the other page events. The server records the code request and the sign-in itself, so nothing else is needed; no user id or address goes into analytics.
+
 ## 4. Payment
 
 - Remove the e-mail and phone fields from `PayModal`. The receipt and the report go to the account e-mail.
