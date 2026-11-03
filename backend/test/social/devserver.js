@@ -27,7 +27,7 @@ function miniApp() {
   const keeperEngines = { modelFor: r => ({ provider: r === 'adviser' ? 'alpha' : 'beta' }), async run(role) { return { text: role === 'adviser' ? JSON.stringify({ statements: [GOOD] }) : JSON.stringify({ supported: true, why: 'stated on the page' }) }; } };
   const social = await createSocial({ env, now: () => NOW, judge: async () => ({ pass: true, issues: [] }), renderer: null, keeperEngines, keeperFetch, log: { log() {}, error: e => console.error(e) } });
   for (const it of F.buildKb(() => '2026-10-25').all()) social.kb.put(it);
-  const app = miniApp(); social.mount(app, { adminAuth: (q, r, n) => n(), ah: fn => fn, jsonParser: (q, r, n) => n(), pageFile: path.join(__dirname, '..', '..', '..', 'admin-social.html') });
+  const app = miniApp(); social.mount(app, { adminAuth: (q, r, n) => n(), ah: fn => fn, jsonParser: (q, r, n) => n(), pageFile: path.join(__dirname, '..', '..', 'social', 'admin-social.html') });
   const server = http.createServer(async (req, res) => { try { if (req.url === '/' ) { res.writeHead(302, { Location: '/admin/social' }); return res.end(); } if (!(await app.handle(req, res))) { res.writeHead(404); res.end('not found'); } } catch (e) { console.error(e); res.writeHead(500); res.end('error'); } });
   server.listen(Number(process.env.PORT) || 0, '127.0.0.1', () => console.log('READY http://127.0.0.1:' + server.address().port + '/admin/social'));
 })();

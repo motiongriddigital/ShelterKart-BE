@@ -71,8 +71,8 @@ production.
 │                                   standalone policy and information pages, GENERATED from the website by
 │                                   tools/build_policies.js: edit the website, not these
 ├── admin.html                      the operator's dashboard (reports, held findings, disputes, costs, health)
-├── admin-social.html               the marketing desk screen (served by the API at /admin/social)
-├── admin-marketing.html            the marketing dashboard screen (served by the API at /admin/marketing)
+├── backend/social/admin-social.html  the marketing desk screen (served by the API at /admin/social)
+├── backend/marketing/admin-marketing.html  the marketing dashboard screen (served by the API at /admin/marketing)
 ├── sw.js, manifest.json            the installable-app shell (service worker, app manifest)
 ├── i18n/                           interface translations: en.json lists every string, one file per language
 ├── legal/                          the legal pack (Final is current; v2 is kept for history)

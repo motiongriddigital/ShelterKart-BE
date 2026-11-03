@@ -1070,7 +1070,7 @@ paths:
               type: object
               required: [event]
               properties:
-                event: {type: string, enum: [page_view, unlock_click, save_pdf, share_whatsapp, guide_open, guide_download, guide_share]}
+                event: {type: string, enum: [page_view, unlock_click, save_pdf, share_whatsapp, guide_open, guide_download, guide_share, respond_open, signin_wall]}
                 path: {type: string}
                 referrer: {type: string}
                 utm: {description: 'Passed through to analytics. Shape not documented.'}
@@ -1090,6 +1090,209 @@ paths:
                   ok: {type: boolean, const: false}
         '403': {$ref: '#/components/responses/OriginNotAllowed'}
         '429': {$ref: '#/components/responses/RateLimitedText'}
+  /api/source-consent:
+    get:
+      operationId: getSourceConsent
+      tags: [Tracking]
+      summary: Whether the page must ask before keeping the visit's source
+      description: 'Decided from the visitor country in the hosting edge header, so it is never cached (`Cache-Control: private, no-store`). `required` means the page asks first; `notice` means a notice is enough. Policy comes from `SK_SOURCE_CONSENT`.'
+      security: []
+      x-source: backend/server.js:1173
+      responses:
+        '200':
+          description: The mode for this visitor.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [mode]
+                properties:
+                  mode: {type: string, enum: [required, notice]}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /api/responses:
+    post:
+      operationId: submitResponse
+      tags: [Reply]
+      summary: Respond to a report or ask for a correction
+      description: |
+        The right of reply and the right of correction. Free, no account, never public until the sender confirms by e-mail and the message passes the screen. Limited to 8 submissions per hour per IP and 5 per day per e-mail address.
+        Who may ask for what: `developer` may send `reply`, `supply` or `error`; `named` may send `reply`, `error`, `privacy` or `legal`; `reader` may send `error`, `missing`, `grade`, `outdated`, `privacy` or `legal`. A `reply` or `supply` needs a finding (`findingId` or at least 12 characters of `findingText`); `supply`, `error`, `missing`, `grade` and `outdated` need an evidence link.
+        A filled `website` field is a honeypot: the reply looks like a success and nothing is stored.
+      security: []
+      x-rate-limit: respondLimiter
+      x-source: backend/server.js:1297
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reportRef, role, kind, body, email]
+              properties:
+                reportRef: {type: string, description: The report reference shown on the report, starting with SK-.}
+                role: {type: string, enum: [developer, named, reader]}
+                kind: {type: string, enum: [reply, supply, error, missing, grade, outdated, privacy, legal]}
+                findingId: {type: string, maxLength: 40}
+                findingText: {type: string, maxLength: 2000}
+                body: {type: string, minLength: 15, maxLength: 2000}
+                evidenceUrls: {type: array, maxItems: 3, items: {type: string, format: uri, maxLength: 500}, description: 'http or https addresses only, with no credentials in them.'}
+                senderName: {type: string, maxLength: 120}
+                email: {type: string, format: email, maxLength: 254}
+                website: {type: string, description: Honeypot. Leave empty.}
+      responses:
+        '200':
+          description: Accepted. A confirmation e-mail was sent. `statusKey` is shown once and is needed to read the status.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, publicRef]
+                properties:
+                  ok: {type: boolean, const: true}
+                  publicRef: {type: string, pattern: '^SKR-[A-Z0-9]{8}$'}
+                  statusKey: {type: [string, 'null']}
+        '400':
+          description: The first validation message, for example a missing evidence link or a role that may not send that kind.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: No report has that reference.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: Rate limit reached, or five submissions from this address today.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /api/responses/confirm:
+    post:
+      operationId: confirmResponse
+      tags: [Reply]
+      summary: Confirm a response from the e-mail link
+      description: 'Moves the response to `published` (a clean reply or supplied fact), `in_review` or `held` (screened, or a privacy or legal matter, which always goes to a person). Confirming twice returns the current state with no change. Limited like the submission.'
+      security: []
+      x-rate-limit: respondLimiter
+      x-source: backend/server.js:1304
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: {type: string, description: The hexadecimal token from the link in the confirmation e-mail.}
+      responses:
+        '200':
+          description: Confirmed.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, publicRef, state]
+                properties:
+                  ok: {type: boolean, const: true}
+                  publicRef: {type: string}
+                  state: {type: string, enum: [published, in_review, held, corrected, not_changed, needs_info, declined]}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: The link is not valid or has expired.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+  /api/responses/status/{publicRef}:
+    get:
+      operationId: getResponseStatus
+      tags: [Reply]
+      summary: Where a response stands
+      description: 'Needs the `key` returned when the response was submitted; a wrong key and an unknown reference give the same 404. Never cached. The resolution note is returned once the response is finished or published.'
+      security: []
+      x-rate-limit: respondReadLimiter
+      x-source: backend/server.js:1308
+      parameters:
+        - {name: publicRef, in: path, required: true, schema: {type: string, pattern: '^SKR-[A-Z0-9]{8}$'}}
+        - {name: key, in: query, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: The state.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, publicRef, kind, state]
+                properties:
+                  ok: {type: boolean, const: true}
+                  publicRef: {type: string}
+                  kind: {type: string}
+                  state: {type: string, enum: [awaiting_confirmation, published, in_review, held, needs_info, corrected, not_changed, declined]}
+                  createdAt: {type: string, format: date-time}
+                  resolution: {type: [string, 'null']}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: No response for that reference and key.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+  /api/responses/{reportRef}:
+    get:
+      operationId: getReportResponses
+      tags: [Reply]
+      summary: The published replies and dated corrections of one report
+      description: Public. Never contains an e-mail address. Never cached. A reply is shown beside the finding it answers and never changes it.
+      security: []
+      x-rate-limit: respondReadLimiter
+      x-source: backend/server.js:1314
+      parameters:
+        - {name: reportRef, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: The replies and corrections.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, replies, corrections, counts]
+                properties:
+                  ok: {type: boolean, const: true}
+                  replies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        publicRef: {type: string}
+                        kind: {type: string, enum: [reply, supply]}
+                        findingId: {type: [string, 'null']}
+                        findingText: {type: string}
+                        body: {type: string}
+                        verified: {type: boolean, description: True when the sender's e-mail domain matched the developer named in the report.}
+                        publishedAt: {type: string, format: date-time}
+                  corrections:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        publicRef: {type: string}
+                        findingId: {type: [string, 'null']}
+                        findingText: {type: string}
+                        note: {type: string}
+                        correctedAt: {type: string, format: date-time}
+                  counts:
+                    type: object
+                    properties:
+                      replies: {type: integer}
+                      corrections: {type: integer}
+        '400':
+          description: '"Unknown report reference."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
   /api/dispute:
     post:
       operationId: submitDispute
@@ -1520,7 +1723,7 @@ paths:
                   truncated: {type: boolean}
                   totals:
                     type: object
-                    description: 'Counters: visitors, page_views, searches, report_opens, unlock_clicks, checkouts_started, purchases, pdf_saves, whatsapp_shares, guide_opens, guide_downloads, guide_shares, document_checks, access_recovered, and `revenue` (an array, element shape not documented).'
+                    description: 'Counters: visitors, page_views, searches, report_opens, unlock_clicks, checkouts_started, purchases, pdf_saves, whatsapp_shares, guide_opens, guide_downloads, guide_shares, document_checks, access_recovered, signin_walls, signin_codes_requested, signins, and `revenue` (an array, element shape not documented).'
                     additionalProperties: true
                   funnel:
                     type: array
@@ -2007,6 +2210,114 @@ paths:
               schema: {$ref: '#/components/schemas/Error'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/response-queue:
+    get:
+      operationId: adminListResponseQueue
+      tags: [Admin]
+      summary: Responses waiting for a person
+      description: 'The oldest first, at most 200. Rows carry the sender e-mail address, so this is admin only. Never cached.'
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1319
+      parameters:
+        - {name: status, in: query, required: false, schema: {type: string, enum: [held, in_review, needs_info], default: held}}
+      responses:
+        '200':
+          description: The queue.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, status, responses]
+                properties:
+                  ok: {type: boolean, const: true}
+                  status: {type: string}
+                  responses:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: string, format: uuid}
+                        public_ref: {type: string}
+                        report_ref: {type: string}
+                        kind: {type: string}
+                        role: {type: string}
+                        finding_id: {type: [string, 'null']}
+                        finding_text: {type: [string, 'null']}
+                        body: {type: string}
+                        evidence_urls: {type: array, items: {type: string}}
+                        sender_name: {type: [string, 'null']}
+                        email: {type: string}
+                        verification: {type: string, enum: [domain_match, unverified]}
+                        status: {type: string}
+                        screen_reasons: {type: array, items: {type: string}}
+                        created_at: {type: string, format: date-time}
+        '400':
+          description: '"status must be held, in_review or needs_info"'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/response-queue/{id}/resolve:
+    post:
+      operationId: adminResolveResponse
+      tags: [Admin]
+      summary: Decide a response
+      description: |
+        Outcomes: `published` (only a reply or a supplied fact), `declined`, `corrected` (only for a correction request, with a note of at least 15 characters saying what changed), `not_changed`, `needs_info`. Every outcome except `published` and `corrected` needs a note saying why. The sender is e-mailed the outcome; on `corrected`, everyone who received the report is told too.
+        A response that is already finished cannot be resolved again.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js:1324
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome]
+              properties:
+                outcome: {type: string, enum: [published, declined, corrected, not_changed, needs_info]}
+                note: {type: string, maxLength: 600}
+      responses:
+        '200':
+          description: Decided.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, publicRef, outcome, notified]
+                properties:
+                  ok: {type: boolean, const: true}
+                  publicRef: {type: string}
+                  outcome: {type: string}
+                  notified: {type: integer, description: How many report recipients were told of a correction.}
+        '400':
+          description: Unknown outcome, a missing note, or an outcome that does not fit the kind.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: No such response.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '409':
+          description: The response is already finished.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
         '429': {$ref: '#/components/responses/RateLimitedJson'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/responses:

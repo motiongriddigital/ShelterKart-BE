@@ -28,7 +28,7 @@ const isMonth = s => /^\d{4}-(0[1-9]|1[0-2])$/.test(String(s));
 const isCur = s => /^[A-Z]{3}$/.test(String(s));
 const txt = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, n);
 
-function mount(app, { adminAuth, ah, jsonParser, loadRows, pool = null, social = null, now = () => Date.now(), pageFile = path.join(__dirname, '..', '..', 'admin-marketing.html') }) {
+function mount(app, { adminAuth, ah, jsonParser, loadRows, pool = null, social = null, now = () => Date.now(), pageFile = path.join(__dirname, 'admin-marketing.html') }) {
   const state = makeState(social && social.store);
   const A = [adminAuth];
   const q = async (sql, args = []) => { if (!pool) return null; try { return (await pool.query(sql, args)).rows; } catch { return null; } };
