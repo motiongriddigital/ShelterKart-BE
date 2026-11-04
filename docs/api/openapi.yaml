@@ -2628,7 +2628,7 @@ paths:
       operationId: adminEngineCosts
       tags: [Admin]
       summary: What each paid report cost in AI
-      description: 'Paid reports touched in the last N days (1 to 90, default 30), newest first, at most 200: the AI cost in US dollars from the investigation, its cap, what buyers paid for it in US dollars (null when there is no database or no active purchase), and the cost as a share of that price. totals covers every report in the window.'
+      description: 'Paid reports touched in the last N days (1 to 90, default 30), newest first, at most 200: the AI cost in US dollars from the investigation, its cap, what buyers paid for it in US dollars (null when there is no database or no paid purchase; a fully refunded one is not counted), and the cost as a share of that price. totals covers every report in the window.'
       security:
         - adminBasic: []
       x-source: backend/engine/enginesAdmin.js
