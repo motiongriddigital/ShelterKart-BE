@@ -40,7 +40,7 @@ Part A: the builder's tests, run independently.
 
 | # | Do this | Expect |
 | --- | --- | --- |
-| A1 | in `backend`: `node test/trustproxy.test.js` | ends `all passing 10`; ten lines starting `  ok`; includes the section "a forged header through real express" |
+| A1 | in `backend`: `node test/trustproxy.test.js` | ends `all 10 passing`; ten lines starting `  ok`; includes the section "a forged header through real express" |
 | A2 | `npm test` (needs Playwright and python3; mark BLOCKED with the reason if missing) | exit code 0 |
 | A3 | `grep -n "trust proxy" backend/server.js` | one line, taking its value from the parsed setting. No literal `1` and no `true`. |
 
