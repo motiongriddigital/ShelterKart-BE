@@ -2489,6 +2489,34 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/geo/users:
+    get:
+      operationId: adminGeoUsers
+      tags: [Admin]
+      summary: Users by country
+      description: 'One entry per market (the 36 in backend/engine/markets.js, keyed by market code, with the ISO country code in iso), then users in countries that are not markets (other) and users with no country (unknown). A user''s country is set once at first sign-in from the edge country header (EDGE_COUNTRY_HEADER, default cf-ipcountry), never from the IP address; the user can change it in their profile. paid counts users with at least one active purchase. conversion is paid divided by users, 0 when there are no users. newThisWeek counts accounts created in the last 7 days.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  markets:
+                    type: array
+                    items:
+                      type: object
+                      properties: {code: {type: string}, name: {type: string}, iso: {type: string}, users: {type: integer}, newThisWeek: {type: integer}, paid: {type: integer}, conversion: {type: number}}
+                  other: {type: object, properties: {users: {type: integer}, newThisWeek: {type: integer}, paid: {type: integer}, conversion: {type: number}}}
+                  unknown: {type: object, properties: {users: {type: integer}, newThisWeek: {type: integer}, paid: {type: integer}, conversion: {type: number}}}
+                  totals: {type: object, properties: {users: {type: integer}, newThisWeek: {type: integer}, paid: {type: integer}, conversion: {type: number}}}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/errors:
     get:
       operationId: adminListErrors

@@ -5,6 +5,7 @@
  * An IP address is only ever shown as a short peppered hash; the raw address is never stored with a session.
  */
 
+const { buildGeo } = require('./geo');
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SESSION_ID = /^[0-9a-f]{16}$/;
 const iso = d => (d ? new Date(d).toISOString() : null);
@@ -143,6 +144,11 @@ function mountAdmin(app, ctx) {
     dropBanCache();
     await audit('admin', 'admin.ban_lift', null, `${ban.kind} ${ban.target}`.slice(0, 300));
     json(res, { ban: banRow(ban) });
+  }));
+
+  app.get('/api/admin/geo/users', ...A, wrap(async (req, res) => {
+    const [rows, paid] = await Promise.all([store.geoCounts(new Date(now() - 7 * DAY)), store.geoPaid()]);
+    json(res, buildGeo(rows, paid));
   }));
 
   app.get('/api/admin/auth/summary', ...A, wrap(async (req, res) => {
