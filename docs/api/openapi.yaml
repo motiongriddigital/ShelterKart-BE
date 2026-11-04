@@ -2489,6 +2489,100 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/errors:
+    get:
+      operationId: adminListErrors
+      tags: [Admin]
+      summary: The error log
+      description: 'Errors and warnings the server printed, grouped by source and message with a count, newest first. Messages are scrubbed of e-mail addresses, IP addresses, tokens and query strings. Kept for 30 days. Set ERROR_LOG=off to switch it off.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/errorlog.js
+      parameters:
+        - {name: level, in: query, schema: {type: string, enum: [error, warn, info]}}
+        - {name: q, in: query, schema: {type: string, maxLength: 80}, description: Part of the source, message or detail.}
+        - {name: hours, in: query, schema: {type: integer, minimum: 1, maximum: 720}, description: Only problems seen within this many hours.}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0}}
+      responses:
+        '200':
+          description: The groups.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: integer}
+                        level: {type: string, enum: [error, warn, info]}
+                        source: {type: string}
+                        message: {type: string}
+                        detail: {type: [string, 'null']}
+                        count: {type: integer}
+                        firstAt: {type: string, format: date-time}
+                        lastAt: {type: string, format: date-time}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/errors/summary:
+    get:
+      operationId: adminErrorSummary
+      tags: [Admin]
+      summary: Errors by hour
+      description: 'One bucket per hour for the last N hours (1 to 168, default 24): errors and warnings, totals by level, and the five noisiest sources.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/errorlog.js
+      parameters:
+        - {name: hours, in: query, schema: {type: integer, minimum: 1, maximum: 168, default: 24}}
+      responses:
+        '200':
+          description: The series.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  hours: {type: integer}
+                  totals: {type: object, properties: {error: {type: integer}, warn: {type: integer}, info: {type: integer}}}
+                  series: {type: array, items: {type: object, properties: {hour: {type: string, format: date-time}, errors: {type: integer}, warnings: {type: integer}}}}
+                  topSources: {type: array, items: {type: object, properties: {source: {type: string}, count: {type: integer}}}}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/errors/{id}:
+    get:
+      operationId: adminGetError
+      tags: [Admin]
+      summary: One error
+      description: 'The group, with the times of its last 30 occurrences.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/errorlog.js
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: integer, minimum: 1}}
+      responses:
+        '200':
+          description: The error.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  error: {type: object}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404':
+          description: No such error.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/disputes:
     get:
       operationId: adminListDisputes

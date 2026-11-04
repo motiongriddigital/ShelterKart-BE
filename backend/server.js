@@ -86,6 +86,9 @@ const jsonSmall = express.json({ limit: '10kb' });
 app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const { createErrorLog } = require('./engine/errorlog');
+const ERRORLOG = createErrorLog({ pool: process.env.DATABASE_URL ? pool : null, enabled: String(process.env.ERROR_LOG || 'on').toLowerCase() !== 'off' });
+ERRORLOG.hookConsole(console);
 
 /* Express 4 does not catch errors thrown in async handlers: the request
    hangs and the error escapes as an unhandled rejection. Five admin
@@ -1328,6 +1331,7 @@ app.post('/api/admin/response-queue/:id/resolve', adminAuth, ah(async (req, res)
 
 ACCOUNTS.mount(app);
 ACCOUNTS.mountAdmin(app, { adminAuth });
+ERRORLOG.mountAdmin(app, { adminAuth, ah, rateLimit });
 
 app.post('/api/dispute', disputeLimiter, ah(async (req, res) => {
   const { contact, note, reportRef } = req.body || {};
@@ -1689,7 +1693,7 @@ app.post('/api/admin/held/:ref/approve', adminAuth, ah(async (req, res) => {
 app.use((err, req, res, next) => {
   if (err && err.type === 'entity.parse.failed') return res.status(400).json({ ok: false, error: 'Malformed JSON' });
   if (err && err.type === 'entity.too.large') return res.status(413).json({ ok: false, error: 'Request body too large' });
-  console.error(err);
+  console.error('[http] ' + req.method + ' ' + ((req.route && req.route.path) || 'unmatched route') + ' failed: ' + (err && err.message), err);
   if (err && err.message === 'Origin not allowed') return res.status(403).json({ ok: false, error: 'Origin not allowed' });
   res.status(500).json({ ok: false, error: 'Internal server error' });
 });
@@ -1737,6 +1741,7 @@ if (require.main === module) {
       console.error('[accounts] configuration problems:\n - ' + ACCOUNTS.problems.join('\n - '));
       if (process.env.NODE_ENV === 'production') process.exit(1);
     }
+    setInterval(() => ERRORLOG.purge().catch(e => console.error('[errorlog] clean-up failed:', e && e.message)), 24 * 3600 * 1000).unref();
     if (ACCOUNTS.enabled) setInterval(() => ACCOUNTS.cleanup().catch(e => console.error('[accounts] clean-up failed:', e && e.message)), 6 * 3600 * 1000).unref();
     app.listen(PORT, () => console.log(`ShelterKart API listening on port ${PORT}`));
   })();
