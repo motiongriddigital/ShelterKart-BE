@@ -2494,7 +2494,7 @@ paths:
       operationId: adminGeoUsers
       tags: [Admin]
       summary: Users by country
-      description: 'One entry per market (the 36 in backend/engine/markets.js, keyed by market code, with the ISO country code in iso), then users in countries that are not markets (other) and users with no country (unknown). A user''s country is set once at first sign-in from the edge country header (EDGE_COUNTRY_HEADER, default cf-ipcountry), never from the IP address; the user can change it in their profile. paid counts users with at least one active purchase. conversion is paid divided by users, 0 when there are no users. newThisWeek counts accounts created in the last 7 days.'
+      description: 'One entry per market (the 36 in backend/engine/markets.js, keyed by market code, with the ISO country code in iso), then users in countries that are not markets (other) and users with no country (unknown). A user''s country is set once at first sign-in from the edge country header (EDGE_COUNTRY_HEADER, default cf-ipcountry), never from the IP address; the user can change it in their profile. paid counts users with at least one paid purchase (a fully refunded one does not count). conversion is paid divided by users, 0 when there are no users. newThisWeek counts accounts created in the last 7 days.'
       security:
         - adminBasic: []
       x-source: backend/accounts/admin.js
@@ -2628,7 +2628,7 @@ paths:
       operationId: adminEngineCosts
       tags: [Admin]
       summary: What each paid report cost in AI
-      description: 'Paid reports touched in the last N days (1 to 90, default 30), newest first, at most 200: the AI cost in US dollars from the investigation, its cap, what buyers paid for it in US dollars (null when there is no database or no active purchase), and the cost as a share of that price. totals covers every report in the window.'
+      description: 'Paid reports touched in the last N days (1 to 90, default 30), newest first, at most 200: the AI cost in US dollars from the investigation, its cap, what buyers paid for it in US dollars (null when there is no database or no paid purchase; a fully refunded one is not counted), and the cost as a share of that price. totals covers every report in the window.'
       security:
         - adminBasic: []
       x-source: backend/engine/enginesAdmin.js

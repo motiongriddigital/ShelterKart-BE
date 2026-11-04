@@ -1365,7 +1365,7 @@ require('./engine/jobsAdmin').mountJobsAdmin(app, { adminAuth, wrap: ah, rateLim
 require('./engine/enginesAdmin').mountEnginesAdmin(app, { adminAuth, wrap: ah, rateLimit, history: ENGINE_HISTORY, jobs: () => liveJobs.values(),
   pricesFor: async refs => {
     const m = new Map(); if (!process.env.DATABASE_URL || !refs.length) return m;
-    const r = await pool.query(`SELECT report_ref, amount, currency FROM report_purchases WHERE report_ref = ANY($1) AND status = 'active'`, [refs]);
+    const r = await pool.query(`SELECT report_ref, amount, currency FROM report_purchases WHERE report_ref = ANY($1) AND status = 'paid'`, [refs]);
     for (const x of r.rows) { const per = pricingData.book.fx.perUsd[x.currency]; if (per) m.set(x.report_ref, (m.get(x.report_ref) || 0) + Number(x.amount) / per); }
     return m;
   } });

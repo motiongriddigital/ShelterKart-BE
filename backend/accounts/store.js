@@ -129,7 +129,7 @@ function makePgStore(pool) {
         .rows.map(r => ({ country: r.country, users: Number(r.users), newUsers: Number(r.new_users) }));
     },
     async geoPaid() {
-      return (await pool.query(`SELECT upper(u.country) AS country, COUNT(DISTINCT u.id)::int AS paid FROM users u JOIN report_purchases p ON p.user_id = u.id AND p.status = 'active' WHERE u.deleted_at IS NULL GROUP BY 1`))
+      return (await pool.query(`SELECT upper(u.country) AS country, COUNT(DISTINCT u.id)::int AS paid FROM users u JOIN report_purchases p ON p.user_id = u.id AND p.status = 'paid' WHERE u.deleted_at IS NULL GROUP BY 1`))
         .rows.map(r => ({ country: r.country, paid: Number(r.paid) }));
     },
     async listUsersAdmin({ q, limit, offset }) {

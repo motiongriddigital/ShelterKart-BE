@@ -49,6 +49,16 @@ async function t(name, fn) { try { await fn(); passed++; console.log('  ok   ' +
   await t('lower-case and mixed input is counted with its market', async () => { assert.strictEqual(buildGeo([{ country: 'in', users: 1, newUsers: 0 }, { country: 'IN', users: 1, newUsers: 0 }], []).markets.find(m => m.code === 'in').users, 2); });
   await t('numbers that arrive as strings are added as numbers', async () => { assert.strictEqual(buildGeo([{ country: 'IN', users: '4', newUsers: '1' }], []).markets.find(m => m.code === 'in').users, 4); });
 
+  console.log('the database query');
+  await t('paid counts purchases with status paid (what the payment code writes), never "active"', async () => {
+    const { makeAccountStore } = require('../accounts/store');
+    const seen = [];
+    const store = makeAccountStore({ query: async sql => { seen.push(sql); return { rows: [] }; } });
+    await store.geoPaid();
+    const sql = seen.join(' ');
+    assert(/report_purchases/.test(sql) && /status = 'paid'/.test(sql) && !/'active'/.test(sql), sql);
+  });
+
   console.log('\n' + (failed ? failed + ' FAILED' : 'all ' + passed + ' passing'));
   if (failed) process.exitCode = 1;
 })();
