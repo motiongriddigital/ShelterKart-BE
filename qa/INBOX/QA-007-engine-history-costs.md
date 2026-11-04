@@ -3,7 +3,7 @@ id: QA-007-engine-history-costs
 title: AI engine usage kept per day, history and costs routes
 repo: ShelterKart-BE
 branch: feature/admin-engines
-sha: ff2238c
+sha: 4ac4f0b
 created: 2026-11-04
 ---
 
@@ -17,7 +17,7 @@ ShelterKart-BE, branch `feature/admin-engines`, commit in the header (stacked on
 
 ## What the builder did and how it was tested
 
-Built: `backend/engines/history.js` (counting, batching, the database write, a failing write is kept and retried), a hook in `backend/engines/meter.js`, `backend/engine/enginesAdmin.js` (the two routes), `backend/engine_usage.sql`, and a clean-stop flush in `server.js`. Tested by the builder: 20 unit checks (`test/enginehistory.test.js`: counting, invariants, UTC midnight, the histogram, a failing database, the meter hook, cost rows), 21 server checks through the real route handlers (`test/harness/enginehistory.test.js`), and the whole `npm test` (exit 0). The builder also ran it against a real Postgres 16: the migration twice; three writers at once added up to 47 calls in one row with the histogram summed correctly; the history survived a restart; a SIGTERM written 2 calls that were still waiting for the timer; the costs route priced a report from its active purchase and ignored a refunded one. Not tested by the builder: real AI calls (no AI key was used; the meter was fed directly), and a table that disappears while the server runs.
+Built: `backend/engines/history.js` (counting, batching, the database write, a failing write is kept and retried), a hook in `backend/engines/meter.js`, `backend/engine/enginesAdmin.js` (the two routes), `backend/engine_usage.sql`, and a clean-stop flush in `server.js`. Tested by the builder: 20 unit checks (`test/enginehistory.test.js`: counting, invariants, UTC midnight, the histogram, a failing database, the meter hook, cost rows), 21 server checks through the real route handlers (`test/harness/enginehistory.test.js`), and the whole `npm test` (exit 0). The builder also ran it against a real Postgres 16: the migration twice; three writers at once added up to 47 calls in one row with the histogram summed correctly; the history survived a restart; a SIGTERM written 2 calls that were still waiting for the timer; the costs route priced a report from its paid purchase and ignored a refunded one. The costs route first looked for purchases with status `active`, which the payment code never writes; it is fixed in `4ac4f0b` and was re-run with `paid` rows. Not tested by the builder: real AI calls (no AI key was used; the meter was fed directly), and a table that disappears while the server runs.
 
 ## Setup
 
@@ -89,7 +89,7 @@ NODE_ENV=development PORT=4017 ADMIN_USERNAME=qa ADMIN_PASSWORD=qa-pass-123 ACCE
 | E3 | Start the server with the poke, wait 6 seconds, then `kill -9` | the 2 extra calls are in the table (the timer wrote them) |
 | F1 | Break the table while the server runs: start with the poke, `docker exec ... psql -c "alter table engine_usage_daily rename to eud_x"`, wait 7 seconds, `grep -c "engine-history" /tmp/sk-qa7-server.log`, `curl -s -o /dev/null -w '%{http_code}' $B/api/health` | the server is still up (health `200`), the log has `[engine-history] could not save usage, will try again` (a few times, not a flood); no crash |
 | F2 | Rename it back (`alter table eud_x rename to engine_usage_daily`), wait 7 seconds, query the table | the calls that waited are now written once: the `openai` row has the right count, not doubled |
-| G1 | Costs: stop the server. Make two paid-report files and one active and one refunded purchase for the first (commands below) | the files exist |
+| G1 | Costs: stop the server. Make two paid-report files and one paid and one refunded purchase for the first (commands below) | the files exist |
 | G2 | Start the server on `LIVE_JOBS_DIR=/tmp/sk-qa7-jobs`, `GET $B/api/admin/engines/costs?days=30` | `SK-COST1`: `costUsd` 0.62, `status` `done`, `priceUsd` about 31.8 (3000 INR at the price book's rate), `costShare` about 0.0195; `SK-COST2`: `costUsd` 1.1, `priceUsd` null, `costShare` null; `totals`: `reports` 2, `costUsd` 1.72, `avgCostUsd` 0.86, `priced` 1. The refunded purchase must not count. |
 | G3 | Delete the files, set `"paid": false` in one, `"updatedAt"` 40 days ago in the other, restart, call the route | the unpaid one and the old one are not listed |
 | H1 | `days` on both routes: `1`, `30`, `90` | `200` |
@@ -104,7 +104,7 @@ The files for G1 (run in a shell where `date` works):
 mkdir -p /tmp/sk-qa7-jobs
 echo '{"ref":"SK-COST1","input":{"query":"A","location":"Mumbai","country":"IN","market":"India"},"key":null,"status":"done","paid":true,"contact":null,"costUsd":0.62,"capUsd":2,"delivered":true,"createdAt":1793800000000,"updatedAt":'$(date +%s)'000,"saved":null}' > /tmp/sk-qa7-jobs/SK-COST1.json
 echo '{"ref":"SK-COST2","input":{"query":"B","location":"Dubai","country":"AE","market":"UAE"},"key":null,"status":"failed","paid":true,"contact":null,"costUsd":1.1,"capUsd":2,"delivered":true,"createdAt":1793800000000,"updatedAt":'$(date +%s)'000,"saved":null}' > /tmp/sk-qa7-jobs/SK-COST2.json
-docker exec sk-qa-pg7 psql -U postgres -d sk -c "insert into report_purchases (report_ref, status, amount, currency) values ('SK-COST1','active',3000,'INR'),('SK-COST1','refunded',3000,'INR')"
+docker exec sk-qa-pg7 psql -U postgres -d sk -c "insert into report_purchases (report_ref, status, amount, currency) values ('SK-COST1','paid',3000,'INR'),('SK-COST1','refunded',3000,'INR')"
 ```
 
 ## Look hardest at

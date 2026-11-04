@@ -3,7 +3,7 @@ id: QA-006-failed-jobs-health-history
 title: Failed jobs list and retry, health history per register
 repo: ShelterKart-BE
 branch: feature/admin-jobs
-sha: 8e7d4e1
+sha: e60607f
 created: 2026-11-04
 ---
 

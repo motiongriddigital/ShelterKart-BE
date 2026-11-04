@@ -3,7 +3,7 @@ id: QA-005-geo-users
 title: Users by country from the edge header, and GET /api/admin/geo/users
 repo: ShelterKart-BE
 branch: feature/admin-geo
-sha: 5c567ca
+sha: 97f3d3d
 created: 2026-11-04
 ---
 
@@ -17,7 +17,7 @@ ShelterKart-BE, branch `feature/admin-geo`, commit in the header (stacked on `fi
 
 ## What the builder did and how it was tested
 
-Built: `backend/accounts/geo.js` (cleans the edge header, maps countries to the 36 markets, builds the table), the sign-in creating a new account with the country from the header, the store's two counting queries, the admin route and its OpenAPI entry. Tested by the builder: 13 unit checks (`test/geo.test.js`), 19 server checks through the real sign-in and route handlers on the in-memory store (`test/harness/geo.test.js`), the whole `npm test` (exit 0), and a run against a real Postgres 16 with a real server: sign-ins with `CF-IPCountry` `IN`, `gb`, none (with a forged `X-Forwarded-For`), `India`, `CN`, `XX` stored `IN`, `GB`, NULL, NULL, `CN`, NULL; a user with two active purchases counted once as paid, a refunded purchase not counted, and moving one user's `created_at` back 10 days lowered `newThisWeek`. Not tested by the builder: 5,000 users, a different `EDGE_COUNTRY_HEADER`, and the profile change.
+Built: `backend/accounts/geo.js` (cleans the edge header, maps countries to the 36 markets, builds the table), the sign-in creating a new account with the country from the header, the store's two counting queries, the admin route and its OpenAPI entry. Tested by the builder: 13 unit checks (`test/geo.test.js`), 19 server checks through the real sign-in and route handlers on the in-memory store (`test/harness/geo.test.js`), the whole `npm test` (exit 0), and a run against a real Postgres 16 with a real server: sign-ins with `CF-IPCountry` `IN`, `gb`, none (with a forged `X-Forwarded-For`), `India`, `CN`, `XX` stored `IN`, `GB`, NULL, NULL, `CN`, NULL; a user with two paid purchases counted once as paid, a refunded purchase not counted, and moving one user's `created_at` back 10 days lowered `newThisWeek`. The first version counted purchases with status `active`, which the payment code never writes; a review of the code found it and it is fixed in `97f3d3d` (the query now uses `paid`, with a regression test). Not tested by the builder: 5,000 users, a different `EDGE_COUNTRY_HEADER`, and the profile change.
 
 ## Setup
 
@@ -48,7 +48,7 @@ signin() { # $1 email, $2 extra header (or empty)
 
 | # | Do this | Expect |
 | --- | --- | --- |
-| A1 | in `backend`: `node test/geo.test.js` | ends `all 13 passing` |
+| A1 | in `backend`: `node test/geo.test.js` | ends `all 14 passing` |
 | A2 | `node -r ./test/harness/stub-loader.js test/harness/geo.test.js` | ends `all passing`; 19 lines starting `  ok` |
 | A3 | `npm test` (needs Playwright and python3; mark BLOCKED with the reason if missing) | exit code 0 |
 | B1 | `node tools/migrate.js` a second time | `0 applied`; no error. `git diff --stat feature/admin-error-log feature/admin-geo -- backend/*.sql` is empty (no migration added). |
@@ -64,7 +64,7 @@ signin() { # $1 email, $2 extra header (or empty)
 | E1 | `GET $B/api/admin/geo/users` after D1 to D6 | `in` users 1 (or 0 if you changed it in D6, report which); `uk` has the `gb` user; `other` counts any non-market country you used; `unknown` counts the NULL users |
 | E2 | Add up every `markets[].users`, `other.users` and `unknown.users` | equals `totals.users` and `select count(*) from users` |
 | E3 | `newThisWeek`: `update users set created_at = now() - interval '10 days' where email = 'geo1@example.com'`, call again | that user's market `newThisWeek` is 1 lower, `users` unchanged |
-| E4 | `paid`: `insert` a row into `report_purchases` for one user with status `active`, and one with status `refunded` for another (look at `backend/schema.sql` for the required columns; use throwaway values), call again | only the user with the `active` purchase counts in `paid`; `conversion` is `paid / users` to four decimals. A user with two active purchases counts once. |
+| E4 | `paid`: `insert` a row into `report_purchases` for one user with status `paid` (that is what the payment code writes), and one with status `refunded` for another (look at `backend/schema.sql` for the required columns; use throwaway values), call again | only the user with the `paid` purchase counts in `paid`; `conversion` is `paid / users` to four decimals. A user with two paid purchases counts once. |
 | E5 | A market with no users | `users` 0, `paid` 0, `conversion` 0; never `null`, `NaN` or `Infinity` anywhere in the JSON |
 | E6 | Search the body for an e-mail address, an IP address or a user id | none |
 | E7 | `curl -s -X POST $B/api/admin/geo/users $ADM`, and `$B/api/admin/geo/users?days=abc&foo=1` | `404` for POST; `200` for the query (ignored), never `500` |

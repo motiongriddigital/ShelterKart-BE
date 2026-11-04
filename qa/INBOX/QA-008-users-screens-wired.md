@@ -3,7 +3,7 @@ id: QA-008-users-screens-wired
 title: Users, Sessions and Bans screens call the real admin API (no browser)
 repo: ShelterKart-FE
 branch: admin-wire-users
-sha: 0493c88
+sha: 944e971
 created: 2026-11-04
 ---
 
@@ -13,7 +13,7 @@ You are the QA agent. Your job is to verify, not to build. Read `qa/README.md` f
 
 ## What is under test
 
-Two repositories. Front end: ShelterKart-FE, branch `admin-wire-users`, commit in the header (stacked on `admin-console`, which QA-003 tested). Back end: the tip of the ShelterKart-BE stack, `feature/admin-engines`, commit `ff2238c` (it contains the admin limiter fix SHEL-34); it is needed because the old limiter locked an admin out after 20 successful requests. The Users, Sessions and Bans screens used generated seed data. Signed in with the real admin login they now load from `GET /api/admin/users`, `/sessions`, `/bans` and `/users/:id`, and their buttons call the matching `POST` routes (end a session, end all, disable or enable, ban an account or an address, ban a session's address, lift a ban). In the demo they still use seed data and change memory only. Every other screen still uses seed data on purpose.
+Two repositories. Front end: ShelterKart-FE, branch `admin-wire-users`, commit in the header (stacked on `admin-console`, which QA-003 tested). Back end: the tip of the ShelterKart-BE stack, `feature/admin-engines`, commit `4ac4f0b` (it contains the admin limiter fix SHEL-34); it is needed because the old limiter locked an admin out after 20 successful requests. The Users, Sessions and Bans screens used generated seed data. Signed in with the real admin login they now load from `GET /api/admin/users`, `/sessions`, `/bans` and `/users/:id`, and their buttons call the matching `POST` routes (end a session, end all, disable or enable, ban an account or an address, ban a session's address, lift a ban). In the demo they still use seed data and change memory only. Every other screen still uses seed data on purpose.
 
 ## What the builder did and how it was tested
 
@@ -25,7 +25,7 @@ The script calls the back end with its own `fetch` and runs the answers through 
 
 ```
 git clone https://github.com/motiongriddigital/ShelterKart-BE.git sk-be8 && cd sk-be8
-git checkout ff2238c && cd backend && npm ci && cd ..
+git checkout 4ac4f0b && cd backend && npm ci && cd ..
 docker run -d --name sk-qa-pg8 -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=sk -p 5492:5432 postgres:16
 export DATABASE_URL=postgres://postgres:pw@127.0.0.1:5492/sk
 node tools/migrate.js

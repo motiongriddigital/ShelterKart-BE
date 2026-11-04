@@ -3,7 +3,7 @@ id: QA-009-user-map-wired
 title: The user map uses the real geo route (no browser)
 repo: ShelterKart-FE
 branch: admin-wire-map
-sha: a79e024
+sha: e8ca5cd
 created: 2026-11-04
 ---
 
@@ -13,7 +13,7 @@ You are the QA agent. Your job is to verify, not to build. Read `qa/README.md` f
 
 ## What is under test
 
-Front end: ShelterKart-FE, branch `admin-wire-map`, commit `a79e024` (stacked on `admin-wire-users`, commit `0493c88`, QA-008). Back end: `feature/admin-engines`, commit `ff2238c`. Signed in with the real admin login, the user map, the country list beside it and the totals load from `GET /api/admin/geo/users` (QA-005 tests that route). The map's fixed facts (names, numeric ids for the shapes, currency, language) stay in the front end; the server supplies users, new this week, paid and conversion per market. Users the map cannot place (in a country that is not a market, or with no country) are counted in a note. The demo keeps seed data.
+Front end: ShelterKart-FE, branch `admin-wire-map`, commit `e8ca5cd` (stacked on `admin-wire-users`, commit `944e971`, QA-008). Back end: `feature/admin-engines`, commit `4ac4f0b`. Signed in with the real admin login, the user map, the country list beside it and the totals load from `GET /api/admin/geo/users` (QA-005 tests that route). The map's fixed facts (names, numeric ids for the shapes, currency, language) stay in the front end; the server supplies users, new this week, paid and conversion per market. Users the map cannot place (in a country that is not a market, or with no country) are counted in a note. The demo keeps seed data.
 
 ## What the builder did and how it was tested
 
@@ -21,11 +21,11 @@ Built: `src/utils/adminGeo.ts` (answer to map rows, pure), `src/store/geoData.ts
 
 ## Setup
 
-As in QA-008: back end `ff2238c` with Postgres 16 (container `sk-qa-pg9`, port 5491, server on port 4018, admin `qa` / `qa-pass-123`, `ACCOUNTS_ENABLED=on`, `ACCOUNTS_DEV_ECHO=on`, an `AUTH_PEPPER` of 40 characters, `DATABASE_URL` set, `node tools/migrate.js` run first), and the front end:
+As in QA-008: back end `4ac4f0b` with Postgres 16 (container `sk-qa-pg9`, port 5491, server on port 4018, admin `qa` / `qa-pass-123`, `ACCOUNTS_ENABLED=on`, `ACCOUNTS_DEV_ECHO=on`, an `AUTH_PEPPER` of 40 characters, `DATABASE_URL` set, `node tools/migrate.js` run first), and the front end:
 
 ```
 git clone https://github.com/motiongriddigital/ShelterKart-FE.git sk-fe9 && cd sk-fe9
-git checkout a79e024 && npm ci
+git checkout e8ca5cd && npm ci
 ```
 
 Node 23.6 or newer for `test:api`.
