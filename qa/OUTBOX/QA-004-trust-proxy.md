@@ -1,6 +1,6 @@
 ---
 id: QA-004-trust-proxy
-status: fail
+status: pass
 tested_sha: 9e8cf62fa7ce55d9c056aa68585a2fdca43f18dc
 machine: Windows 11 Pro 10.0.22631, Git Bash, node v24.20.0, npm 11.2.0, Playwright 1.64.1 (package only, no browser installed), no Docker (not needed)
 finished: 2026-11-04
@@ -10,14 +10,14 @@ finished: 2026-11-04
 
 ## Summary
 
-The TRUST_PROXY behaviour itself passed every check (B to F): by default a forged X-Forwarded-For changes nothing, and the setting, its refusals and its log lines work as described. The overall status is `fail` only because A2 (`npm test`) exits 1 on one test in `test/harness/buyer.test.js`; I did not establish whether that failure is caused by this branch.
+The TRUST_PROXY behaviour itself passed every check (B to F): by default a forged X-Forwarded-For changes nothing, and the setting, its refusals and its log lines work as described. A2 (`npm test`) first failed on one PDF test, then passed (exit 0) on a rerun after the Playwright browser download and a `python3` shim were added on the QA machine, so the overall status is `pass`.
 
 ## Checks
 
 | # | Result | Evidence |
 | --- | --- | --- |
 | A1 | PASS (wording differs) | `node test/trustproxy.test.js` exit 0, 10 lines starting `  ok`, includes section "a forged header through real express". Final line is `all 10 passing`, not `all passing 10` as the prompt says. |
-| A2 | FAIL | `npm test` exit 1. Only failure: `  FAIL the PDF downloads with the token (where Chromium is installed) or says how to print one`, then `1 FAILED`. Test (buyer.test.js:82) accepts 200 `%PDF` or 503; the actual status was neither (not captured). Chromium is not installed here (no `ms-playwright` folder), which may be the cause. The chain stops at that test, so every test after it in the `npm test` script did not run, including `test/trustproxy.test.js`, `accounts*.test.js` and `errorlog` harness (trustproxy.test.js was run separately in A1). I did not run the base branch to see if it fails the same way. |
+| A2 | PASS (on rerun) | First run: exit 1, `FAIL the PDF downloads with the token (where Chromium is installed) or says how to print one`, `1 FAILED`. After `npx playwright install chromium` that test passed; the next stop was `python3` (the Windows Store stub, "Python was not found"), so I put a `python3.cmd` shim pointing at C:/Python313/python.exe first on PATH (no repo files changed). Rerun: `npm test` exit 0, 26 lines `all passing`, no FAIL, including trustproxy.test.js. |
 | A3 | PASS | `server.js:26: app.set('trust proxy', TRUST.setting);` one line, no literal `1` or `true`. |
 | B1 | PASS | 20x `401`, then `429` from request 21 on (30 requests). |
 | B2 | PASS | Identical pattern to B1: 20x `401`, then `429` x10, with a different forged header each time. |
@@ -43,6 +43,6 @@ The TRUST_PROXY behaviour itself passed every check (B to F): by default a forge
 
 ## Environment problems
 
-- Playwright's browser (Chromium) is not installed on the QA machine; I did not download it. A2 may pass with it.
+- Chromium was not installed at first; downloaded with `npx playwright install chromium` (approved by the user). `python3` on this Windows machine is the Store stub; worked around with a PATH shim outside the repo.
 - `qa/README.md` is not on the commit under test; I read it from `ops/admin-plan-and-qa`.
 - Servers were started from Git Bash on Windows; `/tmp` logs were written to the session temp folder instead.
