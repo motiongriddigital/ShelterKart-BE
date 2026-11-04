@@ -1327,6 +1327,7 @@ app.post('/api/admin/response-queue/:id/resolve', adminAuth, ah(async (req, res)
 }));
 
 ACCOUNTS.mount(app);
+ACCOUNTS.mountAdmin(app, { adminAuth });
 
 app.post('/api/dispute', disputeLimiter, ah(async (req, res) => {
   const { contact, note, reportRef } = req.body || {};

@@ -57,4 +57,34 @@ function safeNext(raw, fallback = '/') {
   return s;
 }
 
-module.exports = { normEmail, newCode, hashCode, hashIp, sameHash, newToken, hashToken, TOKEN_RE, parseCookies, cookieName, sessionCookie, clearedCookie, safeNext, b64u };
+
+const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+const ipToInt = ip => { const m = IPV4.exec(ip); if (!m) return null; const p = m.slice(1).map(Number); return p.some(n => n > 255) ? null : ((p[0] * 16777216) + (p[1] * 65536) + (p[2] * 256) + p[3]); };
+
+/** Does this client address fall under a ban target? A target is an IPv4 address, an IPv4 range such as 185.220.101.0/24, or "hash:<peppered hash>". */
+function ipMatches(target, ip, ipHash) {
+  const t = String(target || '');
+  if (t.startsWith('hash:')) return Boolean(ipHash) && t.slice(5) === ipHash;
+  const [base, bits] = t.split('/'), a = ipToInt(ip), b = ipToInt(base);
+  if (a === null || b === null) return false;
+  if (bits === undefined) return a === b;
+  const n = Number(bits);
+  if (!Number.isInteger(n) || n < 8 || n > 32) return false;
+  const size = 2 ** (32 - n);
+  return Math.floor(a / size) === Math.floor(b / size);
+}
+
+/** A ban target that is acceptable for its kind, or '' if not. Ranges wider than /8 are refused so one slip cannot block the world. */
+function cleanBanTarget(kind, raw) {
+  const t = String(raw == null ? '' : raw).trim().toLowerCase();
+  if (kind === 'account') return normEmail(t) || '';
+  if (kind !== 'ip') return '';
+  if (/^hash:[0-9a-f]{16,128}$/.test(t)) return t;
+  const [base, bits] = t.split('/');
+  if (ipToInt(base) === null) return '';
+  if (bits === undefined) return base;
+  const n = Number(bits);
+  return Number.isInteger(n) && n >= 8 && n <= 32 ? t : '';
+}
+
+module.exports = { ipMatches, cleanBanTarget, normEmail, newCode, hashCode, hashIp, sameHash, newToken, hashToken, TOKEN_RE, parseCookies, cookieName, sessionCookie, clearedCookie, safeNext, b64u };
