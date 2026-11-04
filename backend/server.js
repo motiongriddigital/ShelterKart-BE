@@ -189,6 +189,8 @@ const PRICING = require('./pricing');
 const PAYMENTS = require('./payments');
 const morEngine = require('./engine/mor');
 const ENGINES = require('./engines');               // which AI engine serves each agent (backend/engines)
+const ENGINE_HISTORY = require('./engines/history').createHistory({ pool: process.env.DATABASE_URL ? pool : null });   // usage kept per day, so a restart does not reset it
+ENGINES.meter.setSink(ENGINE_HISTORY.record);
 const { refundPurchase, RefundError } = require('./payments/refunds');
 const pricingData = PRICING.load(process.env);
 { const problems = PRICING.validate(pricingData); if (problems.length) console.error('[pricing] data problems:\n  ' + problems.join('\n  ')); }
@@ -1351,6 +1353,13 @@ ACCOUNTS.mount(app);
 ACCOUNTS.mountAdmin(app, { adminAuth });
 ERRORLOG.mountAdmin(app, { adminAuth, ah, rateLimit });
 require('./engine/jobsAdmin').mountJobsAdmin(app, { adminAuth, wrap: ah, rateLimit, liveJobs, delivery: DELIVERY, retryReport: retryFailedReport, markets: MARKETS, history: days => (pgStore ? pgStore.healthHistory(days) : HEALTH.memoryHistory(days)) });
+require('./engine/enginesAdmin').mountEnginesAdmin(app, { adminAuth, wrap: ah, rateLimit, history: ENGINE_HISTORY, jobs: () => liveJobs.values(),
+  pricesFor: async refs => {
+    const m = new Map(); if (!process.env.DATABASE_URL || !refs.length) return m;
+    const r = await pool.query(`SELECT report_ref, amount, currency FROM report_purchases WHERE report_ref = ANY($1) AND status = 'active'`, [refs]);
+    for (const x of r.rows) { const per = pricingData.book.fx.perUsd[x.currency]; if (per) m.set(x.report_ref, (m.get(x.report_ref) || 0) + Number(x.amount) / per); }
+    return m;
+  } });
 
 app.post('/api/dispute', disputeLimiter, ah(async (req, res) => {
   const { contact, note, reportRef } = req.body || {};
@@ -1760,6 +1769,8 @@ if (require.main === module) {
       console.error('[accounts] configuration problems:\n - ' + ACCOUNTS.problems.join('\n - '));
       if (process.env.NODE_ENV === 'production') process.exit(1);
     }
+    setInterval(() => ENGINE_HISTORY.purge().catch(e => console.error('[engine-history] clean-up failed:', e && e.message)), 24 * 3600 * 1000).unref();
+    for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => { ENGINE_HISTORY.flush().catch(() => {}).finally(() => process.exit(0)); });   // write the counts held for a moment before stopping
     setInterval(() => ERRORLOG.purge().catch(e => console.error('[errorlog] clean-up failed:', e && e.message)), 24 * 3600 * 1000).unref();
     if (ACCOUNTS.enabled) setInterval(() => ACCOUNTS.cleanup().catch(e => console.error('[accounts] clean-up failed:', e && e.message)), 6 * 3600 * 1000).unref();
     app.listen(PORT, () => console.log(`ShelterKart API listening on port ${PORT}`));

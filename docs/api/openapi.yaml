@@ -2592,6 +2592,67 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/engines/history:
+    get:
+      operationId: adminEngineHistory
+      tags: [Admin]
+      summary: AI engine usage per day
+      description: 'One row per UTC day, engine and agent role for the last N days (1 to 90, default 7), oldest first: calls, failures, rescues (a call that succeeded after another engine failed), tokens, searches, cost in US dollars (only calls whose model has a price count as costed), average time, and p50 and p95 time (the upper bound of the histogram bucket they fall in; 120000 means slower than 64 seconds). Counts are written every few seconds and on a clean stop and kept in the database, so a restart does not reset them; without a database they start again at each start. Never holds prompts or answers.'
+      security:
+        - adminBasic: []
+      x-source: backend/engines/history.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 90, default: 7}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  days: {type: integer}
+                  totals: {type: object}
+                  byEngine: {type: array, items: {type: object}}
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties: {day: {type: string}, engine: {type: string}, role: {type: string}, calls: {type: integer}, failures: {type: integer}, rescues: {type: integer}, tokensIn: {type: integer}, tokensOut: {type: integer}, searches: {type: integer}, costUsd: {type: number}, costedCalls: {type: integer}, avgMs: {type: integer}, p50Ms: {type: integer}, p95Ms: {type: integer}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/engines/costs:
+    get:
+      operationId: adminEngineCosts
+      tags: [Admin]
+      summary: What each paid report cost in AI
+      description: 'Paid reports touched in the last N days (1 to 90, default 30), newest first, at most 200: the AI cost in US dollars from the investigation, its cap, what buyers paid for it in US dollars (null when there is no database or no active purchase), and the cost as a share of that price. totals covers every report in the window.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/enginesAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 90, default: 30}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  days: {type: integer}
+                  totals: {type: object, properties: {reports: {type: integer}, costUsd: {type: number}, avgCostUsd: {type: number}, priced: {type: integer}, priceUsd: {type: number}}}
+                  reports:
+                    type: array
+                    items:
+                      type: object
+                      properties: {ref: {type: string}, market: {type: [string, 'null']}, status: {type: string}, at: {type: [string, 'null']}, costUsd: {type: number}, capUsd: {type: [number, 'null']}, priceUsd: {type: [number, 'null']}, costShare: {type: [number, 'null']}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/errors:
     get:
       operationId: adminListErrors
