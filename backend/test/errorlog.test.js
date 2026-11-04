@@ -30,6 +30,16 @@ const settle = () => new Promise(r => setImmediate(r));
     const rows = await log.list({});
     assert.strictEqual(rows.length, 1); assert.strictEqual(rows[0].count, 2); assert.strictEqual(rows[0].level, 'error');
   });
+  await t('a short burst is not left uncounted: a timer writes what was held', async () => {
+    const c = { t: Date.parse('2026-11-04T12:00:00Z') }, timers = [], log = createErrorLog({ now: () => c.t, setTimer: fn => timers.push(fn) });
+    for (let i = 0; i < 3; i++) log.record({ source: 'x', message: 'boom' });
+    await settle();
+    assert.strictEqual((await log.list({}))[0].count, 1);
+    assert.strictEqual(timers.length, 1);
+    c.t += 1000; timers.shift()(); await settle();
+    assert.strictEqual((await log.list({}))[0].count, 3);
+    assert.strictEqual((await log.summary(24)).totals.error, 3);
+  });
   await t('a flood inside one second is counted, not written again', async () => {
     const { c, log } = mk();
     for (let i = 0; i < 50; i++) log.record({ source: 'x', message: 'boom' });

@@ -119,21 +119,34 @@ function makeMemoryStore() {
   };
 }
 
-function createErrorLog({ pool = null, now = () => Date.now(), enabled = true } = {}) {
+function createErrorLog({ pool = null, now = () => Date.now(), enabled = true, setTimer = (fn, ms) => { const h = setTimeout(fn, ms); if (h.unref) h.unref(); return h; } } = {}) {
   const store = pool ? makePgStore(pool) : makeMemoryStore();
-  const lastWrite = new Map(), pending = new Map();
+  const lastWrite = new Map(), pending = new Map(), held = new Map();
+
+  const write = (fp, e, n, t) => Promise.resolve(store.upsert({ fingerprint: fp, level: e.lv, source: e.src, message: e.msg, detail: e.detail, at: new Date(t), n }))
+    .catch(err => process.stderr.write('[errorlog] not saved: ' + (err && err.message) + '\n'));
+
+  function flush(fp) {
+    const e = held.get(fp), n = pending.get(fp) || 0;
+    held.delete(fp); pending.delete(fp);
+    if (e && n) { lastWrite.set(fp, now()); write(fp, e, n, now()); }
+  }
 
   /** Never throws. Same problem within a second is counted, not written again. */
   function record({ level = 'error', source = 'server', message, detail }) {
     if (!enabled) return;
     try {
       const lv = LEVELS.has(level) ? level : 'error', src = scrub(source, 60) || 'server', msg = scrub(message, 300) || '(no message)';
-      const fp = fingerprint(src, msg), t = now();
-      if (t - (lastWrite.get(fp) || 0) < THROTTLE_MS) { pending.set(fp, (pending.get(fp) || 0) + 1); return; }
-      const n = 1 + (pending.get(fp) || 0); pending.delete(fp); lastWrite.set(fp, t);
+      const fp = fingerprint(src, msg), t = now(), entry = { lv, src, msg, detail: detail ? scrub(detail, 1200) : null };
+      if (t - (lastWrite.get(fp) || 0) < THROTTLE_MS) {
+        pending.set(fp, (pending.get(fp) || 0) + 1);
+        if (lv === 'error' || !held.has(fp)) held.set(fp, entry);
+        if (pending.get(fp) === 1) setTimer(() => flush(fp), THROTTLE_MS);
+        return;
+      }
+      const n = 1 + (pending.get(fp) || 0); pending.delete(fp); held.delete(fp); lastWrite.set(fp, t);
       if (lastWrite.size > 2000) lastWrite.clear();
-      Promise.resolve(store.upsert({ fingerprint: fp, level: lv, source: src, message: msg, detail: detail ? scrub(detail, 1200) : null, at: new Date(t), n }))
-        .catch(e => process.stderr.write('[errorlog] not saved: ' + (e && e.message) + '\n'));
+      write(fp, entry, n, t);
     } catch { /* the log must never break the server */ }
   }
 
