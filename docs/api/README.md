@@ -20,7 +20,7 @@ The code is the source of truth. If the two disagree, the contract is wrong.
 |---|---|---|
 | none | search, quote, checkout, tracking, disputes, replies, health, reference data, guide, samples, SEO | Public. Cost is limited by rate limiters, the daily research cap and the proof of work, not by credentials. |
 | access token | `X-Report-Access` header, or `t` query parameter on pages and the event stream | A signed token for one report reference, valid 30 days, issued after payment. Without it the report is the free preview. `GET /r/{ref}/pdf` requires it. |
-| admin Basic | every `/api/admin/*` route | HTTP Basic against `ADMIN_USERNAME` and `ADMIN_PASSWORD`. 503 if either is unset. Also behind `adminLimiter`: 20 requests per 15 minutes per IP, counting successful requests. |
+| admin Basic | every `/api/admin/*` route | HTTP Basic against `ADMIN_USERNAME` and `ADMIN_PASSWORD`. 503 if either is unset. Also behind `adminLimiter`: 20 refused requests per 15 minutes per IP (successful requests are not counted). |
 | webhook signature | the three `/api/payments/*webhook` routes | Razorpay: `X-Razorpay-Signature`. Merchant of Record (Dodo): `webhook-id`, `webhook-timestamp`, `webhook-signature`. Generic: `X-SK-Signature`. Each is an HMAC over the exact raw body. |
 
 Webhook routes use `express.raw` and are listed in `OWN_BODY_PARSER` so that the global JSON parser skips them. The raw bytes are what is signed. No JSON parser, and no proxy or middleware that re-serialises the body, may sit in front of them.
@@ -75,7 +75,7 @@ Observations that need a human decision or a code change (the contract documents
 2. `POST /api/payments/webhook`: a request whose `Content-Type` is not `application/json` throws inside an async handler and, on Node 23, ended the whole server process (verified locally). The other two webhooks answer 401.
 3. Malformed JSON and bodies over 10 kb on any JSON route return 500 `Internal server error`, not 400 or 413, because the generic error handler ignores the error's status.
 4. `POST /api/investigate/{ref}/contact` needs no token. Anyone who knows a report reference can set the contact that the finished report is delivered to.
-5. `adminLimiter` counts every admin request, not only failed logins: 20 per 15 minutes per IP. Whether `admin.html` stays under that on a full refresh was not measured.
+5. `adminLimiter` (SHEL-34) counts only refused requests (status 400 and above): 20 per 15 minutes per IP, so password guessing is capped while a signed-in console is not locked out by its own screens. Measured: 25 wrong passwords gave 20 times `401` then `429`; 40 correct requests in a row all gave `200`.
 6. Helmet sends `Cross-Origin-Resource-Policy: same-origin` on every response, including `/guide/card.png`. A cross-origin `<img>` that points at the API would be blocked by the browser; fetch with CORS and navigation are not affected. Not tested in a browser.
 7. The guide page's `og:image` is the fixed address `https://shelterkart.com/guide/card.png`, whatever `PUBLIC_BASE_URL` is.
 8. A comment above `POST /api/track` says four event names are accepted; the code accepts seven.

@@ -17,7 +17,7 @@ The image (`Dockerfile`) holds `backend/` and `tools/`, runs as the unprivileged
 - The variables in `backend/.env.example`. `.env.example` marks `ALLOWED_ORIGINS` and `DATABASE_URL` as required in production, and the CI production-mode run also sets `ACCESS_TOKEN_SECRET`, `QUOTE_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` and the webhook secrets. Keep every value in the host's secret store, never in the repository.
 - One instance only until saved investigations move off local files (`LIVE_JOBS_DIR`); mount a persistent volume there.
 - On every release, before starting the new version: `node tools/migrate.js` (idempotent; applies only new migrations). The first time only: `node tools/seed_pricing.js`.
-- `TRUST_PROXY` set to the number of proxies in front of the API (usually 1 for one load balancer) or to their addresses. Left unset the API trusts no proxy and counts every client by the address that connects, which behind a load balancer is one address for everyone. Never `true`; a forged `X-Forwarded-For` is only believed when it arrives through a trusted proxy, so the API must not be reachable except through it.
+- `TRUST_PROXY` set to the number of proxies in front of the API (usually 1 for one load balancer) or to their addresses. Left unset the API trusts no proxy and counts every client by the address that connects, which behind a load balancer is one address for everyone. Use `loopback` for a proxy on the same machine: it covers `127.0.0.1` and `::1`, while `127.0.0.1` alone does not match a client that connects as `::1`. Never `true`; a forged `X-Forwarded-For` is only believed when it arrives through a trusted proxy, so the API must not be reachable except through it.
 - A health check on `/api/health`.
 
 ## Not built yet: the last step

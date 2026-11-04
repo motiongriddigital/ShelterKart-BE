@@ -18,7 +18,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+const rateLimitFactory = require('express-rate-limit');
+/* The limiter's own check for a request that carries X-Forwarded-For while no proxy is trusted is switched off: it printed a stack trace for
+   every such request, and the trust setting is explained once at start (TRUST_PROXY, engine/trustproxy.js). */
+const rateLimit = opts => rateLimitFactory({ validate: { xForwardedForHeader: false }, ...opts });
 const { Pool } = require('pg');
 
 const app = express();
@@ -314,6 +317,7 @@ function stripPII(s) {
 const adminLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
+  skipSuccessfulRequests: true,   // only refused requests count: guessing the password is capped, while a signed-in console (3 calls per screen) is not locked out
   standardHeaders: true,
   legacyHeaders: false,
   message: { ok: false, error: 'Too many attempts. Try again later.' },
