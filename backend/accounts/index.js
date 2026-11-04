@@ -47,6 +47,7 @@ function createAccounts(deps = {}) {
   const ev = (kind, { email, userId, req, detail } = {}) => Promise.resolve(store.recordEvent({ emailLower: email || null, userId: userId || null, ipHash: req ? S.hashIp(cfg.pepper, req.ip) : null, kind, detail, at: at() }))
     .catch(e => console.error('[accounts] event not recorded:', e && e.message));
 
+  const bulkAlerted = new Map();
   let banCache = { at: 0, list: [] };
   const activeBans = async () => {
     const t = now();
@@ -144,11 +145,20 @@ function createAccounts(deps = {}) {
         const v = bot.verify(b.pow, env);
         if (!v.ok) { await ev('challenge_failed', { email, req }); return fail(res, 428, 'challenge', 'Please complete the quick check and try again.'); }
       }
-      const t = now(), last = await store.lastCodeAt(email);
+      const t = now(), ipHash = S.hashIp(cfg.pepper, req.ip), last = await store.lastCodeAt(email, ipHash);
       if (last && t - last.getTime() < 60000) { await ev('cooldown', { email, req }); return fail(res, 429, 'cooldown', 'Please wait a minute before asking for another code.', { retryAfter: Math.ceil((60000 - (t - last.getTime())) / 1000) }); }
-      if (await store.countCodesSince(email, new Date(t - 3600e3)) >= 5) { await ev('rate_limited_email', { email, req }); return fail(res, 429, 'rate_limited', 'Too many codes were requested for this address. Please try again later.', { retryAfter: 3600 }); }
+      const hourAgo = new Date(t - 3600e3);
+      if (await store.countCodesSince(email, hourAgo, ipHash) >= 5) { await ev('rate_limited_email', { email, req }); return fail(res, 429, 'rate_limited', 'Too many codes were requested for this address. Please try again later.', { retryAfter: 3600 }); }
+      const state = await store.lastCodeState(email, at());
+      const quiet = { ok: true, cooldownSeconds: 60, codeLength: 6 };
+      if (state && state.open && t - state.createdAt.getTime() < 60000) { await ev('code_request_absorbed', { email, req, detail: 'recent_code' }); return res.status(202).json(quiet); }
+      if (state && state.open && await store.countCodesSince(email, hourAgo) >= 20) {
+        await ev('code_request_absorbed', { email, req, detail: 'bulk' });
+        if (!bulkAlerted.has(email) || t - bulkAlerted.get(email) > 3600e3) { bulkAlerted.set(email, t); alert('bulk sign-in code requests', `More than 20 codes were requested for one address within an hour (${email}). Further requests are answered without sending while its last code is still open.`).catch(() => {}); }
+        return res.status(202).json(quiet);
+      }
       const code = S.newCode();
-      await store.createCode({ emailLower: email, codeHash: S.hashCode(cfg.pepper, email, code), expiresAt: new Date(t + cfg.codeMinutes * 60000), ipHash: S.hashIp(cfg.pepper, req.ip), now: at() });
+      await store.createCode({ emailLower: email, codeHash: S.hashCode(cfg.pepper, email, code), expiresAt: new Date(t + cfg.codeMinutes * 60000), ipHash, now: at() });
       const sent = await mail({ to: email, subject: 'Your ShelterKart sign-in code',
         text: `Your ShelterKart sign-in code is ${code}\n\nIt works for ${cfg.codeMinutes} minutes. If you did not ask for it, ignore this e-mail: nobody can sign in without the code.` }).catch(() => false);
       if (!sent) { console.error('[accounts] the sign-in code could not be sent'); alert('sign-in codes are not being sent', 'The e-mail provider refused or is not configured.').catch(() => {}); }

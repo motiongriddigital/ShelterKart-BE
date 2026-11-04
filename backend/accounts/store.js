@@ -29,12 +29,16 @@ function makePgStore(pool) {
       await pool.query(`UPDATE auth_codes SET consumed_at=now() WHERE email_lower=$1 AND consumed_at IS NULL`, [emailLower]);
       await pool.query(`INSERT INTO auth_codes (email_lower, code_hash, expires_at, ip_hash) VALUES ($1,$2,$3,$4)`, [emailLower, codeHash, iso(expiresAt), ipHash || null]);
     },
-    async lastCodeAt(emailLower) {
-      const r = one(await pool.query(`SELECT created_at FROM auth_codes WHERE email_lower=$1 ORDER BY created_at DESC LIMIT 1`, [emailLower]));
+    async lastCodeAt(emailLower, ipHash) {
+      const r = one(await pool.query(`SELECT created_at FROM auth_codes WHERE email_lower=$1 AND ($2::text IS NULL OR ip_hash=$2) ORDER BY created_at DESC LIMIT 1`, [emailLower, ipHash || null]));
       return r ? new Date(r.created_at) : null;
     },
-    async countCodesSince(emailLower, since) {
-      const r = one(await pool.query(`SELECT COUNT(*)::int AS n FROM auth_codes WHERE email_lower=$1 AND created_at >= $2`, [emailLower, iso(since)]));
+    async lastCodeState(emailLower, now) {
+      const r = one(await pool.query(`SELECT created_at, (consumed_at IS NULL AND expires_at > $2) AS open FROM auth_codes WHERE email_lower=$1 ORDER BY created_at DESC LIMIT 1`, [emailLower, iso(now)]));
+      return r ? { createdAt: new Date(r.created_at), open: Boolean(r.open) } : null;
+    },
+    async countCodesSince(emailLower, since, ipHash) {
+      const r = one(await pool.query(`SELECT COUNT(*)::int AS n FROM auth_codes WHERE email_lower=$1 AND created_at >= $2 AND ($3::text IS NULL OR ip_hash=$3)`, [emailLower, iso(since), ipHash || null]));
       return r ? Number(r.n) : 0;
     },
     async latestOpenCode(emailLower, now) {
@@ -180,8 +184,12 @@ function makeMemoryStore() {
       for (const c of codes) if (c.emailLower === emailLower && !c.consumedAt) c.consumedAt = now;
       codes.push({ id: crypto.randomUUID(), emailLower, codeHash, attempts: 0, expiresAt: iso(expiresAt), consumedAt: null, ipHash: ipHash || null, createdAt: now });
     },
-    async lastCodeAt(emailLower) { const l = codes.filter(c => c.emailLower === emailLower).map(c => c.createdAt.getTime()); return l.length ? new Date(Math.max(...l)) : null; },
-    async countCodesSince(emailLower, since) { return codes.filter(c => c.emailLower === emailLower && c.createdAt >= iso(since)).length; },
+    async lastCodeAt(emailLower, ipHash) { const l = codes.filter(c => c.emailLower === emailLower && (!ipHash || c.ipHash === ipHash)).map(c => c.createdAt.getTime()); return l.length ? new Date(Math.max(...l)) : null; },
+    async lastCodeState(emailLower, now) {
+      const c = codes.filter(x => x.emailLower === emailLower).sort((a, b) => b.createdAt - a.createdAt)[0];
+      return c ? { createdAt: c.createdAt, open: !c.consumedAt && c.expiresAt > iso(now) } : null;
+    },
+    async countCodesSince(emailLower, since, ipHash) { return codes.filter(c => c.emailLower === emailLower && c.createdAt >= iso(since) && (!ipHash || c.ipHash === ipHash)).length; },
     async latestOpenCode(emailLower, now) {
       const l = codes.filter(c => c.emailLower === emailLower && !c.consumedAt && c.expiresAt > iso(now)).sort((a, b) => b.createdAt - a.createdAt)[0];
       return l ? { id: l.id, codeHash: l.codeHash, attempts: l.attempts } : null;
