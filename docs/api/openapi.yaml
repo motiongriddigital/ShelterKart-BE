@@ -2517,6 +2517,81 @@ paths:
                   totals: {type: object, properties: {users: {type: integer}, newThisWeek: {type: integer}, paid: {type: integer}, conversion: {type: number}}}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/jobs/failed:
+    get:
+      operationId: adminFailedJobs
+      tags: [Admin]
+      summary: Failed jobs
+      description: 'Paid reports that stopped early (kind report) and deliveries that gave up after every automatic retry (kind delivery, with the channel and a masked address). The reason is scrubbed of personal data. Failed deliveries are kept in memory, so a restart forgets them; failed reports are saved with the investigation.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/jobsAdmin.js
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 200}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  total: {type: integer}
+                  jobs:
+                    type: array
+                    items:
+                      type: object
+                      properties: {id: {type: string, description: 'report:<ref> or delivery:<ref>:<channel>'}, kind: {type: string, enum: [report, delivery]}, ref: {type: string}, channel: {type: [string, 'null']}, to: {type: [string, 'null']}, failedAt: {type: [string, 'null']}, reason: {type: [string, 'null']}, attempts: {type: [integer, 'null']}, retryable: {type: boolean}}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/jobs/{id}/retry:
+    post:
+      operationId: adminRetryJob
+      tags: [Admin]
+      summary: Retry a failed job
+      description: 'Runs a job from the failed list again, once. A report resumes from its saved state (nothing is researched or charged twice) and is delivered when complete; a delivery makes one more attempt and does not alert again if it fails. A job that is not failed now, or is already being retried, is refused with 409.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/jobsAdmin.js
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}, description: 'An id from the failed list'}
+      responses:
+        '202': {description: Started again.}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404': {description: No such report.}
+        '409': {description: Not failed now, or already being retried.}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/health/registers/history:
+    get:
+      operationId: adminRegisterHistory
+      tags: [Admin]
+      summary: How each source register has been doing
+      description: 'One series per market that has a live register: every nightly check in the last N days (1 to 90, default 30), oldest first, with its state, the count of checks, healthy checks and the uptime of the counted ones (skipped checks are not counted). Kept in the database for 90 days; without a database only this run of the server is shown.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/jobsAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 90, default: 30}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  days: {type: integer}
+                  registers:
+                    type: array
+                    items:
+                      type: object
+                      properties: {market: {type: string}, name: {type: string}, checks: {type: integer}, healthy: {type: integer}, uptime: {type: [number, 'null']}, latest: {type: [string, 'null']}, points: {type: array, items: {type: object, properties: {at: {type: string}, state: {type: string}, reason: {type: [string, 'null']}}}}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/errors:
     get:
       operationId: adminListErrors

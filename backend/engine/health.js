@@ -273,6 +273,11 @@ const withTimeout = (p, ms) => new Promise((resolve, reject) => {
  * job has no reason to hit fifteen hosts at once), save the result, and
  * alert on changes only.
  */
+/** The checks of this run of the server, for when there is no database (the database keeps the long history). */
+const historyMem = [];
+function remember(market, rec) { historyMem.push({ market, state: rec.state, reason: rec.reason || null, at: rec.checkedAt }); if (historyMem.length > 3000) historyMem.splice(0, historyMem.length - 3000); }
+function memoryHistory(days) { const since = Date.now() - days * 24 * 3600 * 1000; return historyMem.filter(h => Date.parse(h.at) >= since); }
+
 async function runHealthChecks({ connectors, markets, http, env = process.env, store = null, alert = sendAlert, now = () => new Date() }) {
   const robotsOverride = new Set(String(env.HEALTH_ROBOTS_OVERRIDE || '').split(',').map(s => s.trim()).filter(Boolean));
   const results = [], newlyUnconfirmed = [];
@@ -288,6 +293,7 @@ async function runHealthChecks({ connectors, markets, http, env = process.env, s
     const rec = { ...nextState(prev, result), market, checkedAt: now().toISOString(),
                   lastOkAt: result.kind === 'ok' ? now().toISOString() : (prev && prev.lastOkAt) || null };
     setHealth(market, rec);
+    remember(market, rec);
     if (store) { try { await store.saveHealth(market, rec); } catch (e) { console.error('[source-health] could not save:', e && e.message); } }
 
     const msg = describeTransition(market, m.label, prev ? prev.state : null, rec);
@@ -314,5 +320,5 @@ function startSchedule(run, { hours = 24, firstDelayMs = 60000 } = {}) {
 module.exports = {
   parseRobots, robotsAllows, patternMatches, checkRobots,
   CANARIES, NO_CANARY, runCanary, nextState, describeTransition, runHealthChecks, sendAlert, startSchedule,
-  getHealth, isRegistryUsable, setHealth, loadHealth, _health: health,
+  getHealth, isRegistryUsable, setHealth, loadHealth, memoryHistory, _health: health,
 };

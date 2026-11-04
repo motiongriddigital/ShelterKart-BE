@@ -67,18 +67,26 @@ function emailProvider(env) {
  */
 function createDelivery({ env = process.env, fetchImpl = globalThis.fetch, onGiveUp = () => {}, setTimer = (fn, ms) => { const t = setTimeout(fn, ms); if (t && t.unref) t.unref(); return t; }, delays = DELAYS } = {}) {
   const log = [];   // every attempt: { ref, channel, to (masked), ok, error, at, attempt }
+  const failed = new Map();   // 'ref|channel' -> a delivery that gave up and is waiting for an operator: { job, ch, error, attempts, at, busy }
   const mask = (ch, to) => (ch === 'email' ? to.replace(/^(.).*(@.*)$/, '$1•••$2') : to.replace(/^(\+\d{2}).*(\d{3})$/, '$1•••$2'));
-  function attempt(job, ch, n) {
+  function attempt(job, ch, n, manual = false) {
+    const key = job.ref + '|' + ch;
     const run = async () => {
       try {
         let out;
         if (ch === 'email') out = await EMAIL[job.emailProvider].send({ to: job.email, msg: job.msg }, { env, fetchImpl });
         else out = await WHATSAPP.send({ to: job.phone, project: job.project, link: job.link }, { env, fetchImpl });
         log.push({ ref: job.ref, channel: ch, to: mask(ch, ch === 'email' ? job.email : job.phone), ok: true, id: out.id, attempt: n + 1, at: new Date().toISOString() });
+        failed.delete(key);
       } catch (e) {
         log.push({ ref: job.ref, channel: ch, to: mask(ch, ch === 'email' ? job.email : job.phone), ok: false, error: String((e && e.message) || e).slice(0, 120), attempt: n + 1, at: new Date().toISOString() });
-        if (n < delays.length) setTimer(() => attempt(job, ch, n + 1), delays[n]);
-        else { try { onGiveUp({ ref: job.ref, channel: ch, error: String((e && e.message) || e).slice(0, 160) }); } catch { /* alerting must never break delivery */ } }
+        const error = String((e && e.message) || e).slice(0, 160);
+        if (manual) { const f = failed.get(key); if (f) { f.attempts += 1; f.error = error; f.at = new Date().toISOString(); } }
+        else if (n < delays.length) setTimer(() => attempt(job, ch, n + 1), delays[n]);
+        else {
+          failed.set(key, { job, ch, error, attempts: n + 1, at: new Date().toISOString(), busy: false });
+          try { onGiveUp({ ref: job.ref, channel: ch, error }); } catch { /* alerting must never break delivery */ }
+        }
       }
     };
     return run();
@@ -92,6 +100,17 @@ function createDelivery({ env = process.env, fetchImpl = globalThis.fetch, onGiv
       if (phone) { if (WHATSAPP.configured(env)) { queued.push('whatsapp'); runs.push(attempt(job, 'whatsapp', 0)); } else skipped.push({ channel: 'whatsapp', reason: 'WhatsApp is not set up' }); }
       for (const s of skipped) log.push({ ref, channel: s.channel, ok: false, error: s.reason, attempt: 0, at: new Date().toISOString() });
       return { queued, skipped, done: Promise.all(runs) };
+    },
+    /** Deliveries that gave up after every automatic retry. Masked address only; kept in memory, so a restart forgets them. */
+    failed() { return [...failed.values()].map(f => ({ ref: f.job.ref, channel: f.ch, to: mask(f.ch, f.ch === 'email' ? f.job.email : f.job.phone), error: f.error, attempts: f.attempts, at: f.at })); },
+    /** One more attempt by hand, once: a second call while it runs is refused, and a failure does not alert again. */
+    retry(ref, ch) {
+      const f = failed.get(ref + '|' + ch);
+      if (!f) return { ok: false, code: 'not_failed' };
+      if (f.busy) return { ok: false, code: 'busy' };
+      f.busy = true;
+      const done = attempt(f.job, ch, 0, true).finally(() => { f.busy = false; });
+      return { ok: true, done };
     },
     status() { return { email: emailProvider(env), whatsapp: WHATSAPP.configured(env), recent: log.slice(-50) }; },
     log,
