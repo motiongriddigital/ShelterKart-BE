@@ -275,7 +275,12 @@ async function gateBrief(brief, req) {
   const paywall = active ? { active: true, price: fee.price, currency: fee.currency, depth: fee.depth, depthLabel: fee.depthLabel, basis: fee.basis,
     fee: { net: fee.net, tax: fee.tax, taxName: fee.taxName, taxRateBps: fee.taxRateBps, taxInclusive: fee.taxInclusive }, buyer: fee.buyer, priceBookVersion: fee.priceBookVersion } : { active: false };
   const open = !active || (ACCOUNTS.enabled ? await ACCOUNTS.entitled(req, brief.ref) : verifyToken(req.get('x-report-access'), brief.ref, process.env.ACCESS_TOKEN_SECRET));
-  if (open) return { brief: { ...brief, locked: false }, paywall };
+  if (open) {
+    // The contact on a report is whoever unlocked it, kept for delivery and corrections: another buyer of the same report must never read it.
+    const full = { ...brief, locked: false };
+    delete full.contact;
+    return { brief: full, paywall };
+  }
   return { brief: previewOf(brief), paywall };
 }
 const { MARKETS, depthOf } = require('./engine/markets');
