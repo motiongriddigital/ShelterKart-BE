@@ -74,6 +74,12 @@ const okEv = (o = {}) => ({ engine: 'anthropic', role: 'research', ok: true, tok
     const pool = fakePool(), { h } = mk({ pool }); pool.up = false; h.record(okEv()); const w = h.flush(); h.record(okEv()); await w; h.record(okEv());
     pool.up = true; await h.flush(); assert.strictEqual(pool.calls.reduce((s, a) => s + a[3], 0), 3);
   });
+  await t('after a failed write the counts are retried by themselves, after a growing pause, and written once the database is back', async () => {
+    const pool = fakePool(), { h } = mk({ pool, flushMs: 10 }); pool.up = false; h.record(okEv());
+    await new Promise(r => setTimeout(r, 60)); assert.strictEqual(pool.calls.length, 0); assert.strictEqual(h._pending().size, 1);
+    pool.up = true; await new Promise(r => setTimeout(r, 120));
+    assert.strictEqual(pool.calls.length, 1); assert.strictEqual(pool.calls[0][3], 1); assert.strictEqual(h._pending().size, 0);
+  });
   await t('a flush with nothing held writes nothing; two at once write once', async () => {
     const pool = fakePool(), { h } = mk({ pool }); await h.flush(); assert.strictEqual(pool.calls.length, 0);
     h.record(okEv()); await Promise.all([h.flush(), h.flush()]); assert.strictEqual(pool.calls.length, 1);
