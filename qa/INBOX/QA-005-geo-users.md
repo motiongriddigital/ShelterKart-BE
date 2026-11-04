@@ -49,7 +49,7 @@ signin() { # $1 email, $2 extra header (or empty)
 | # | Do this | Expect |
 | --- | --- | --- |
 | A1 | in `backend`: `node test/geo.test.js` | ends `all 14 passing` |
-| A2 | `node -r ./test/harness/stub-loader.js test/harness/geo.test.js` | ends `all passing`; 19 lines starting `  ok` |
+| A2 | `node -r ./test/harness/stub-loader.js test/harness/geo.test.js` | ends `all passing`; 18 lines starting `  ok` |
 | A3 | `npm test` (needs Playwright and python3; mark BLOCKED with the reason if missing) | exit code 0 |
 | B1 | `node tools/migrate.js` a second time | `0 applied`; no error. `git diff --stat feature/admin-error-log feature/admin-geo -- backend/*.sql` is empty (no migration added). |
 | B2 | `docker exec sk-qa-pg5 psql -U postgres -d sk -c "\d users"` | `country` is a nullable text column |

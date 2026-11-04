@@ -43,8 +43,8 @@ Node 23.6 or newer for `test:api`.
 | C3 | Read `src/components/console/SecondaryPanel.tsx` | for `/admin/map` the Countries group is built from the store, sorted by users; for `/admin/users` unchanged |
 | C4 | Read `src/store/geoData.ts` | live mode starts empty and idle, demo mode starts with seed data, switching mode resets it, an error sets `error` and does not keep stale numbers |
 | C5 | `grep -rn "fetch(" src/store/geoData.ts src/utils/adminGeo.ts` | no match: the only network path is `fetchGeo` through `http()` |
-| D1 | `npm run start -- -p 3100 &` after the build; the crawl from QA-003 Part B | every page `200`, including `/admin/map` and `/admin/map/in` |
-| D2 | `curl -s -o /dev/null -w '%{http_code}\n'` for `/admin/map/uk`, `/admin/map/world`, `/admin/map/zz` | `200`, `200` and `404` (an unknown country); report what you get |
+| D1 | `npm run start -- -p 3100 &` after the build; the crawl from QA-003 Part B (with every route of the build's route table requested directly, as QA-003 B1 now says) | every request `200`, including `/admin/map` and `/admin/map/in`; the `BAD-BODY` flag on `/admin` is a known false positive |
+| D2 | `curl -s -o /dev/null -w '%{http_code}\n'` for `/admin/map/uk`, `/admin/map/world`, `/admin/map/zz` | `200`, `200`, and for the unknown country `zz` a `200` whose body says "could not be found" (the client app does not send a 404 status); report what you get |
 
 ## Part M: for the owner, not for the QA AI
 
