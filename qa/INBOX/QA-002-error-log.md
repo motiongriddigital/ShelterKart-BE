@@ -15,6 +15,10 @@ You are the QA agent. Your job is to verify, not to build. Read `qa/README.md` f
 
 Repository ShelterKart-BE, branch `feature/admin-error-log`, commit `fbe6149` (stacked on QA-001's branch). Every `console.error` and `console.warn` is also written to a database log that groups repeats, scrubs personal data, and is read through three admin routes. It adds the fourteenth migration.
 
+## What the builder did and how it was tested
+
+Built: `backend/engine/errorlog.js` mirrors every `console.error` and `console.warn` into a grouped, scrubbed, flood-throttled log (30 days), the fourteenth migration `error_log.sql`, and three admin routes. Tested by the builder: 17 unit checks (`test/errorlog.test.js`), 5 server checks through the real route handlers, the whole `npm test`, and a run against a real Postgres. Not tested by the builder: the flood and `ERROR_LOG=off` steps below, run end to end.
+
 ## Setup
 
 Same as QA-001 Setup, but check out `fbe6149` and use port 5496 for Postgres and container name `sk-qa-pg2`:

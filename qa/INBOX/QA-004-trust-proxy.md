@@ -15,6 +15,10 @@ You are the QA agent. Your job is to verify, not to build. Read `qa/README.md` f
 
 Repository ShelterKart-BE, branch `fix/trust-proxy`, commit as in the header. Until now the server was hard-coded to believe one proxy, so anyone who could reach the API directly could send a different `X-Forwarded-For` on every request and dodge every per-IP limit and IP ban. Now `TRUST_PROXY` decides: unset means no proxy is believed; a number means that many proxies; a list means those proxy addresses. `true` is refused. The stack under it is `feature/admin-error-log`, so the migrations are the fourteen from QA-002.
 
+## What the builder did and how it was tested
+
+Built: `backend/engine/trustproxy.js` reads `TRUST_PROXY` (unset or `off` is no proxy; a number is a hop count; a list is proxy addresses or named ranges; `true`, a count outside 1 to 10 and malformed entries are refused and trust no one, with a `[proxy]` log line), `server.js` uses it instead of the fixed `1`, and in production a warning is logged when it is unset. Tested by the builder: 10 checks in `test/trustproxy.test.js`, four of which start real express on a socket and send a forged `X-Forwarded-For` (no proxy: no effect; one proxy: believed; listed address: believed; unlisted: ignored); the whole `npm test` (exit 0). Not tested by the builder: the production warning on a real production start, and the 30-request limiter runs below through a real server.
+
 ## Setup
 
 ```

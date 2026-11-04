@@ -15,6 +15,10 @@ You are the QA agent. Your job is to verify, not to build. Read `qa/README.md` f
 
 Repository ShelterKart-BE (GitHub: motiongriddigital/ShelterKart-BE), branch `feature/admin-users`, commit `06c003e`. It adds a log of every sign-in attempt, bans for accounts and IP addresses (enforced), and twelve admin routes. Throwaway values only.
 
+## What the builder did and how it was tested
+
+Built: a log of every sign-in attempt, bans for accounts and for IP addresses (enforced on code request, verify and every guarded route), and twelve admin routes for users, sessions, bans and a sign-in summary (see `docs/admin/BACKEND-PLAN.md`, S1). Tested by the builder: the accounts unit tests (`test/accounts.test.js`), 35 server checks through the real route handlers (`test/harness/accounts-admin.test.js`) and the whole `npm test`. Those tests run on an in-memory store, so the real Postgres path and the real server are what this prompt adds: treat them as untested by the builder.
+
 ## Setup
 
 You need Node 22 or newer, Docker, `curl`. In a folder other than the one holding `qa/`:

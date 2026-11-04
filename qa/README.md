@@ -1,6 +1,6 @@
 # QA handoff: how test prompts move between the two machines
 
-The builder (an AI on the owner's Mac) writes the code and its own unit tests. An independent QA agent (an AI on another computer) verifies the work: a real database, a real server, a real browser. The builder never runs these prompts, so the check is not marked by the one who wrote the code.
+The builder (an AI on the owner's Mac) writes the code and its own unit tests. An independent QA agent (an AI on another computer) verifies the work: a real database, a real server, scripts and the command line. The QA agent does not drive a browser; checks that need eyes on a screen are marked as for the owner and the QA agent leaves them as `NOT RUN (owner)`. The builder never runs these prompts, so the check is not marked by the one who wrote the code.
 
 The channel is this git branch, `ops/admin-plan-and-qa`, on GitHub. No ports are opened, no secrets are shared, and the history is the audit trail.
 
