@@ -94,6 +94,11 @@ app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const { createErrorLog } = require('./engine/errorlog');
 const ERRORLOG = createErrorLog({ pool: process.env.DATABASE_URL ? pool : null, enabled: String(process.env.ERROR_LOG || 'on').toLowerCase() !== 'off' });
+const ADMIN_AUDIT = require('./engine/adminAudit').createAdminAudit({ pool: process.env.DATABASE_URL ? pool : null });
+const auditAdmin = async (req, entry) => {
+  try { await ADMIN_AUDIT.record({ actor: require('./engine/adminAudit').actorOf(req), ...entry }); return true; }
+  catch (e) { console.error('[audit] could not record ' + entry.action + ':', e && e.message); return false; }
+};
 ERRORLOG.hookConsole(console);
 
 /* Express 4 does not catch errors thrown in async handlers: the request
@@ -335,7 +340,8 @@ app.post('/api/admin/purge', adminAuth, ah(async (req, res) => {
   if (!url && !host) return res.status(400).json({ ok: false, error: 'Provide a url or a host.' });
   // Reported as purged only once storage has confirmed the deletion too.
   const { memory, stored } = await purgeDurably(url ? { url } : { host });
-  res.json({ ok: true, purged: memory, purgedFromStorage: stored });
+  const audited = await auditAdmin(req, { action: 'SOURCE_PURGED', objectType: 'source', after: { purged: memory, purgedFromStorage: stored }, reason: (url ? 'url ' : 'host ') + String(url || host).slice(0, 300) });
+  res.json({ ok: true, purged: memory, purgedFromStorage: stored, audited });
 }));
 
 const checkoutResearchLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 20, standardHeaders: true, legacyHeaders: false });
@@ -1352,6 +1358,7 @@ app.post('/api/admin/response-queue/:id/resolve', adminAuth, ah(async (req, res)
 ACCOUNTS.mount(app);
 ACCOUNTS.mountAdmin(app, { adminAuth });
 ERRORLOG.mountAdmin(app, { adminAuth, ah, rateLimit });
+require('./engine/adminAudit').mountAudit(app, { adminAuth, wrap: ah, rateLimit, audit: ADMIN_AUDIT });
 require('./engine/jobsAdmin').mountJobsAdmin(app, { adminAuth, wrap: ah, rateLimit, liveJobs, delivery: DELIVERY, retryReport: retryFailedReport, markets: MARKETS, history: days => (pgStore ? pgStore.healthHistory(days) : HEALTH.memoryHistory(days)) });
 require('./engine/enginesAdmin').mountEnginesAdmin(app, { adminAuth, wrap: ah, rateLimit, history: ENGINE_HISTORY, jobs: () => liveJobs.values(),
   pricesFor: async refs => {
@@ -1681,7 +1688,11 @@ app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
 
 app.get('/api/admin/disputes', adminAuth, ah(async (req, res) => { res.json(await REVIEWS.openDisputes()); }));
 
-app.post('/api/admin/disputes/:id/resolve', adminAuth, requireUuid, ah(async (req, res) => { await REVIEWS.resolveDispute(req.params.id); res.json({ ok: true }); }));
+app.post('/api/admin/disputes/:id/resolve', adminAuth, requireUuid, ah(async (req, res) => {
+  await REVIEWS.resolveDispute(req.params.id);
+  const audited = await auditAdmin(req, { action: 'DISPUTE_RESOLVED', objectType: 'dispute', objectId: req.params.id });
+  res.json({ ok: true, audited });
+}));
 
 /* Pending developer replies, each with what the reviewer needs to judge it: whether the sender's email domain matches
    the developer's own website, and which finding the reply quotes (or that it quotes none of them). */
@@ -1692,9 +1703,17 @@ app.get('/api/admin/responses', adminAuth, ah(async (req, res) => {
     return { ...r, sender_check: senderCheck(r.contact_email, b), developer_site: (b && b.project && b.project.developer_site) || null, finding_match: i, report_available: Boolean(b) }; }));
 }));
 
-app.post('/api/admin/responses/:id/approve', adminAuth, requireUuid, ah(async (req, res) => { await REVIEWS.setReply(req.params.id, 'approved'); res.json({ ok: true }); }));
+app.post('/api/admin/responses/:id/approve', adminAuth, requireUuid, ah(async (req, res) => {
+  await REVIEWS.setReply(req.params.id, 'approved');
+  const audited = await auditAdmin(req, { action: 'REPLY_APPROVED', objectType: 'developer_reply', objectId: req.params.id, after: { status: 'approved' } });
+  res.json({ ok: true, audited });
+}));
 
-app.post('/api/admin/responses/:id/reject', adminAuth, requireUuid, ah(async (req, res) => { await REVIEWS.setReply(req.params.id, 'rejected'); res.json({ ok: true }); }));
+app.post('/api/admin/responses/:id/reject', adminAuth, requireUuid, ah(async (req, res) => {
+  await REVIEWS.setReply(req.params.id, 'rejected');
+  const audited = await auditAdmin(req, { action: 'REPLY_REJECTED', objectType: 'developer_reply', objectId: req.params.id, after: { status: 'rejected' } });
+  res.json({ ok: true, audited });
+}));
 
 /* Reports held for a person (ADVERSE_HOLD_MARKETS): the negative findings to check, with their sources. */
 app.get('/api/admin/held', adminAuth, ah(async (req, res) => {
@@ -1712,7 +1731,8 @@ app.post('/api/admin/held/:ref/approve', adminAuth, ah(async (req, res) => {
   if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Unknown report reference.' });
   const b = await setReview(ref, { status: 'approved', adverse: REVIEW.adverseIndexes(await getByRefAsync(ref) || {}).length });
   if (!b) return res.status(404).json({ ok: false, error: 'No such report.' });
-  res.json({ ok: true, ref, review: b.review });
+  const audited = await auditAdmin(req, { action: 'HELD_FINDINGS_RELEASED', objectType: 'report', after: { ref, status: 'approved', adverse: b.review && b.review.adverse }, reason: 'report ' + ref });
+  res.json({ ok: true, ref, review: b.review, audited });
 }));
 
 // Generic error handler. It used to sit mid-file, before the admin
