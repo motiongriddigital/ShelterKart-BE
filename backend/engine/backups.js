@@ -101,6 +101,10 @@ function createBackups({ pool = null, env = process.env, now = () => Date.now(),
   const rec = records || (pool ? pgRecords(pool) : memoryRecords());
   const enabled = Boolean(active && dumper);
   let running = false, timer = null;
+  const recent = [];
+  const remember = row => { recent.unshift(row); if (recent.length > 20) recent.length = 20; };
+  if (String(env.BACKUP_KEY_ID || '').trim() && !active)
+    (log.warn || log.error).call(log, '[backups] backups are off: BACKUP_KEY_ID names ' + (KEY_ID_RE.test(String(env.BACKUP_KEY_ID)) ? 'a key id with no valid BACKUP_KEY_<id> (64 hexadecimal characters)' : 'an invalid key id (1 to 16 letters or digits)') + '.');
 
   async function encryptTo(stream, file, keyId) {
     const iv = crypto.randomBytes(12), cipher = crypto.createCipheriv('aes-256-gcm', keys.get(keyId), iv);
@@ -149,6 +153,7 @@ function createBackups({ pool = null, env = process.env, now = () => Date.now(),
       const why = scrubError(e && e.message);
       log.error('[backups] backup failed:', why);
       if (id != null) await rec.finish(id, { status: 'failed', finishedAt: new Date(now()), error: why }).catch(() => {});
+      remember({ id, startedAt, finishedAt: new Date(now()), trigger, status: 'failed', fileName: null, sizeBytes: null, sha256: null, keyId: active, destination: dest.name, error: why });
       return { ok: false, status: 502, code: 'failed', error: 'The backup failed: ' + why };
     } finally { running = false; }
   }
@@ -165,7 +170,12 @@ function createBackups({ pool = null, env = process.env, now = () => Date.now(),
   async function notice() {
     const t = now();
     if (!enabled) return { level: 'off', text: 'Backups are not set up yet.', lastOkAt: null, nextDueAt: null, overdue: false, everyDays };
-    const [ok, last] = [await rec.lastOk(), await rec.last()];
+    let ok, last;
+    try { [ok, last] = [await rec.lastOk(), await rec.last()]; }
+    catch (e) {
+      log.error('[backups] the backup records cannot be read:', scrubError(e && e.message));
+      return { level: 'error', text: 'The backup records cannot be read, so the state of the backups is unknown.' + (recent.length ? ' The last attempt on this server failed.' : ''), lastOkAt: null, nextDueAt: null, overdue: true, everyDays, recordsAvailable: false };
+    }
     const lastOkAt = ok ? ok.finishedAt || ok.startedAt : null, nextDue = lastOkAt ? new Date(lastOkAt.getTime() + everyDays * DAY) : null;
     const overdue = !nextDue || t > nextDue.getTime() + 2 * DAY;
     const day = d => d.toISOString().slice(0, 10);
@@ -180,7 +190,9 @@ function createBackups({ pool = null, env = process.env, now = () => Date.now(),
 
   /** Key ids and ages only. Age counts from the first backup that used the key. */
   async function keyInfo() {
-    const first = await rec.keyFirstUsed(), t = now();
+    let first;
+    try { first = await rec.keyFirstUsed(); } catch (e) { log.error('[backups] key ages cannot be read:', scrubError(e && e.message)); first = new Map(); }
+    const t = now();
     return [...keys.keys()].sort().map(id => ({ id, active: id === active, firstUsedAt: first.has(id) ? first.get(id).toISOString() : null, ageDays: first.has(id) ? Math.floor((t - first.get(id).getTime()) / DAY) : null }));
   }
 
@@ -209,9 +221,12 @@ function createBackups({ pool = null, env = process.env, now = () => Date.now(),
     app.get('/api/admin/backups/keys', ...A, ah(async (req, res) => json(res, { keys: await keyInfo() })));
     app.get('/api/admin/backups', ...A, ah(async (req, res) => {
       const limit = Math.min(100, Math.max(1, parseInt((req.query || {}).limit, 10) || 30));
-      json(res, { enabled, everyDays, keep, destination: dest.name, backups: (await rec.list(limit)).map(out) });
+      let rows, recordsAvailable = true;
+      try { rows = await rec.list(limit); }
+      catch (e) { log.error('[backups] the backup records cannot be read:', scrubError(e && e.message)); rows = recent.slice(0, limit); recordsAvailable = false; }
+      json(res, { enabled, everyDays, keep, destination: dest.name, recordsAvailable, backups: rows.map(out) });
     }));
-    app.post('/api/admin/backups/run', lim(3600e3, 3), ...A, ah(async (req, res) => {
+    app.post('/api/admin/backups/run', A[0], adminAuth, lim(3600e3, 3), ah(async (req, res) => {
       const r = await run('manual');
       res.set('Cache-Control', 'no-store');
       res.status(r.status).json(r.ok ? { ok: true, backup: r.backup } : { ok: false, code: r.code, error: r.error });

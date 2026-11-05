@@ -150,6 +150,37 @@ const keyFor = id => ({ k1: Buffer.from(KEY_A, 'hex'), k2: Buffer.from(KEY_B, 'h
     assert.strictEqual(r.code, 409); assert.strictEqual(r.body.code, 'not_configured');
   });
 
+  await t('the manual-run limit counts only requests that passed the admin login', async () => {
+    const { b } = mk(); const reg = []; const app = {}; for (const m of ['get', 'post']) app[m] = (p, ...h) => reg.push({ m, p, h });
+    const hits = []; const rateLimit = o => { let n = 0; return (q, r, next) => { hits.push(o.max); if (++n > o.max) return r.status(429).json({ ok: false }); next(); }; };
+    const auth = (req, res, next) => (req.headers.authorization === 'ok' ? next() : res.status(401).json({ ok: false }));
+    b.mountAdmin(app, { adminAuth: auth, ah: fn => (q, r, n) => Promise.resolve(fn(q, r, n)).catch(n), rateLimit });
+    const route = reg.find(r => r.m === 'post' && r.p === '/api/admin/backups/run');
+    const call = headers => new Promise(resolve => {
+      const res = { code: 200, status(c) { this.code = c; return this; }, set() { return this; }, json(o) { resolve(this.code); return this; } };
+      let i = 0; const next = () => { const f = route.h[i++]; if (f) f({ headers, query: {}, body: {} }, res, next); }; next();
+    });
+    for (let i = 0; i < 6; i++) assert.strictEqual(await call({}), 401);
+    assert.strictEqual(hits.filter(m => m === 3).length, 0);
+    assert.strictEqual(await call({ authorization: 'ok' }), 200);
+  });
+  await t('when the records cannot be read the notice says error and the list shows this server\'s failures', async () => {
+    const broken = { start: async () => { throw new Error('database "x" does not exist'); }, finish: async () => {}, list: async () => { throw new Error('down'); }, lastOk: async () => { throw new Error('down'); }, last: async () => { throw new Error('down'); }, keyFirstUsed: async () => { throw new Error('down'); }, failRunning: async () => {} };
+    const { b } = mk({ records: broken }); const call = routes(b);
+    const run = await call('post', '/api/admin/backups/run'); assert.strictEqual(run.code, 502);
+    const note = await call('get', '/api/admin/backups/notice'); assert.strictEqual(note.code, 200); assert.strictEqual(note.body.notice.level, 'error'); assert.strictEqual(note.body.notice.recordsAvailable, false);
+    const list = await call('get', '/api/admin/backups'); assert.strictEqual(list.code, 200); assert.strictEqual(list.body.recordsAvailable, false);
+    assert.strictEqual(list.body.backups.length, 1); assert.strictEqual(list.body.backups[0].status, 'failed'); assert(!/postgres:/.test(JSON.stringify(list.body)));
+    const keys = await call('get', '/api/admin/backups/keys'); assert.strictEqual(keys.code, 200); assert.strictEqual(keys.body.keys[0].firstUsedAt, null);
+  });
+  await t('a key that is set but malformed leaves backups off and the log says why, without the key', () => {
+    const lines = []; const log = { error() {}, warn: (...a) => lines.push(a.join(' ')) };
+    const { b } = mk({ log }, { BACKUP_KEY_k1: 'abc' });
+    assert.strictEqual(b.enabled, false); assert.strictEqual(lines.length, 1); assert(/BACKUP_KEY_<id>/.test(lines[0])); assert(!lines[0].includes('abc'));
+    const quietLines = []; mk({ log: { error() {}, warn: (...a) => quietLines.push(a) } }); assert.strictEqual(quietLines.length, 0);
+    mk({ log: { error() {}, warn: (...a) => quietLines.push(a) } }, { BACKUP_KEY_ID: '' }); assert.strictEqual(quietLines.length, 0);
+  });
+
   console.log(failed ? '\n' + failed + ' FAILED' : '\nall ' + passed + ' passing');
   if (failed) process.exitCode = 1;
 })();

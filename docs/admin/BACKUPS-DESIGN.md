@@ -26,11 +26,14 @@ Never restore over the live database. Use a scratch database.
 # 1. fetch the newest db-*.skbk from the destination and the key from where it is kept
 BACKUP_KEY_k1=<64 hex> node tools/backup-decrypt.js db-20261104T100000Z-k1.skbk restored.dump
 # 2. restore into a scratch database
-createdb shelterkart_drill
-pg_restore --no-owner --dbname=postgres://.../shelterkart_drill restored.dump
+export PGPASSWORD=<database password>
+createdb -h <host> -U <user> shelterkart_drill
+pg_restore --no-owner --dbname=postgres://<user>@<host>:5432/shelterkart_drill restored.dump
 # 3. check: counts of a few tables match what you expect; ops/restore_drill.sh does the same for the older nightly dumps
 # 4. drop the scratch database and delete restored.dump
 ```
+
+The first scheduled backup starts about two minutes after the server starts, then the check runs hourly. A key that is set but malformed (not 64 hexadecimal characters) leaves backups off and the server logs the reason, never the key. QA-015 (2026-11-05, Windows 11, PostgreSQL 16) restored a 5,000-row database from a backup and confirmed wrong-key, changed-file and truncated-file refusals.
 
 A rehearsal was run on 2026-11-04 on PostgreSQL 16 with a throwaway database: 5,000 rows and a JSONB table came back identical, and a wrong key was refused with no output file. Repeat it on the real host once, with the real key, before relying on this.
 
