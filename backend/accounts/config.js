@@ -11,6 +11,7 @@ function settings(env = process.env) {
     production,
     secure: production || on(env.ACCOUNTS_COOKIE_SECURE),
     pepper: String(env.AUTH_PEPPER || ''),
+    edgeCountryHeader: (/^[A-Za-z0-9-]{1,60}$/.test(String(env.EDGE_COUNTRY_HEADER || '')) ? String(env.EDGE_COUNTRY_HEADER) : 'cf-ipcountry').toLowerCase(),
     allowMemory: on(env.ACCOUNTS_ALLOW_MEMORY),
     devEcho: on(env.ACCOUNTS_DEV_ECHO),
     sessionDays: num(env.SESSION_DAYS, 30, 1, 365),

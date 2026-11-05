@@ -124,6 +124,14 @@ function makePgStore(pool) {
       for (const r of (await pool.query(`SELECT kind, COUNT(*)::int AS n FROM auth_events WHERE at >= $1 GROUP BY kind`, [iso(since)])).rows) out[r.kind] = Number(r.n);
       return out;
     },
+    async geoCounts(since) {
+      return (await pool.query(`SELECT upper(country) AS country, COUNT(*)::int AS users, COUNT(*) FILTER (WHERE created_at >= $1)::int AS new_users FROM users WHERE deleted_at IS NULL GROUP BY 1`, [iso(since)]))
+        .rows.map(r => ({ country: r.country, users: Number(r.users), newUsers: Number(r.new_users) }));
+    },
+    async geoPaid() {
+      return (await pool.query(`SELECT upper(u.country) AS country, COUNT(DISTINCT u.id)::int AS paid FROM users u JOIN report_purchases p ON p.user_id = u.id AND p.status = 'paid' WHERE u.deleted_at IS NULL GROUP BY 1`))
+        .rows.map(r => ({ country: r.country, paid: Number(r.paid) }));
+    },
     async listUsersAdmin({ q, limit, offset }) {
       const like = q ? '%' + q.toLowerCase().replace(/[%_]/g, '') + '%' : null;
       return (await pool.query(
@@ -243,6 +251,12 @@ function makeMemoryStore() {
       return out;
     },
     async eventSummary(since) { const out = {}; for (const e of events) if (e.at >= iso(since)) out[e.kind] = (out[e.kind] || 0) + 1; return out; },
+    async geoCounts(since) {
+      const by = new Map();
+      for (const u of live()) { const k = u.country ? String(u.country).toUpperCase() : null, r = by.get(k) || { country: k, users: 0, newUsers: 0 }; r.users++; if (new Date(u.createdAt) >= since) r.newUsers++; by.set(k, r); }
+      return [...by.values()];
+    },
+    async geoPaid() { return []; },
     async listUsersAdmin({ q, limit, offset }) {
       const t = q ? q.toLowerCase() : null;
       return live().filter(u => !t || u.email.toLowerCase().includes(t) || (u.displayName || '').toLowerCase().includes(t))

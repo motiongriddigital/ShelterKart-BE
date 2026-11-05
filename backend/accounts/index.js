@@ -7,6 +7,7 @@
 const S = require('./secrets');
 const { settings, validate } = require('./config');
 const { makeAccountStore } = require('./store');
+const { countryFromRequest } = require('./geo');
 
 const DAY = 24 * 3600 * 1000;
 const LANG_RE = /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/;
@@ -179,7 +180,7 @@ function createAccounts(deps = {}) {
       let u = await store.findUserByEmail(email), isNewUser = false;
       if (!u) {
         if (b.termsAccepted !== true) { await ev('consent_required', { email, req }); return fail(res, 400, 'consent_required', 'Please accept the terms and the privacy notice to create your account.'); }
-        u = await store.createUser({ email, language: LANG_RE.test(String(b.language || '')) ? String(b.language) : null, country: null, termsVersion: cfg.termsVersion, privacyVersion: cfg.privacyVersion, now: at() });
+        u = await store.createUser({ email, language: LANG_RE.test(String(b.language || '')) ? String(b.language) : null, country: countryFromRequest(req, cfg.edgeCountryHeader), termsVersion: cfg.termsVersion, privacyVersion: cfg.privacyVersion, now: at() });
         isNewUser = true;
       }
       if (u.disabledAt) { await ev('login_blocked_disabled', { email, userId: u.id, req }); return fail(res, 403, 'account_disabled', 'This account is disabled. Write to us if you think that is a mistake.'); }
