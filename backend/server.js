@@ -91,7 +91,7 @@ const OWN_BODY_PARSER = new Set(['/api/payments/webhook', '/api/payments/razorpa
 const jsonSmall = express.json({ limit: '10kb' });
 app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = require('./engine/poolGuard').guardPool(new Pool({ connectionString: process.env.DATABASE_URL }));
 const { createErrorLog } = require('./engine/errorlog');
 const ERRORLOG = createErrorLog({ pool: process.env.DATABASE_URL ? pool : null, enabled: String(process.env.ERROR_LOG || 'on').toLowerCase() !== 'off' });
 ERRORLOG.hookConsole(console);
