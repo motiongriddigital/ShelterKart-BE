@@ -2,7 +2,7 @@
 /**
  * AI engine usage kept per day (UTC), engine and role, so a restart does not reset it. The meter feeds every call to record();
  * counts are held for a moment and written in one go (and on shutdown). A failed write never reaches an engine call: it is logged
- * and tried again with the next write. Without a database the history lives in memory and starts again at each start.
+ * and tried again after a growing pause (and with the next write). Without a database the history lives in memory and starts again at each start.
  * Never stores prompts or answers. Latency is a histogram, so p50 and p95 are the upper bound of the bucket they fall in.
  */
 const BOUNDS = [100, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000];
@@ -31,7 +31,7 @@ const present = (day, engine, role, c) => ({ day, engine, role, calls: c.calls, 
 function createHistory({ pool = null, now = () => Date.now(), flushMs = 3000, log = console } = {}) {
   let pending = new Map();                   // 'day|engine|role' -> counts not yet written
   const mem = new Map();                     // the same, kept for good, when there is no database
-  let timer = null, writing = null;
+  let timer = null, writing = null, fails = 0;
   const key = (d, e, r) => d + '|' + e + '|' + r;
 
   function record(ev) {
@@ -67,10 +67,12 @@ function createHistory({ pool = null, now = () => Date.now(), flushMs = 3000, lo
     if (writing) return writing;
     if (!pending.size) return Promise.resolve();
     const batch = pending; pending = new Map();
-    writing = write(batch).catch(e => {
+    writing = write(batch).then(() => { fails = 0; }).catch(e => {
       log.error('[engine-history] could not save usage, will try again:', e && e.message);
       for (const [k, c] of batch) { const p = pending.get(k); pending.set(k, p ? add(p, c) : c); }
       if (pending.size > 5000) pending = new Map([...pending].slice(-5000));
+      fails++;
+      if (!timer && flushMs > 0) { timer = setTimeout(() => { timer = null; flush(); }, Math.min(flushMs * 2 ** fails, 60000)); if (timer.unref) timer.unref(); }
     }).finally(() => { writing = null; });
     return writing;
   }
