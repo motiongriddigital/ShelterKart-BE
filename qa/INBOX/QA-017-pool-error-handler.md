@@ -25,7 +25,7 @@ Clone ShelterKart-BE as `sk-be17`, `git checkout 5f4b389`, `cd backend && npm ci
 | --- | --- | --- |
 | A1 | in `backend`: `node test/poolguard.test.js` | ends `all 5 passing` |
 | A2 | `npm test` (BLOCKED with the reason if Playwright or python3 is missing) | exit code 0 |
-| B1 | `GET $B/api/health` and one request that uses the database (for example `GET $B/api/admin/analytics/summary` with the admin login, or any route that queries) | 200 |
+| B1 | `GET $B/api/health` and one request that uses the database (for example `GET $B/api/admin/stats` with the admin login (this branch is off main, so it has no admin panel routes)) | 200 |
 | B2 | with a request that keeps the pool warm done, run `psql -h 127.0.0.1 -U postgres -c "select pg_terminate_backend(pid) from pg_stat_activity where datname='sk_qa17' and pid <> pg_backend_pid()"` | returns true for each session |
 | B3 | wait 3 seconds, then `GET $B/api/health` | 200; the server process is still alive (check its process id) |
 | B4 | the same database-using request as B1 | 200 (the pool reconnected); it may fail once with a 500 if it picked up the dead connection, in which case repeat once and report both |
