@@ -91,6 +91,13 @@ function makePgStore(pool) {
            consecutive_failures = EXCLUDED.consecutive_failures, ever_healthy = EXCLUDED.ever_healthy,
            detail = EXCLUDED.detail, last_ok_at = EXCLUDED.last_ok_at, checked_at = now()`,
         [market, h.state, h.reason || null, h.consecutiveFailures || 0, Boolean(h.everHealthy), h.detail || null, h.lastOkAt || null]);
+      await pool.query(`INSERT INTO source_health_history (market, state, reason, detail, checked_at) VALUES ($1, $2, $3, $4, now())`, [market, h.state, h.reason || null, h.detail ? String(h.detail).slice(0, 300) : null]);
+      await pool.query(`DELETE FROM source_health_history WHERE market = $1 AND checked_at < now() - interval '90 days'`, [market]);
+    },
+
+    async healthHistory(days) {
+      const r = await pool.query(`SELECT market, state, reason, checked_at FROM source_health_history WHERE checked_at >= now() - ($1::int * interval '1 day') ORDER BY market, checked_at ASC`, [days]);
+      return r.rows.map(x => ({ market: x.market, state: x.state, reason: x.reason || null, at: new Date(x.checked_at).toISOString() }));
     },
 
     async loadHealth() {

@@ -658,7 +658,7 @@ function aiCapFor(brief) {
 function persistJob(job) {
   JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), contact: job.contact || null,
     costUsd: job.costUsd || 0, capUsd: job.capUsd == null ? null : job.capUsd, delivered: Boolean(job.delivered), createdAt: job.createdAt || Date.now(),
-    updatedAt: Date.now(), saved: job.inv ? job.inv.exportState() : (job.saved || null) });
+    failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: Date.now(), saved: job.inv ? job.inv.exportState() : (job.saved || null) });
 }
 const tokenOk = (t, ref) => Boolean(t) && verifyToken(String(t), ref, process.env.ACCESS_TOKEN_SECRET);
 const fullAccess = (req, ref, token) => (ACCOUNTS.enabled ? ACCOUNTS.entitled(req, ref) : Promise.resolve(tokenOk(token, ref)));
@@ -726,8 +726,19 @@ function completeLive(job) {
     try { const p = deliverReport(job); if (p && typeof p.catch === 'function') p.catch(e => console.error('[investigate] delivery failed for ' + job.ref + ':', e && e.message)); }
     catch (e) { console.error('[investigate] delivery failed for ' + job.ref + ':', e && e.message); }
   })
-    .catch(e => { notifyOps('a paid report failed', `Report ${job.ref} could not be completed after payment. Error: ${String((e && e.message) || e).slice(0, 160)}`); job.status = 'failed'; console.error('[investigate] completion failed for ' + job.ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation stopped early. What was found is in your report.' }); deliverReport(job); })
+    .catch(e => { notifyOps('a paid report failed', `Report ${job.ref} could not be completed after payment. Error: ${String((e && e.message) || e).slice(0, 160)}`); job.status = 'failed'; job.failedAt = Date.now(); job.failError = String((e && e.message) || e).slice(0, 300); persistJob(job); console.error('[investigate] completion failed for ' + job.ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation stopped early. What was found is in your report.' }); if (!job.retried) deliverReport(job); })
     .finally(() => { for (const l of job.listeners) { try { l.res.end(); } catch { /* gone */ } } job.listeners.clear(); });
+}
+/** An operator's retry of a paid report that stopped early. Only a failed one runs, once; a retry that fails again does not e-mail the partial report a second time, and one that works delivers the complete report; the research resumes from its saved state, so nothing is paid for twice and the buyer is not charged again. */
+function retryFailedReport(ref) {
+  const job = liveJobs.get(ref);
+  if (!job) return { ok: false, code: 'not_found' };
+  if (!job.paid || job.status !== 'failed') return { ok: false, code: 'not_failed' };
+  if (job.inv) { job.saved = job.inv.exportState(); job.inv = null; }   // start from the saved state, exactly as after a restart
+  job.completing = false; job.delivered = false; job.retried = true; job.failedAt = null; job.failError = null; job.status = 'preview';
+  persistJob(job);
+  try { completeLive(job); } catch (e) { console.error('[jobs] retry could not start for ' + ref + ':', e && e.message); }
+  return { ok: true };
 }
 /** Called whenever a purchase is settled (the browser's verification or Razorpay's webhook). A no-op for other reports. */
 function onReportPaid(ref, payerEmail) {
@@ -1339,6 +1350,7 @@ app.post('/api/admin/response-queue/:id/resolve', adminAuth, ah(async (req, res)
 ACCOUNTS.mount(app);
 ACCOUNTS.mountAdmin(app, { adminAuth });
 ERRORLOG.mountAdmin(app, { adminAuth, ah, rateLimit });
+require('./engine/jobsAdmin').mountJobsAdmin(app, { adminAuth, wrap: ah, rateLimit, liveJobs, delivery: DELIVERY, retryReport: retryFailedReport, markets: MARKETS, history: days => (pgStore ? pgStore.healthHistory(days) : HEALTH.memoryHistory(days)) });
 
 app.post('/api/dispute', disputeLimiter, ah(async (req, res) => {
   const { contact, note, reportRef } = req.body || {};
