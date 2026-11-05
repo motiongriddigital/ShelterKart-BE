@@ -1352,6 +1352,8 @@ app.post('/api/admin/response-queue/:id/resolve', adminAuth, ah(async (req, res)
 ACCOUNTS.mount(app);
 ACCOUNTS.mountAdmin(app, { adminAuth });
 ERRORLOG.mountAdmin(app, { adminAuth, ah, rateLimit });
+const BACKUPS = require('./engine/backups').createBackups({ pool: process.env.DATABASE_URL ? pool : null });
+BACKUPS.mountAdmin(app, { adminAuth, ah, rateLimit });
 require('./engine/jobsAdmin').mountJobsAdmin(app, { adminAuth, wrap: ah, rateLimit, liveJobs, delivery: DELIVERY, retryReport: retryFailedReport, markets: MARKETS, history: days => (pgStore ? pgStore.healthHistory(days) : HEALTH.memoryHistory(days)) });
 require('./engine/enginesAdmin').mountEnginesAdmin(app, { adminAuth, wrap: ah, rateLimit, history: ENGINE_HISTORY, jobs: () => liveJobs.values(),
   pricesFor: async refs => {
@@ -1771,6 +1773,7 @@ if (require.main === module) {
     }
     setInterval(() => ENGINE_HISTORY.purge().catch(e => console.error('[engine-history] clean-up failed:', e && e.message)), 24 * 3600 * 1000).unref();
     for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => { ENGINE_HISTORY.flush().catch(() => {}).finally(() => process.exit(0)); });   // write the counts held for a moment before stopping
+    BACKUPS.startSchedule();
     setInterval(() => ERRORLOG.purge().catch(e => console.error('[errorlog] clean-up failed:', e && e.message)), 24 * 3600 * 1000).unref();
     if (ACCOUNTS.enabled) setInterval(() => ACCOUNTS.cleanup().catch(e => console.error('[accounts] clean-up failed:', e && e.message)), 6 * 3600 * 1000).unref();
     app.listen(PORT, () => console.log(`ShelterKart API listening on port ${PORT}`));
