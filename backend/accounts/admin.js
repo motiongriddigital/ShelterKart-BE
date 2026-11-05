@@ -100,13 +100,13 @@ function mountAdmin(app, ctx) {
 
   async function addBan(req, res, { kind, target, reason, days, by = 'admin' }) {
     const clean = S.cleanBanTarget(kind, target);
-    if (!clean) return bad(res, kind === 'ip' ? 'Enter an IPv4 address or a range from /8 to /32, such as 185.220.101.0/24.' : 'Enter the account e-mail address.');
+    if (!clean) { bad(res, kind === 'ip' ? 'Enter an IPv4 address or a range from /8 to /32, such as 185.220.101.0/24.' : 'Enter the account e-mail address.'); return null; }
     const why = String(reason == null ? '' : reason).replace(/[\u0000-\u001f\u007f]/g, ' ').trim();
-    if (why.length < 8 || why.length > 500) return bad(res, 'Say why, in 8 to 500 characters. It is kept in the audit trail.');
+    if (why.length < 8 || why.length > 500) { bad(res, 'Say why, in 8 to 500 characters. It is kept in the audit trail.'); return null; }
     const d = days == null || days === '' || Number(days) === 0 ? null : Number(days);
-    if (d !== null && (!Number.isInteger(d) || d < 1 || d > 3650)) return bad(res, 'Choose a number of days from 1 to 3650, or leave it empty for no end.');
-    if (kind === 'ip' && !clean.startsWith('hash:') && S.ipMatches(clean, String(req.ip || '').replace(/^::ffff:/, ''), null)) return fail(res, 400, 'self_ban', 'That would block the address you are using now.');
-    if ((await activeBans()).some(b => b.kind === kind && b.target === clean)) return fail(res, 409, 'exists', 'That is already banned.');
+    if (d !== null && (!Number.isInteger(d) || d < 1 || d > 3650)) { bad(res, 'Choose a number of days from 1 to 3650, or leave it empty for no end.'); return null; }
+    if (kind === 'ip' && !clean.startsWith('hash:') && S.ipMatches(clean, String(req.ip || '').replace(/^::ffff:/, ''), null)) { fail(res, 400, 'self_ban', 'That would block the address you are using now.'); return null; }
+    if ((await activeBans()).some(b => b.kind === kind && b.target === clean)) { fail(res, 409, 'exists', 'That is already banned.'); return null; }
     const ban = await store.addBan({ kind, target: clean, reason: why, expiresAt: d ? new Date(now() + d * DAY) : null, by });
     if (kind === 'account') { const u = await store.findUserByEmail(clean); if (u) await store.revokeAllFor(u.id); }
     dropBanCache();
