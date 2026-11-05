@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ShelterKart — Marketing dashboard</title>
+<style>
+  :root{
+    --navy-900:#061428; --ink:#0A1C33; --ink-2:#2F4460; --ink-3:#52657F;
+    --paper:#FAF8F5; --paper-2:#F1EDE6; --rule:#E4DDD1; --gold:#D3A245; --gold-deep:#865E1D; --white:#fff;
+    --ok:#1D6338; --ok-bg:#E3F0E8; --warn:#865E1D; --warn-bg:#F6ECD6; --bad:#A32B1C; --bad-bg:#F7E3DF; --blue:#163C64;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{ margin:0; font-family:'Instrument Sans','IBM Plex Sans',system-ui,-apple-system,'Segoe UI','Noto Sans',Arial,sans-serif; background:var(--paper); color:var(--ink); font-size:16px; line-height:1.5; }
+  h1,h2,h3{ font-family:'Fraunces',Georgia,'Times New Roman',serif; font-weight:600; letter-spacing:-.01em; margin:0; }
+  h2{ font-size:22px; margin-bottom:6px; } h3{ font-size:18px; margin-bottom:6px; }
+  button,input,select{ font:inherit; color:inherit; }
+  button{ cursor:pointer; }
+  :focus-visible{ outline:3px solid var(--blue); outline-offset:2px; }
+  .top{ position:sticky; top:0; z-index:10; background:var(--navy-900); color:#F5E6C2; padding:12px 16px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; border-bottom:3px solid var(--gold); }
+  .top h1{ font-size:20px; color:#F5E6C2; } .top .spacer{ flex:1; }
+  .top a{ color:#F5E6C2; font-weight:600; }
+  .pill{ display:inline-block; padding:4px 12px; border-radius:999px; font-size:14px; font-weight:600; border:1px solid currentColor; background:var(--warn-bg); color:var(--warn); }
+  .wrap{ max-width:1040px; margin:0 auto; padding:16px; }
+  section{ background:var(--white); border:1px solid var(--rule); border-radius:12px; padding:18px 16px; margin-bottom:16px; }
+  .muted{ color:var(--ink-3); font-size:15px; margin:0 0 12px; }
+  .btn{ min-height:44px; padding:10px 18px; border-radius:10px; border:1px solid var(--ink-3); background:var(--white); color:var(--ink); font-weight:600; }
+  .btn.gold{ background:linear-gradient(178deg,#ECD093 0%,#D3A245 55%,#B6832B 100%); border-color:#B6832B; color:var(--navy-900); }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .calls{ list-style:none; margin:0; padding:0; }
+  .calls li{ display:grid; grid-template-columns:120px 1fr; gap:12px; padding:12px 0; border-top:1px solid var(--rule); }
+  .calls li:first-child{ border-top:0; }
+  .word{ font-weight:700; font-size:15px; padding:4px 10px; border-radius:8px; text-align:center; align-self:start; }
+  .w-ok{ background:var(--ok-bg); color:var(--ok); } .w-bad{ background:var(--bad-bg); color:var(--bad); } .w-warn{ background:var(--warn-bg); color:var(--warn); } .w-plain{ background:var(--paper-2); color:var(--ink-2); }
+  .calls b{ display:block; font-size:16px; } .calls span{ color:var(--ink-2); font-size:15px; }
+  .anchors{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:12px; }
+  .anchor{ border:1px solid var(--rule); border-radius:10px; padding:14px; background:var(--paper); }
+  .scroll{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ border-collapse:collapse; width:100%; font-size:15px; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--rule); vertical-align:top; }
+  th{ font-size:14px; color:var(--ink-2); font-weight:600; }
+  td.n,th.n{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .sub{ font-size:14px; color:var(--ink-2); white-space:normal; margin-top:2px; }
+  .up{ color:var(--ok); } .down{ color:var(--bad); } .flat{ color:var(--ink-3); }
+  .gap{ background:var(--warn-bg); color:var(--warn); border-radius:10px; padding:12px 14px; font-size:15px; margin:0 0 12px; }
+  .banner{ border-radius:12px; padding:14px 16px; margin-bottom:16px; font-weight:600; }
+  .banner.bad{ background:var(--bad-bg); color:var(--bad); border:1px solid var(--bad); }
+  form{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; align-items:end; margin:0 0 16px; }
+  label{ display:grid; gap:4px; font-size:14px; color:var(--ink-2); font-weight:600; }
+  input,select{ min-height:44px; padding:8px 10px; border:1px solid var(--ink-3); border-radius:8px; background:var(--white); font-size:16px; }
+  .msg{ font-size:15px; margin:4px 0 0; } .msg.err{ color:var(--bad); } .msg.okk{ color:var(--ok); }
+  details summary{ cursor:pointer; font-weight:600; min-height:44px; display:flex; align-items:center; }
+  @media (max-width:560px){ .calls li{ grid-template-columns:1fr; gap:6px; } .word{ justify-self:start; } }
+  @media (prefers-reduced-motion:reduce){ *{ transition:none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Marketing dashboard</h1>
+  <span class="pill" id="phase">Phase 0</span>
+  <span class="spacer"></span>
+  <button class="btn" id="prev" aria-label="Previous week">Previous week</button>
+  <strong id="weekLabel" aria-live="polite"></strong>
+  <button class="btn" id="next" aria-label="Next week">Next week</button>
+  <a href="/admin/social">Marketing desk</a>
+</header>
+<main class="wrap">
+  <div id="pauseBanner"></div>
+  <p class="gap" id="gaps" hidden></p>
+
+  <section aria-labelledby="h-calls">
+    <h2 id="h-calls">This week's calls</h2>
+    <p class="muted">What the launch strategy's rules say to do now. A call says "unknown" when the data to decide does not exist yet, and why.</p>
+    <ul class="calls" id="calls"></ul>
+  </section>
+
+  <section aria-labelledby="h-anchors">
+    <h2 id="h-anchors">Anchor markets</h2>
+    <p class="muted">The seven weekly numbers for India, the UAE, the UK and Singapore. Targets stay blank until two weeks of baseline exist.</p>
+    <div class="anchors" id="anchors"></div>
+  </section>
+
+  <section aria-labelledby="h-all">
+    <h2 id="h-all">All 36 markets, this week</h2>
+    <p class="muted" id="unattributed"></p>
+    <div class="scroll"><table id="allTable"></table></div>
+  </section>
+
+  <section aria-labelledby="h-warn">
+    <h2 id="h-warn">Early warnings</h2>
+    <div class="scroll"><table id="warnTable"></table></div>
+  </section>
+
+  <section aria-labelledby="h-gate">
+    <h2 id="h-gate">Phase 1 gate: all five must hold</h2>
+    <div class="scroll"><table id="gateTable"></table></div>
+  </section>
+
+  <section aria-labelledby="h-rcs">
+    <h2 id="h-rcs">Repeat, change, stop</h2>
+    <p class="muted">Each social topic and platform this week, judged by the previews its visitors opened. A topic needs 30 visits before it is judged. Repeat: at or above the week's preview rate. Change: below it. Stop: no previews at all.</p>
+    <div class="scroll"><table id="rcsTable"></table></div>
+  </section>
+
+  <section aria-labelledby="h-rank">
+    <h2 id="h-rank">Last month: paid reports per hour of effort</h2>
+    <p class="muted">Enter your hours per market below; a market without hours cannot be ranked.</p>
+    <div class="scroll"><table id="rankTable"></table></div>
+  </section>
+
+  <section aria-labelledby="h-in">
+    <h2 id="h-in">Your inputs</h2>
+    <p class="muted" id="durable"></p>
+    <h3>Ad spend (Phase 1 onward)</h3>
+    <form id="fSpend">
+      <label>Market<select name="market" class="mk"></select></label>
+      <label>Week starting (Monday)<input name="week" type="date" required></label>
+      <label>Channel<select name="channel" id="spendChannel"></select></label>
+      <label>Amount<input name="amount" type="number" min="0" step="any" required></label>
+      <label>Currency<input name="currency" value="INR" maxlength="3" required></label>
+      <button class="btn gold">Save spend</button>
+    </form>
+    <h3>AI-answer check (monthly)</h3>
+    <form id="fCit">
+      <label>Month<input name="month" type="month" required></label>
+      <label>Market<select name="market" class="mk" data-any="1"></select></label>
+      <label>Question asked<input name="query" required></label>
+      <label>AI service<input name="engine" placeholder="ChatGPT" required></label>
+      <label>Was ShelterKart cited?<select name="cited"><option value="false">No</option><option value="true">Yes</option></select></label>
+      <label>Where<input name="where" placeholder="Second source listed"></label>
+      <button class="btn gold">Save check</button>
+    </form>
+    <h3>Hours of effort</h3>
+    <form id="fEffort">
+      <label>Month<input name="month" type="month" required></label>
+      <label>Market<select name="market" class="mk"></select></label>
+      <label>Hours<input name="hours" type="number" min="0" max="744" step="any" required></label>
+      <button class="btn gold">Save hours</button>
+    </form>
+    <details><summary>Settings: phase, AI cost, ceilings, exchange rates, counsel, legal notices</summary>
+      <form id="fPhase"><label>Phase<select name="phase"><option value="0">Phase 0, organic</option><option value="1">Phase 1, reinvest</option><option value="2">Phase 2, compound</option></select></label><button class="btn gold">Save phase</button></form>
+      <form id="fAi"><label>Measured AI cost per paid report (US$)<input name="ai" type="number" min="0" step="any"></label><button class="btn gold">Save AI cost</button></form>
+      <form id="fCeil"><label>Market<select name="market" class="mk"></select></label><label>Cost ceiling per paid report<input name="amount" type="number" min="0" step="any" required></label><label>Currency<input name="currency" value="INR" maxlength="3" required></label><button class="btn gold">Save ceiling</button></form>
+      <form id="fFx"><label>Currency<input name="cur" value="USD" maxlength="3" required></label><label>Rupees per unit<input name="rate" type="number" min="0" step="any" required></label><button class="btn gold">Save rate</button></form>
+      <form id="fPaid"><label>Markets you plan to pay in (codes, comma-separated)<input name="list" placeholder="IN, AE"></label><button class="btn gold">Save list</button></form>
+      <form id="fCounsel"><label>Market<select name="market" class="mk"></select></label><label>Counsel's decision on the Housing ad category<select name="decided"><option value="true">Decided</option><option value="false">Not yet</option></select></label><label>Note<input name="note"></label><button class="btn gold">Save decision</button></form>
+      <form id="fLegal"><label>Open a legal notice<input name="note" placeholder="Letter from a developer's lawyers about report X" required></label><label>Market<select name="market" class="mk" data-any="1"></select></label><button class="btn gold">Record notice</button></form>
+      <div id="notices"></div>
+    </details>
+    <p class="msg" id="formMsg" role="status" aria-live="polite"></p>
+  </section>
+</main>
+<script>
+(function(){
+  'use strict';
+  var week = null, data = null;
+  function api(method, path, body){
+    return fetch(path, { method: method, credentials: 'same-origin', headers: body ? { 'Content-Type':'application/json' } : {}, body: body ? JSON.stringify(body) : undefined })
+      .then(function(r){ return r.json().catch(function(){ return { ok:false, error:'The server sent something unreadable.' }; }); })
+      .catch(function(){ return { ok:false, error:'The dashboard could not be reached.' }; });
+  }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+  function n(v, suffix){ return v == null ? '—' : (typeof v === 'number' ? v.toLocaleString('en-IN') : esc(v)) + (suffix || ''); }
+  function money(o){ var k = Object.keys(o || {}); return k.length ? k.map(function(c){ return o[c].toLocaleString('en-IN') + ' ' + esc(c); }).join(', ') : '—'; }
+  function change(a, b){ if (a == null || b == null) return ''; if (a === b) return ' <span class="flat">(same)</span>'; var up = a > b; return ' <span class="' + (up ? 'up' : 'down') + '">(' + (up ? 'up' : 'down') + ' from ' + n(b) + ')</span>'; }
+  function addDays(ymd, k){ return new Date(Date.parse(ymd + 'T00:00:00Z') + k * 864e5).toISOString().slice(0,10); }
+  function word(kind, text){ return '<span class="word w-' + kind + '">' + esc(text) + '</span>'; }
+
+  function costCell(m){ return m.organic ? 'Organic: no spend' : money(m.costPerPaid); }
+  function rowsFor(m, last, base, targets){
+    var t = targets || {};
+    return [
+      ['Visits', n(m.visits) + change(m.visits, last.visits), Object.keys(m.visitsByChannel).map(function(c){ return esc(c) + ' ' + m.visitsByChannel[c]; }).join(', ') || 'No visits yet', t.visits],
+      ['Previews per 100 visits', n(m.previewsPer100) + change(m.previewsPer100, last.previewsPer100), '', t.previewsPer100],
+      ['Shares per 100 visits', n(m.sharesPer100) + change(m.sharesPer100, last.sharesPer100), '', t.sharesPer100],
+      ['"Ask us to check" requests', n(m.checkRequests) + change(m.checkRequests, last.checkRequests), '', t.checkRequests],
+      ['Paid reports and revenue', n(m.paid) + change(m.paid, last.paid), money(m.revenue) + (Object.keys(m.paidByChannel || {}).length ? '; via ' + Object.keys(m.paidByChannel).map(function(c){ return esc(c) + ' ' + m.paidByChannel[c]; }).join(', ') : ''), t.paid],
+      ['Cost per paid report', costCell(m), '', null],
+      ['Refund rate and open complaints', 'All markets only', 'Shown under Early warnings', null],
+    ];
+  }
+
+  function render(){
+    var d = data;
+    document.getElementById('weekLabel').textContent = 'Week of ' + d.week;
+    document.getElementById('phase').textContent = ['Phase 0, organic', 'Phase 1, reinvest', 'Phase 2, compound'][d.phase] || 'Phase ' + d.phase;
+    var gaps = [];
+    var tp = d.total.thisWeek; if (tp.paid && tp.attributedPaid < tp.paid) gaps.push((tp.paid - tp.attributedPaid) + ' of ' + tp.paid + ' paid reports this week carry no source (paid before checkout sent it, or the browser sent nothing). They count for their market, not for a channel.');
+    if (!d.connected.refunds) gaps.push('Refunds are not connected (they need the database).');
+    if (!d.connected.responses) gaps.push('Replies, corrections and complaints are not connected (they need the database).');
+    var g = document.getElementById('gaps'); g.hidden = !gaps.length; g.innerHTML = gaps.map(esc).join('<br>');
+
+    var p = d.decisions.pause;
+    document.getElementById('pauseBanner').innerHTML = p.triggered ? '<div class="banner bad" role="alert">Pause everything: ' + p.reasons.map(esc).join('; ') + '. Pause related content and follow the crisis plan.</div>' : '';
+
+    var gate = d.decisions.gate, met = gate.conditions.filter(function(c){ return c.status === 'met'; }).length, ch = d.decisions.channels, bud = d.decisions.budget, p2 = d.decisions.phase2;
+    var calls = [];
+    calls.push(p.triggered ? [word('bad', 'Pause'), 'Pause everything', p.reasons.join('; ')] : [word('ok', 'Clear'), 'No reason to pause', 'No open legal notice, platform strike or uncorrected factual error' + (p.connected.responses ? '.' : ' that the dashboard can see (complaints are not connected).')]);
+    calls.push(gate.open ? [word('ok', 'Open'), 'The Phase 1 gate is open', 'All five conditions hold: set the first monthly budget at 30% of contribution.'] : [word('warn', met + ' of 5'), 'Stay organic: the Phase 1 gate is shut', 'See the gate below for what is missing.']);
+    calls.push(ch.length ? [word('plain', ch.length + ' market' + (ch.length > 1 ? 's' : '')), 'Paid channels', ch.map(function(c){ return c.market + ', ' + c.scope + ': ' + c.call + ' (' + c.detail + ')'; }).join(' ')] : [word('plain', 'None'), 'No paid spend recorded', d.phase === 0 ? 'Phase 0 has no media spend.' : 'Record spend below to get scale, hold and stop calls.']);
+    calls.push([word(p2.organicHalf === 'met' ? 'ok' : p2.organicHalf === 'unknown' ? 'plain' : 'warn', p2.organicShareOfPreviews == null ? 'Unknown' : p2.organicShareOfPreviews + '% organic'), 'Phase 2 readiness', 'Organic share of previews over the last six weeks. ' + p2.paybackDetail]);
+    calls.push(bud.contribution == null ? [word('plain', 'Unknown'), 'Budget rule for ' + bud.month, bud.detail] : [word('plain', '₹' + bud.budget.toLocaleString('en-IN')), 'Budget rule for the month after ' + bud.month, 'Contribution ₹' + bud.contribution.toLocaleString('en-IN') + ' × 30%: best channel ₹' + bud.split.best.toLocaleString('en-IN') + ', tests ₹' + bud.split.tests.toLocaleString('en-IN') + ', reserve ₹' + bud.split.reserve.toLocaleString('en-IN') + (d.phase === 0 ? '. Not to be spent until the gate opens.' : '.')]);
+    document.getElementById('calls').innerHTML = calls.map(function(c){ return '<li>' + c[0] + '<div><b>' + esc(c[1]) + '</b><span>' + esc(c[2]) + '</span></div></li>'; }).join('');
+
+    var names = {}; d.allMarkets.forEach(function(m){ names[m.market] = m.name; });
+    document.getElementById('anchors').innerHTML = d.anchorMarkets.map(function(a){
+      var b = a.baseline, bText = b.status === 'ready' ? 'Baseline ready since ' + b.since : b.status === 'collecting' ? 'Collecting a baseline: day ' + b.days + ' of 14' : 'No visits yet: the baseline starts with the first visit';
+      return '<div class="anchor"><h3>' + esc(names[a.market] || a.market) + '</h3><p class="muted">' + esc(bText) + '</p><div class="scroll"><table><tr><th>Measure</th><th class="n">This week</th></tr>' +
+        rowsFor(a.thisWeek, a.lastWeek, b, a.targets).map(function(r){ return '<tr><td>' + esc(r[0]) + '</td><td class="n">' + r[1] + (r[2] ? '<div class="sub">' + r[2] + '</div>' : '') + (r[3] != null ? '<div class="sub">Target ' + n(r[3]) + '</div>' : '') + '</td></tr>'; }).join('') + '</table></div></div>';
+    }).join('');
+
+    var u = d.unattributed; document.getElementById('unattributed').textContent = u.visits ? u.visits + ' visit(s) this week carried no market and are counted only in the totals.' : 'Every visit this week was tied to a market.';
+    document.getElementById('allTable').innerHTML = '<tr><th>Market</th><th class="n">Visits</th><th class="n">Previews per 100</th><th class="n">Shares per 100</th><th class="n">Check requests</th><th class="n">Paid</th><th>Revenue</th><th>Cost per paid</th></tr>' +
+      d.allMarkets.map(function(m){ var t = m.thisWeek; return '<tr><td>' + esc(m.name) + '</td><td class="n">' + n(t.visits) + '</td><td class="n">' + n(t.previewsPer100) + '</td><td class="n">' + n(t.sharesPer100) + '</td><td class="n">' + n(t.checkRequests) + '</td><td class="n">' + n(t.paid) + '</td><td>' + money(t.revenue) + '</td><td>' + (t.organic ? 'No spend' : money(t.costPerPaid)) + '</td></tr>'; }).join('') +
+      (function(t){ return '<tr><th>All markets</th><th class="n">' + n(t.visits) + '</th><th class="n">' + n(t.previewsPer100) + '</th><th class="n">' + n(t.sharesPer100) + '</th><th class="n">' + n(t.checkRequests) + '</th><th class="n">' + n(t.paid) + '</th><th>' + money(t.revenue) + '</th><th>' + costCell(t) + '</th></tr>'; })(d.total.thisWeek);
+
+    var w = d.earlyWarnings, rc = w.repliesAndCorrections, tw = d.total.thisWeek;
+    document.getElementById('warnTable').innerHTML = '<tr><th>Warning</th><th>This week</th><th>Source</th></tr>' + [
+      ['Refund rate', tw.refundRate == null ? (d.connected.refunds ? 'No sales yet' : 'Not connected') : tw.refundRate + '% of ' + tw.paid + ' paid (the model assumes 3%)', 'Refunds'],
+      ['Replies and corrections', rc ? rc.open + ' open; ' + rc.resolvedThisWeek + ' resolved this week' + (rc.medianDaysToResolve == null ? '' : ', median ' + rc.medianDaysToResolve + ' days to resolve') : 'Not connected', 'Developer replies and corrections'],
+      ['Audience quality', w.audienceQuality == null ? 'No visits yet' : w.audienceQuality + '% of visitors opened a preview', 'Analytics'],
+      ['Content health', w.contentHealth.posts ? w.contentHealth.held + ' of ' + w.contentHealth.posts + ' posts held by the checker' + (w.contentHealth.reasons.length ? ': ' + w.contentHealth.reasons.map(function(r){ return r[0] + ' (' + r[1] + ')'; }).join(', ') : '') : 'No posts planned for this week', 'Marketing desk'],
+      ['AI-answer citations', w.aiCitations ? w.aiCitations.cited + ' of ' + w.aiCitations.checked + ' questions cited ShelterKart (' + w.aiCitations.month + ')' : 'No monthly check recorded yet', 'Your monthly check'],
+    ].map(function(r){ return '<tr><td>' + esc(r[0]) + '</td><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td></tr>'; }).join('');
+
+    document.getElementById('gateTable').innerHTML = '<tr><th>Condition</th><th>Status</th><th>Detail</th></tr>' + gate.conditions.map(function(c){
+      var k = c.status === 'met' ? 'ok' : c.status === 'unknown' ? 'plain' : 'warn', t = c.status === 'met' ? 'Met' : c.status === 'unknown' ? 'Unknown' : 'Not met';
+      return '<tr><td>' + esc(c.label) + '</td><td>' + word(k, t) + '</td><td>' + esc(c.detail || '') + '</td></tr>'; }).join('');
+
+    var rcs = d.repeatChangeStop, label = { repeat:['ok','Repeat'], change:['warn','Change'], stop:['bad','Stop'], too_early:['plain','Too early'] };
+    document.getElementById('rcsTable').innerHTML = rcs.length ? '<tr><th>Platform and topic</th><th class="n">Visits</th><th class="n">Previews per 100</th><th class="n">Shares</th><th>Call</th></tr>' + rcs.map(function(r){ var l = label[r.call]; return '<tr><td>' + esc(r.item) + '</td><td class="n">' + n(r.visits) + '</td><td class="n">' + n(r.previewsPer100) + '</td><td class="n">' + n(r.shares) + '</td><td>' + word(l[0], l[1]) + '</td></tr>'; }).join('') : '<tr><td>No visits from tagged social posts this week.</td></tr>';
+
+    var rk = d.monthlyRanking;
+    document.getElementById('rankTable').innerHTML = rk.length ? '<tr><th>Market</th><th class="n">Paid reports</th><th class="n">Hours</th><th class="n">Paid per hour</th></tr>' + rk.map(function(r){ return '<tr><td>' + esc(names[r.market] || r.market) + '</td><td class="n">' + n(r.paid) + '</td><td class="n">' + n(r.hours) + '</td><td class="n">' + n(r.perHour) + '</td></tr>'; }).join('') : '<tr><td>No paid reports or hours recorded for last month.</td></tr>';
+
+    document.getElementById('durable').textContent = d.durable ? 'Saved in the marketing desk\'s durable store.' : 'Saved in memory only: the marketing desk is not running, so inputs are lost on restart.';
+    var ln = (d.inputs.settings.legalNotices || []);
+    document.getElementById('notices').innerHTML = ln.length ? '<table><tr><th>Legal notice</th><th>Status</th><th></th></tr>' + ln.map(function(x){ return '<tr><td>' + esc(x.note) + '</td><td>' + (x.closed ? 'Closed' : 'Open') + '</td><td>' + (x.closed ? '' : '<button class="btn" data-close="' + esc(x.id) + '">Close notice</button>') + '</td></tr>'; }).join('') + '</table>' : '';
+    var sc = document.getElementById('spendChannel'); if (!sc.options.length) sc.innerHTML = d.channels.map(function(c){ return '<option value="' + esc(c) + '">' + esc(c) + '</option>'; }).join('') + '<option value="whole market">Whole market (not one channel)</option>';
+    document.querySelectorAll('select.mk').forEach(function(s){ if (s.options.length) return; s.innerHTML = (s.dataset.any ? '<option value="">All markets</option>' : '') + d.allMarkets.map(function(m){ return '<option value="' + esc(m.market) + '">' + esc(m.name) + '</option>'; }).join(''); });
+  }
+
+  function load(){ api('GET', '/api/admin/marketing/dashboard' + (week ? '?week=' + week : '')).then(function(j){ if (!j.ok){ document.getElementById('calls').innerHTML = '<li>' + word('bad','Error') + '<div><b>The dashboard could not load</b><span>' + esc(j.error || 'Unknown error') + '</span></div></li>'; return; } data = j; week = j.week; render(); }); }
+  function say(j, okText){ var m = document.getElementById('formMsg'); m.className = 'msg ' + (j.ok ? 'okk' : 'err'); m.textContent = j.ok ? okText : (j.error || 'That was not saved.'); if (j.ok) load(); }
+  function form(id, fn){ document.getElementById(id).addEventListener('submit', function(e){ e.preventDefault(); var f = Object.fromEntries(new FormData(e.target).entries()); fn(f); }); }
+  form('fSpend', function(f){ api('POST', '/api/admin/marketing/spend', { market:f.market, week:f.week, channel:f.channel, amount:Number(f.amount), currency:f.currency.toUpperCase() }).then(function(j){ say(j, 'Spend saved.'); }); });
+  form('fCit', function(f){ api('POST', '/api/admin/marketing/citation', { month:f.month, market:f.market, query:f.query, engine:f.engine, cited:f.cited === 'true', where:f.where }).then(function(j){ say(j, 'Check saved.'); }); });
+  form('fEffort', function(f){ api('POST', '/api/admin/marketing/effort', { month:f.month, market:f.market, hours:Number(f.hours) }).then(function(j){ say(j, 'Hours saved.'); }); });
+  form('fPhase', function(f){ api('POST', '/api/admin/marketing/settings', { phase:Number(f.phase) }).then(function(j){ say(j, 'Phase saved.'); }); });
+  form('fAi', function(f){ api('POST', '/api/admin/marketing/settings', { aiCostMeasuredUsd: f.ai === '' ? null : Number(f.ai) }).then(function(j){ say(j, 'AI cost saved.'); }); });
+  form('fCeil', function(f){ api('POST', '/api/admin/marketing/settings', { ceiling:{ market:f.market, amount:Number(f.amount), currency:f.currency.toUpperCase() } }).then(function(j){ say(j, 'Ceiling saved.'); }); });
+  form('fFx', function(f){ var o = {}; o[f.cur.toUpperCase()] = Number(f.rate); api('POST', '/api/admin/marketing/settings', { fx:o }).then(function(j){ say(j, 'Rate saved.'); }); });
+  form('fPaid', function(f){ api('POST', '/api/admin/marketing/settings', { paidMarkets: f.list.split(',').map(function(s){ return s.trim().toUpperCase(); }).filter(Boolean) }).then(function(j){ say(j, 'List saved.'); }); });
+  form('fCounsel', function(f){ api('POST', '/api/admin/marketing/settings', { counsel:{ market:f.market, decided:f.decided === 'true', note:f.note } }).then(function(j){ say(j, 'Decision saved.'); }); });
+  form('fLegal', function(f){ api('POST', '/api/admin/marketing/settings', { legalNotice:{ note:f.note, market:f.market } }).then(function(j){ say(j, 'Notice recorded.'); }); });
+  document.getElementById('notices').addEventListener('click', function(e){ var id = e.target.getAttribute('data-close'); if (id) api('POST', '/api/admin/marketing/settings', { legalNotice:{ close:id } }).then(function(j){ say(j, 'Notice closed.'); }); });
+  document.getElementById('prev').addEventListener('click', function(){ if (week){ week = addDays(week, -7); load(); } });
+  document.getElementById('next').addEventListener('click', function(){ if (week){ week = addDays(week, 7); load(); } });
+  load();
+})();
+</script>
+</body>
+</html>

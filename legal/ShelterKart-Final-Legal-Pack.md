@@ -136,7 +136,7 @@ To use these rights, write to [privacy e-mail] or to the Grievance Officer. We r
 
 ## 5. Right of reply and corrections
 
-**5.1 Right of reply.** A party named in a report may respond to any finding through the "Developer Right of Reply" link beside it. Responses are checked for unlawful content only (for example, defamation of a named individual, personal data or threats) before they are published. ShelterKart does not otherwise edit a response.
+**5.1 Right of reply.** A party named in a report may respond to any finding through the "Respond or correct" link beside it. Before publication, a response is screened automatically for content that is unlawful, such as defamation of a named individual, personal data or threats; a response that is flagged, and every legal or privacy notice, is looked at by a person before anything is published. The sender must first confirm their e-mail address. ShelterKart does not otherwise edit a response.
 
 **5.2 How a response is shown.** A response appears beside the finding it answers, labelled as the party's response, with its date. It does not replace the finding, and it does not change any finding.
 
@@ -163,6 +163,8 @@ To use these rights, write to [privacy e-mail] or to the Grievance Officer. We r
 **7.2 Your choices.** You can clear or block cookies in your browser. Blocking the cookies needed to run the service may stop some features working.
 
 **7.3 Local storage.** Some saved settings and unlocked reports may be kept on your device, so that you can return to them. Clearing your browser data removes them; the report can be recovered from the e-mail and payment reference.
+
+**7.4 Where a visit came from.** While a visit lasts, the page keeps a note of the campaign link or website that brought the visitor. Where the law requires agreement first (visitors in the European Economic Area, the United Kingdom and Switzerland, and any visitor whose country cannot be told), the page asks, with a plain choice of "Allow" or "No thanks", and neither keeps the note on the device nor sends it until the visitor agrees; the visitor's choice is remembered on the device. Elsewhere the note is kept in session storage, which is cleared when the tab is closed and holds no identifier, with notice in the privacy policy. If the visitor buys a report, the note is sent with the order and kept with the purchase record, with the property's market, so that the company can tell which channels lead to purchases. [Counsel to confirm: the list of countries; whether this note needs consent at all under the ePrivacy rules (it may count as strictly necessary or as measurement); the position under the DPDP Act for visitors in India; and the wording of the choice in each language.]
 
 ---
 

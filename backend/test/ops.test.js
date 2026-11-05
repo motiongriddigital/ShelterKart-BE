@@ -18,17 +18,17 @@ function fakeClient({ failOn = null } = {}) {
 }
 
 (async () => {
-  await t('migrations: exactly the nine, in the documented order, each present on disk', async () => {
-    assert.deepStrictEqual(MIGRATIONS, ['schema.sql', 'schema_evidence.sql', 'razorpay_orders.sql', 'idempotent_checkout.sql', 'research_persistence.sql', 'source_health.sql', 'analytics.sql', 'translations.sql', 'pricing_v2.sql']);
-    assert.strictEqual(plan().length, 9);
+  await t('migrations: exactly the twelve, in the documented order, each present on disk', async () => {
+    assert.deepStrictEqual(MIGRATIONS, ['schema.sql', 'schema_evidence.sql', 'razorpay_orders.sql', 'idempotent_checkout.sql', 'research_persistence.sql', 'source_health.sql', 'analytics.sql', 'translations.sql', 'pricing_v2.sql', 'responses.sql', 'social.sql', 'purchase_attribution.sql']);
+    assert.strictEqual(plan().length, 12);
   });
   await t('migrations: each runs once, in its own transaction, and a second run applies nothing', async () => {
     const c = fakeClient();
     const first = await migrate(c);
-    assert.deepStrictEqual([first.applied.length, first.skipped.length], [9, 0]);
-    assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 9); assert.strictEqual(c.log.filter(x => x === 'COMMIT').length, 9);
+    assert.deepStrictEqual([first.applied.length, first.skipped.length], [12, 0]);
+    assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 12); assert.strictEqual(c.log.filter(x => x === 'COMMIT').length, 12);
     const second = await migrate(c);
-    assert.deepStrictEqual([second.applied.length, second.skipped.length], [0, 9]);
+    assert.deepStrictEqual([second.applied.length, second.skipped.length], [0, 12]);
   });
   await t('migrations: a file edited after it was applied stops the run, and a failing file is rolled back and named', async () => {
     const c = fakeClient(); await migrate(c);
@@ -40,7 +40,7 @@ function fakeClient({ failOn = null } = {}) {
   });
   await t('migrations: a dry run touches nothing', async () => {
     const c = fakeClient(); const r = await migrate(c, { dryRun: true });
-    assert.strictEqual(r.pending.length, 9); assert(!c.log.includes('BEGIN'));
+    assert.strictEqual(r.pending.length, 12); assert(!c.log.includes('BEGIN'));
   });
   await t('smoke test: passes a correct server, and catches a webhook that accepts a forged signature', async () => {
     const { run } = require('../../tools/smoke');

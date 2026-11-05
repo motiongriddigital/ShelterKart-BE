@@ -139,6 +139,8 @@ async function query(sql, p=[]) {
 
   if (/SELECT amount FROM report_purchases WHERE id=\$1 AND report_ref=\$2/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0] && x.report_ref === p[1]).map(x => ({ amount: String(x.amount) })) };
   if (/SELECT report_ref FROM report_purchases WHERE provider_payment_id=\$1 AND status='paid'/.test(q)) return { rows: db.purchases.filter(x => x.provider_payment_id === p[0] && x.status === 'paid').map(x => ({ report_ref: x.report_ref })) };
+  if (/UPDATE report_purchases SET attribution=\$2 WHERE id=\$1/.test(q)) { db.purchases.filter(x => x.id === p[0]).forEach(x => { x.attribution = JSON.parse(p[1]); }); return { rows: [] }; }
+  if (/SELECT attribution FROM report_purchases WHERE id=\$1/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0]).map(x => ({ attribution: x.attribution || {} })) };
   if (/SET provider_order_id=\$2 WHERE id=\$1/.test(q)) { db.purchases.filter(x=>x.id===p[0]).forEach(x=>x.provider_order_id=p[1]); return { rows:[] }; }
   if (/SELECT status, provider, provider_order_id, amount, currency FROM report_purchases WHERE id=\$1 AND report_ref=\$2/.test(q)) return { rows: db.purchases.filter(x=>x.id===p[0]&&x.report_ref===p[1]) };
   if (/SELECT id, report_ref, amount, currency, status FROM report_purchases WHERE id=\$1 AND provider='mor'/.test(q)) return { rows: db.purchases.filter(x=>x.id===p[0]&&x.provider==='mor') };

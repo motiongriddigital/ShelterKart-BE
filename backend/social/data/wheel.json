@@ -1,0 +1,670 @@
+{
+ "version": "2026-10.1",
+ "note": "The weekly wheel: every market posts once a day, on a different platform each weekday. Computed by a balancing search (see section 3 of the posting-engine plan); a change needs the founder's approval.",
+ "days": [
+  "Mon",
+  "Tue",
+  "Wed",
+  "Thu",
+  "Fri",
+  "Sat",
+  "Sun"
+ ],
+ "markets": [
+  {
+   "code": "IN",
+   "name": "India",
+   "wave": 1,
+   "zone": "Asia/Kolkata",
+   "languages": [
+    "English",
+    "Hindi"
+   ],
+   "week": [
+    "X",
+    "FB",
+    "IG",
+    "LI",
+    "YT",
+    "TH",
+    "TG"
+   ]
+  },
+  {
+   "code": "AE",
+   "name": "United Arab Emirates",
+   "wave": 1,
+   "zone": "Asia/Dubai",
+   "languages": [
+    "English",
+    "Arabic"
+   ],
+   "week": [
+    "LI",
+    "FB",
+    "IG",
+    "TT",
+    "TG",
+    "YT",
+    "X"
+   ]
+  },
+  {
+   "code": "SG",
+   "name": "Singapore",
+   "wave": 1,
+   "zone": "Asia/Singapore",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "LI",
+    "IG",
+    "YT",
+    "X",
+    "FB",
+    "TG",
+    "TT"
+   ]
+  },
+  {
+   "code": "MY",
+   "name": "Malaysia",
+   "wave": 1,
+   "zone": "Asia/Kuala_Lumpur",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "FB",
+    "YT",
+    "X",
+    "LI",
+    "TT",
+    "FB",
+    "IG"
+   ]
+  },
+  {
+   "code": "HK",
+   "name": "Hong Kong",
+   "wave": 1,
+   "zone": "Asia/Hong_Kong",
+   "languages": [
+    "English",
+    "Traditional Chinese"
+   ],
+   "week": [
+    "YT",
+    "LI",
+    "TH",
+    "X",
+    "FB",
+    "IG",
+    "TT"
+   ]
+  },
+  {
+   "code": "ZA",
+   "name": "South Africa",
+   "wave": 1,
+   "zone": "Africa/Johannesburg",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "FB",
+    "LI",
+    "YT",
+    "IG",
+    "TT",
+    "FB",
+    "X"
+   ]
+  },
+  {
+   "code": "PH",
+   "name": "Philippines",
+   "wave": 1,
+   "zone": "Asia/Manila",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "TT",
+    "X",
+    "FB",
+    "IG",
+    "TH",
+    "FB",
+    "YT"
+   ]
+  },
+  {
+   "code": "GB",
+   "name": "United Kingdom",
+   "wave": 1,
+   "zone": "Europe/London",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "X",
+    "TT",
+    "TH",
+    "LI",
+    "IG",
+    "FB",
+    "YT"
+   ]
+  },
+  {
+   "code": "IE",
+   "name": "Ireland",
+   "wave": 1,
+   "zone": "Europe/Dublin",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "X",
+    "IG",
+    "FB",
+    "TT",
+    "LI",
+    "TH",
+    "YT"
+   ]
+  },
+  {
+   "code": "US",
+   "name": "United States",
+   "wave": 1,
+   "zone": "America/New_York",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "IG",
+    "TH",
+    "YT",
+    "LI",
+    "TT",
+    "X",
+    "FB"
+   ]
+  },
+  {
+   "code": "CA",
+   "name": "Canada",
+   "wave": 1,
+   "zone": "America/Toronto",
+   "languages": [
+    "English",
+    "French"
+   ],
+   "week": [
+    "TH",
+    "YT",
+    "LI",
+    "TT",
+    "X",
+    "IG",
+    "FB"
+   ]
+  },
+  {
+   "code": "AU",
+   "name": "Australia",
+   "wave": 1,
+   "zone": "Australia/Sydney",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "YT",
+    "TT",
+    "X",
+    "TH",
+    "LI",
+    "IG",
+    "FB"
+   ]
+  },
+  {
+   "code": "NZ",
+   "name": "New Zealand",
+   "wave": 1,
+   "zone": "Pacific/Auckland",
+   "languages": [
+    "English"
+   ],
+   "week": [
+    "LI",
+    "TH",
+    "X",
+    "FB",
+    "IG",
+    "YT",
+    "TT"
+   ]
+  },
+  {
+   "code": "FR",
+   "name": "France",
+   "wave": 2,
+   "zone": "Europe/Paris",
+   "languages": [
+    "French"
+   ],
+   "week": [
+    "TH",
+    "X",
+    "YT",
+    "IG",
+    "LI",
+    "TT",
+    "FB"
+   ]
+  },
+  {
+   "code": "BE",
+   "name": "Belgium",
+   "wave": 2,
+   "zone": "Europe/Brussels",
+   "languages": [
+    "French",
+    "Dutch"
+   ],
+   "week": [
+    "TT",
+    "LI",
+    "IG",
+    "YT",
+    "X",
+    "FB",
+    "TH"
+   ]
+  },
+  {
+   "code": "CH",
+   "name": "Switzerland",
+   "wave": 2,
+   "zone": "Europe/Zurich",
+   "languages": [
+    "German",
+    "French"
+   ],
+   "week": [
+    "TT",
+    "IG",
+    "TH",
+    "YT",
+    "LI",
+    "FB",
+    "X"
+   ]
+  },
+  {
+   "code": "DE",
+   "name": "Germany",
+   "wave": 2,
+   "zone": "Europe/Berlin",
+   "languages": [
+    "German"
+   ],
+   "week": [
+    "TT",
+    "IG",
+    "YT",
+    "FB",
+    "LI",
+    "X",
+    "TH"
+   ]
+  },
+  {
+   "code": "ES",
+   "name": "Spain",
+   "wave": 2,
+   "zone": "Europe/Madrid",
+   "languages": [
+    "Spanish"
+   ],
+   "week": [
+    "TH",
+    "TT",
+    "FB",
+    "LI",
+    "IG",
+    "YT",
+    "X"
+   ]
+  },
+  {
+   "code": "MX",
+   "name": "Mexico",
+   "wave": 2,
+   "zone": "America/Mexico_City",
+   "languages": [
+    "Spanish"
+   ],
+   "week": [
+    "LI",
+    "FB",
+    "TT",
+    "X",
+    "FB",
+    "YT",
+    "IG"
+   ]
+  },
+  {
+   "code": "PL",
+   "name": "Poland",
+   "wave": 2,
+   "zone": "Europe/Warsaw",
+   "languages": [
+    "Polish"
+   ],
+   "week": [
+    "LI",
+    "FB",
+    "TT",
+    "TH",
+    "X",
+    "YT",
+    "IG"
+   ]
+  },
+  {
+   "code": "JP",
+   "name": "Japan",
+   "wave": 2,
+   "zone": "Asia/Tokyo",
+   "languages": [
+    "Japanese"
+   ],
+   "week": [
+    "X",
+    "TT",
+    "LN",
+    "X",
+    "YT",
+    "IG",
+    "FB"
+   ]
+  },
+  {
+   "code": "TW",
+   "name": "Taiwan",
+   "wave": 2,
+   "zone": "Asia/Taipei",
+   "languages": [
+    "Traditional Chinese"
+   ],
+   "week": [
+    "FB",
+    "X",
+    "IG",
+    "TT",
+    "YT",
+    "LN",
+    "TH"
+   ]
+  },
+  {
+   "code": "SA",
+   "name": "Saudi Arabia",
+   "wave": 2,
+   "zone": "Asia/Riyadh",
+   "languages": [
+    "Arabic",
+    "English"
+   ],
+   "week": [
+    "IG",
+    "LI",
+    "TT",
+    "YT",
+    "FB",
+    "TG",
+    "X"
+   ]
+  },
+  {
+   "code": "BR",
+   "name": "Brazil",
+   "wave": 3,
+   "zone": "America/Sao_Paulo",
+   "languages": [
+    "Portuguese"
+   ],
+   "week": [
+    "IG",
+    "LI",
+    "X",
+    "FB",
+    "TT",
+    "IG",
+    "YT"
+   ]
+  },
+  {
+   "code": "PT",
+   "name": "Portugal",
+   "wave": 3,
+   "zone": "Europe/Lisbon",
+   "languages": [
+    "Portuguese"
+   ],
+   "week": [
+    "FB",
+    "YT",
+    "TT",
+    "LI",
+    "X",
+    "TH",
+    "IG"
+   ]
+  },
+  {
+   "code": "IT",
+   "name": "Italy",
+   "wave": 3,
+   "zone": "Europe/Rome",
+   "languages": [
+    "Italian"
+   ],
+   "week": [
+    "YT",
+    "TG",
+    "LI",
+    "X",
+    "FB",
+    "IG",
+    "TT"
+   ]
+  },
+  {
+   "code": "NL",
+   "name": "Netherlands",
+   "wave": 3,
+   "zone": "Europe/Amsterdam",
+   "languages": [
+    "Dutch"
+   ],
+   "week": [
+    "LI",
+    "FB",
+    "IG",
+    "TH",
+    "TT",
+    "X",
+    "YT"
+   ]
+  },
+  {
+   "code": "TH",
+   "name": "Thailand",
+   "wave": 3,
+   "zone": "Asia/Bangkok",
+   "languages": [
+    "Thai"
+   ],
+   "week": [
+    "FB",
+    "YT",
+    "FB",
+    "TT",
+    "IG",
+    "X",
+    "LN"
+   ]
+  },
+  {
+   "code": "NO",
+   "name": "Norway",
+   "wave": 3,
+   "zone": "Europe/Oslo",
+   "languages": [
+    "Norwegian"
+   ],
+   "week": [
+    "FB",
+    "IG",
+    "X",
+    "YT",
+    "LI",
+    "TT",
+    "TH"
+   ]
+  },
+  {
+   "code": "SE",
+   "name": "Sweden",
+   "wave": 3,
+   "zone": "Europe/Stockholm",
+   "languages": [
+    "Swedish"
+   ],
+   "week": [
+    "TT",
+    "TH",
+    "LI",
+    "IG",
+    "YT",
+    "FB",
+    "X"
+   ]
+  },
+  {
+   "code": "DK",
+   "name": "Denmark",
+   "wave": 3,
+   "zone": "Europe/Copenhagen",
+   "languages": [
+    "Danish"
+   ],
+   "week": [
+    "IG",
+    "LI",
+    "TH",
+    "YT",
+    "FB",
+    "X",
+    "TT"
+   ]
+  },
+  {
+   "code": "FI",
+   "name": "Finland",
+   "wave": 3,
+   "zone": "Europe/Helsinki",
+   "languages": [
+    "Finnish"
+   ],
+   "week": [
+    "TH",
+    "YT",
+    "LI",
+    "FB",
+    "X",
+    "TT",
+    "IG"
+   ]
+  },
+  {
+   "code": "EE",
+   "name": "Estonia",
+   "wave": 3,
+   "zone": "Europe/Tallinn",
+   "languages": [
+    "Estonian"
+   ],
+   "week": [
+    "IG",
+    "X",
+    "FB",
+    "LI",
+    "TH",
+    "TT",
+    "YT"
+   ]
+  },
+  {
+   "code": "LV",
+   "name": "Latvia",
+   "wave": 3,
+   "zone": "Europe/Riga",
+   "languages": [
+    "Latvian"
+   ],
+   "week": [
+    "YT",
+    "LI",
+    "TT",
+    "TH",
+    "IG",
+    "X",
+    "FB"
+   ]
+  },
+  {
+   "code": "LT",
+   "name": "Lithuania",
+   "wave": 3,
+   "zone": "Europe/Vilnius",
+   "languages": [
+    "Lithuanian"
+   ],
+   "week": [
+    "YT",
+    "X",
+    "LI",
+    "IG",
+    "TH",
+    "TT",
+    "FB"
+   ]
+  },
+  {
+   "code": "CZ",
+   "name": "Czechia",
+   "wave": 3,
+   "zone": "Europe/Prague",
+   "languages": [
+    "Czech"
+   ],
+   "week": [
+    "X",
+    "TT",
+    "LI",
+    "FB",
+    "YT",
+    "TH",
+    "IG"
+   ]
+  }
+ ]
+}

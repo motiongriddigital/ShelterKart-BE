@@ -1,0 +1,78 @@
+{
+ "version": "2026-10.1",
+ "note": "Twelve topics that match the twelve chapters of the Home Buying Guide, in a 12-week cycle. Scope is new-build, primary sales, direct from the developer (constitution rule 7): the last topic stops at registration and upkeep and does not cover resale.",
+ "topics": [
+  {
+   "id": "t01",
+   "title": "How buying works, start to finish",
+   "chapter": 1
+  },
+  {
+   "id": "t02",
+   "title": "Check the developer on the official register",
+   "chapter": 2
+  },
+  {
+   "id": "t03",
+   "title": "Documents to ask for",
+   "chapter": 3
+  },
+  {
+   "id": "t04",
+   "title": "The real total cost",
+   "chapter": 4
+  },
+  {
+   "id": "t05",
+   "title": "Area measures explained",
+   "chapter": 5
+  },
+  {
+   "id": "t06",
+   "title": "Construction and technical specifications",
+   "chapter": 6
+  },
+  {
+   "id": "t07",
+   "title": "Booking amounts and payment plans",
+   "chapter": 7
+  },
+  {
+   "id": "t08",
+   "title": "Possession dates and delays",
+   "chapter": 8
+  },
+  {
+   "id": "t09",
+   "title": "Loans and affordability basics",
+   "chapter": 9
+  },
+  {
+   "id": "t10",
+   "title": "Red flags and sales-office questions",
+   "chapter": 10
+  },
+  {
+   "id": "t11",
+   "title": "Inspection before taking possession",
+   "chapter": 11
+  },
+  {
+   "id": "t12",
+   "title": "After purchase: registration and upkeep",
+   "chapter": 12
+  }
+ ],
+ "depths": 3,
+ "series": {
+  "X": "myth_or_fact",
+  "LI": "what_it_means",
+  "IG": "ask_this",
+  "FB": "explainer_question",
+  "YT": "read_the_record",
+  "TT": "one_trap",
+  "TH": "quick_tip",
+  "TG": "weekly_card",
+  "LN": "weekly_card"
+ }
+}

@@ -37,7 +37,7 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
   const quoteFor = async session => (await call(find('post','/api/research/quote'), { ref, country:'IN', session })).body.quote;
   const q1 = await quoteFor('buyer-one'), q2 = await quoteFor('buyer-two');
   ok('each buyer gets their own signed quote, at the price the preview showed', q1 && q2 && q1.id !== q2.id && q1.gross === pv.body.paywall.price && q1.currency === 'INR');
-  const c1 = await call(find('post','/api/research/checkout'), { ref, idempotencyKey:'legacy-buyer-one-aaaaaaaa', quoteId: q1.id, billingCountry:'IN' });
+  const c1 = await call(find('post','/api/research/checkout'), { ref, idempotencyKey:'legacy-buyer-one-aaaaaaaa', quoteId: q1.id, billingCountry:'IN', source: { utm: { source:'instagram', medium:'social', campaign:'in-t07' }, referrer:'https://l.instagram.com/' } });
   const c2 = await call(find('post','/api/research/checkout'), { ref, idempotencyKey:'legacy-buyer-two-bbbbbbbb', quoteId: q2.id, billingCountry:'IN' });
   ok('checkout charges exactly the quote total', c1.body.amount === q1.gross && c1.body.currency === 'INR');
   ok('two buyers get two separate purchase ids', c1.body.purchaseId && c2.body.purchaseId && c1.body.purchaseId !== c2.body.purchaseId);
@@ -50,6 +50,11 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
   ok('signed webhook processed', wh.code===200 && wh.body.ok);
   const p1 = _db.purchases.find(p => p.id === c1.body.purchaseId), p2 = _db.purchases.find(p => p.id === c2.body.purchaseId);
   ok('ONLY the paying buyer\u2019s purchase is marked paid -- the other buyer\u2019s stays pending', p1.status==='paid' && p2.status==='pending_payment');
+  // Where the paying buyer came from travels from the checkout to the paid event, with the property's market, so the marketing
+  // dashboard can trace the sale to its channel; a checkout whose browser sent nothing records nothing.
+  ok('the checkout keeps the buyer\u2019s source and the market with the purchase', p1.attribution && p1.attribution.captured === true && p1.attribution.utm.source === 'instagram' && p1.attribution.market === pv.body.brief.market && p2.attribution && !p2.attribution.captured);
+  const paidEv = (await require('../../engine/analytics').loadRows('2000-01-01')).filter(e => e.event === 'purchase_paid' && e.ref === ref).pop();
+  ok('the paid event carries the market and the source, marked as traced', paidEv && paidEv.market === pv.body.brief.market && paidEv.utm_source === 'instagram' && paidEv.channel === 'instagram' && /:src$/.test(paidEv.detail));
   ok('replayed webhook is acknowledged, not processed twice', (await call(hook, raw, { 'x-sk-provider':'test', 'x-sk-signature': sig }, '/api/payments/webhook')).body.duplicate === true);
   const bad = Buffer.from(JSON.stringify({ id:'evt_2', type:'payment.succeeded', data:{ reportRef: ref, purchaseId: c2.body.purchaseId, amount: 1 } }));
   const badSig = crypto.createHmac('sha256','whsec').update(bad).digest('hex');

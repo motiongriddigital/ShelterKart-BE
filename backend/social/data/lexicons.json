@@ -1,0 +1,882 @@
+{
+ "version": "2026-10.1",
+ "note": "Terms the constitution checker looks for, in 21 languages where a list exists. A language with no list still gets every structural test and the judgement test; when the judge is unavailable the post is held. A native-speaker review of each list is part of the dry run.",
+ "categories": {
+  "accusation": {
+   "en": [
+    "fraud",
+    "fraudulent",
+    "fraudster",
+    "scam",
+    "scammer",
+    "scammed",
+    "cheat",
+    "cheated",
+    "cheating",
+    "crook",
+    "crooked",
+    "criminal",
+    "thief",
+    "theft",
+    "stole",
+    "steal",
+    "bribe",
+    "bribery",
+    "corrupt",
+    "corruption",
+    "extort",
+    "extortion",
+    "blackmail",
+    "forged",
+    "forgery",
+    "liar",
+    "lying",
+    "swindle",
+    "swindler",
+    "con artist",
+    "ponzi",
+    "rip-off",
+    "ripoff",
+    "racket",
+    "money laundering",
+    "embezzle",
+    "embezzlement"
+   ],
+   "hi": [
+    "धोखा",
+    "धोखाधड़ी",
+    "ठगी",
+    "ठग",
+    "घोटाला",
+    "चोर",
+    "चोरी",
+    "रिश्वत",
+    "भ्रष्ट",
+    "भ्रष्टाचार",
+    "जालसाजी",
+    "झूठा",
+    "फर्जी",
+    "dhokha",
+    "thagi",
+    "ghotala"
+   ],
+   "ar": [
+    "احتيال",
+    "نصب",
+    "نصاب",
+    "محتال",
+    "غش",
+    "سرقة",
+    "لص",
+    "رشوة",
+    "فساد",
+    "تزوير",
+    "كذاب",
+    "مخادع",
+    "خداع"
+   ],
+   "fr": [
+    "fraude",
+    "frauduleux",
+    "arnaque",
+    "escroc",
+    "escroquerie",
+    "tricher",
+    "tricherie",
+    "voleur",
+    "corrompu",
+    "corruption",
+    "pot-de-vin",
+    "mensonge",
+    "menteur",
+    "blanchiment"
+   ],
+   "es": [
+    "fraude",
+    "fraudulento",
+    "estafa",
+    "estafador",
+    "timo",
+    "tramposo",
+    "ladrón",
+    "robo",
+    "corrupto",
+    "corrupción",
+    "soborno",
+    "falsificación",
+    "mentiroso",
+    "lavado de dinero"
+   ],
+   "de": [
+    "betrug",
+    "betrüger",
+    "betrügerisch",
+    "abzocke",
+    "abzocker",
+    "schwindel",
+    "gauner",
+    "dieb",
+    "diebstahl",
+    "korrupt",
+    "korruption",
+    "bestechung",
+    "fälschung",
+    "lügner"
+   ],
+   "pl": [
+    "oszustwo",
+    "oszust",
+    "oszukać",
+    "wyłudzenie",
+    "naciągacz",
+    "złodziej",
+    "kradzież",
+    "łapówka",
+    "korupcja",
+    "fałszerstwo",
+    "kłamca"
+   ],
+   "ja": [
+    "詐欺",
+    "騙し",
+    "騙す",
+    "ペテン",
+    "泥棒",
+    "窃盗",
+    "賄賂",
+    "汚職",
+    "偽造",
+    "嘘つき",
+    "悪徳",
+    "不正"
+   ],
+   "zh": [
+    "詐騙",
+    "騙子",
+    "欺詐",
+    "欺騙",
+    "盜竊",
+    "小偷",
+    "賄賂",
+    "貪污",
+    "腐敗",
+    "偽造",
+    "謊言",
+    "黑心"
+   ],
+   "pt": [
+    "fraude",
+    "fraudulento",
+    "golpe",
+    "golpista",
+    "estelionato",
+    "trapaceiro",
+    "ladrão",
+    "roubo",
+    "suborno",
+    "corrupção",
+    "corrupto",
+    "falsificação",
+    "mentiroso",
+    "lavagem de dinheiro"
+   ],
+   "it": [
+    "frode",
+    "fraudolento",
+    "truffa",
+    "truffatore",
+    "imbroglio",
+    "imbroglione",
+    "ladro",
+    "furto",
+    "tangente",
+    "corruzione",
+    "corrotto",
+    "falsificazione",
+    "bugiardo",
+    "riciclaggio"
+   ],
+   "nl": [
+    "fraude",
+    "oplichting",
+    "oplichter",
+    "bedrog",
+    "bedrieger",
+    "dief",
+    "diefstal",
+    "omkoping",
+    "corruptie",
+    "corrupt",
+    "vervalsing",
+    "leugenaar"
+   ],
+   "th": [
+    "ฉ้อโกง",
+    "โกง",
+    "หลอกลวง",
+    "มิจฉาชีพ",
+    "ขโมย",
+    "ทุจริต",
+    "สินบน",
+    "ปลอมแปลง",
+    "โกหก"
+   ],
+   "sv": [
+    "bedrägeri",
+    "bedragare",
+    "lurendrejeri",
+    "svindel",
+    "tjuv",
+    "stöld",
+    "mutor",
+    "korruption",
+    "korrupt",
+    "förfalskning",
+    "lögnare"
+   ],
+   "da": [
+    "svindel",
+    "svindler",
+    "bedrageri",
+    "bedrager",
+    "tyv",
+    "tyveri",
+    "bestikkelse",
+    "korruption",
+    "korrupt",
+    "forfalskning",
+    "løgner"
+   ],
+   "no": [
+    "svindel",
+    "svindler",
+    "bedrageri",
+    "bedrager",
+    "tyv",
+    "tyveri",
+    "bestikkelse",
+    "korrupsjon",
+    "korrupt",
+    "forfalskning",
+    "løgner"
+   ],
+   "fi": [
+    "huijaus",
+    "huijari",
+    "petos",
+    "varas",
+    "varkaus",
+    "lahjus",
+    "korruptio",
+    "korruptoitunut",
+    "väärennös",
+    "valehtelija"
+   ],
+   "cs": [
+    "podvod",
+    "podvodník",
+    "podfuk",
+    "zloděj",
+    "krádež",
+    "úplatek",
+    "korupce",
+    "zkorumpovaný",
+    "padělek",
+    "lhář"
+   ],
+   "et": [
+    "pettus",
+    "petis",
+    "varas",
+    "vargus",
+    "altkäemaks",
+    "korruptsioon",
+    "võltsing",
+    "valetaja",
+    "kelmus"
+   ],
+   "lv": [
+    "krāpšana",
+    "krāpnieks",
+    "zaglis",
+    "zādzība",
+    "kukulis",
+    "korupcija",
+    "viltojums",
+    "melis"
+   ],
+   "lt": [
+    "sukčiavimas",
+    "sukčius",
+    "vagis",
+    "vagystė",
+    "kyšis",
+    "korupcija",
+    "klastotė",
+    "melagis"
+   ]
+  },
+  "advice": {
+   "en": [
+    "you should buy",
+    "should you buy",
+    "don't buy",
+    "do not buy",
+    "must buy",
+    "buy now",
+    "buy this",
+    "good investment",
+    "great investment",
+    "best investment",
+    "guaranteed return",
+    "guaranteed returns",
+    "guaranteed profit",
+    "risk-free",
+    "sure profit",
+    "invest in",
+    "worth buying",
+    "avoid buying",
+    "guaranteed"
+   ],
+   "hi": [
+    "खरीदें",
+    "मत खरीदें",
+    "निवेश करें",
+    "गारंटीड",
+    "गारंटी",
+    "जोखिम मुक्त"
+   ],
+   "ar": [
+    "اشترِ",
+    "اشتر الآن",
+    "لا تشتري",
+    "استثمر",
+    "عائد مضمون",
+    "بدون مخاطر",
+    "مضمون"
+   ],
+   "fr": [
+    "achetez",
+    "n'achetez pas",
+    "investissez",
+    "rendement garanti",
+    "sans risque",
+    "garanti"
+   ],
+   "es": [
+    "compre ahora",
+    "no compre",
+    "invierta",
+    "rentabilidad garantizada",
+    "sin riesgo",
+    "garantizado"
+   ],
+   "de": [
+    "kaufen sie",
+    "kaufen sie nicht",
+    "investieren sie",
+    "garantierte rendite",
+    "risikofrei",
+    "garantiert"
+   ],
+   "pl": [
+    "kup teraz",
+    "nie kupuj",
+    "zainwestuj",
+    "gwarantowany zysk",
+    "bez ryzyka",
+    "gwarantowany"
+   ],
+   "ja": [
+    "買うべき",
+    "買わないで",
+    "投資すべき",
+    "元本保証",
+    "リスクなし",
+    "必ず儲かる"
+   ],
+   "zh": [
+    "應該購買",
+    "不要購買",
+    "建議投資",
+    "保證回報",
+    "零風險",
+    "穩賺"
+   ],
+   "pt": [
+    "compre agora",
+    "não compre",
+    "invista",
+    "retorno garantido",
+    "sem risco",
+    "garantido"
+   ],
+   "it": [
+    "compra ora",
+    "non comprare",
+    "investi",
+    "rendimento garantito",
+    "senza rischio",
+    "garantito"
+   ],
+   "nl": [
+    "koop nu",
+    "koop niet",
+    "investeer",
+    "gegarandeerd rendement",
+    "zonder risico",
+    "gegarandeerd"
+   ],
+   "th": [
+    "ควรซื้อ",
+    "อย่าซื้อ",
+    "ผลตอบแทนแน่นอน",
+    "ไม่มีความเสี่ยง",
+    "รับประกัน"
+   ]
+  },
+  "score_ranking": {
+   "en": [
+    "trust score",
+    "score out of",
+    "rating of",
+    "star rating",
+    "ranked",
+    "ranking of developers",
+    "top 10",
+    "top ten",
+    "best builder",
+    "best developer",
+    "worst builder",
+    "worst developer",
+    "league table",
+    "out of 100",
+    "/100",
+    "leaderboard"
+   ],
+   "hi": [
+    "सबसे अच्छा बिल्डर",
+    "सबसे खराब बिल्डर",
+    "रेटिंग",
+    "स्कोर"
+   ],
+   "ar": [
+    "أفضل مطور",
+    "أسوأ مطور",
+    "تصنيف المطورين",
+    "من 100"
+   ],
+   "fr": [
+    "classement des promoteurs",
+    "meilleur promoteur",
+    "pire promoteur",
+    "note sur 100",
+    "sur 100"
+   ],
+   "es": [
+    "mejor promotor",
+    "peor promotor",
+    "puntuación",
+    "clasificación de promotores",
+    "sobre 100"
+   ],
+   "de": [
+    "bester bauträger",
+    "schlechtester bauträger",
+    "bewertung von",
+    "von 100",
+    "rangliste"
+   ],
+   "pl": [
+    "najlepszy deweloper",
+    "najgorszy deweloper",
+    "ranking deweloperów",
+    "z 100"
+   ],
+   "ja": [
+    "最高の開発会社",
+    "最悪の開発会社",
+    "ランキング",
+    "100点"
+   ],
+   "zh": [
+    "最佳開發商",
+    "最差開發商",
+    "排名",
+    "滿分100"
+   ],
+   "pt": [
+    "melhor construtora",
+    "pior construtora",
+    "ranking de",
+    "nota de"
+   ],
+   "it": [
+    "miglior costruttore",
+    "peggior costruttore",
+    "classifica dei",
+    "su 100"
+   ],
+   "nl": [
+    "beste ontwikkelaar",
+    "slechtste ontwikkelaar",
+    "ranglijst",
+    "van de 100"
+   ],
+   "th": [
+    "ผู้พัฒนาที่ดีที่สุด",
+    "อันดับ",
+    "คะแนนเต็ม 100"
+   ]
+  },
+  "out_of_scope": {
+   "en": [
+    "resale",
+    "re-sale",
+    "second-hand",
+    "secondhand",
+    "pre-owned",
+    "secondary market",
+    "rental",
+    "tenant",
+    "landlord",
+    "buy-to-let",
+    "rent out",
+    "flipping"
+   ],
+   "hi": [
+    "रीसेल",
+    "पुराना मकान",
+    "किराएदार",
+    "किराये"
+   ],
+   "ar": [
+    "إعادة البيع",
+    "سوق ثانوي",
+    "مستأجر",
+    "إيجار"
+   ],
+   "fr": [
+    "revente",
+    "seconde main",
+    "marché secondaire",
+    "locataire",
+    "bailleur"
+   ],
+   "es": [
+    "reventa",
+    "segunda mano",
+    "mercado secundario",
+    "inquilino",
+    "arrendador"
+   ],
+   "de": [
+    "wiederverkauf",
+    "gebrauchtimmobilie",
+    "zweitmarkt",
+    "mieter",
+    "vermieter"
+   ],
+   "pl": [
+    "rynek wtórny",
+    "odsprzedaż",
+    "najemca",
+    "wynajem"
+   ],
+   "ja": [
+    "中古",
+    "再販",
+    "賃貸",
+    "借主"
+   ],
+   "zh": [
+    "二手",
+    "轉售",
+    "租賃",
+    "租客"
+   ],
+   "pt": [
+    "revenda",
+    "segunda mão",
+    "mercado secundário",
+    "inquilino",
+    "aluguel"
+   ],
+   "it": [
+    "rivendita",
+    "usato",
+    "mercato secondario",
+    "inquilino",
+    "affitto"
+   ],
+   "nl": [
+    "doorverkoop",
+    "tweedehands",
+    "secundaire markt",
+    "huurder",
+    "verhuur"
+   ],
+   "th": [
+    "บ้านมือสอง",
+    "ขายต่อ",
+    "ผู้เช่า",
+    "ให้เช่า"
+   ]
+  },
+  "scope_watch": {
+   "en": [
+    "land plot",
+    "plot of land",
+    "agricultural land",
+    "vacant land"
+   ],
+   "es": [
+    "terreno",
+    "parcela"
+   ],
+   "de": [
+    "grundstück"
+   ],
+   "pl": [
+    "działka"
+   ],
+   "fr": [
+    "terrain à bâtir"
+   ]
+  },
+  "fair_housing": {
+   "en": [
+    "no muslims",
+    "no hindus",
+    "no christians",
+    "only for hindus",
+    "only for muslims",
+    "hindus only",
+    "muslims only",
+    "vegetarians only",
+    "vegetarian only",
+    "no bachelors",
+    "bachelors not allowed",
+    "no singles",
+    "family only",
+    "whites only",
+    "no foreigners",
+    "no immigrants",
+    "locals only",
+    "upper caste",
+    "lower caste",
+    "caste preferred",
+    "no kids",
+    "no children"
+   ],
+   "hi": [
+    "केवल हिंदू",
+    "मुस्लिम नहीं",
+    "शाकाहारी ही",
+    "बैचलर नहीं"
+   ],
+   "ar": [
+    "للمسلمين فقط",
+    "لا للأجانب",
+    "عائلات فقط"
+   ],
+   "fr": [
+    "pas d'étrangers",
+    "familles uniquement",
+    "réservé aux"
+   ],
+   "es": [
+    "no extranjeros",
+    "solo familias",
+    "solo para"
+   ],
+   "de": [
+    "keine ausländer",
+    "nur für familien",
+    "nur für"
+   ]
+  },
+  "sensitive": {
+   "en": [
+    "election",
+    "vote for",
+    "prime minister",
+    "politician",
+    "protest",
+    "riot",
+    "war",
+    "terror",
+    "terrorist",
+    "suicide",
+    "death",
+    "funeral",
+    "religion",
+    "mosque",
+    "church",
+    "temple"
+   ],
+   "fr": [
+    "élection",
+    "guerre",
+    "attentat",
+    "décès",
+    "religion"
+   ],
+   "es": [
+    "elecciones",
+    "guerra",
+    "atentado",
+    "muerte",
+    "religión"
+   ],
+   "de": [
+    "wahl",
+    "krieg",
+    "anschlag",
+    "todesfall",
+    "religion"
+   ],
+   "hi": [
+    "चुनाव",
+    "युद्ध",
+    "आतंक",
+    "मौत",
+    "धर्म"
+   ],
+   "ar": [
+    "انتخابات",
+    "حرب",
+    "إرهاب",
+    "وفاة",
+    "دين"
+   ],
+   "pl": [
+    "wybory",
+    "wojna",
+    "zamach",
+    "śmierć",
+    "religia"
+   ],
+   "ja": [
+    "選挙",
+    "戦争",
+    "テロ",
+    "死亡",
+    "宗教"
+   ],
+   "zh": [
+    "選舉",
+    "戰爭",
+    "恐怖",
+    "死亡",
+    "宗教"
+   ]
+  },
+  "clickbait": {
+   "en": [
+    "you won't believe",
+    "shocking",
+    "secret",
+    "urgent",
+    "hurry",
+    "last chance",
+    "don't miss",
+    "must see",
+    "act now",
+    "!!!",
+    "???"
+   ],
+   "fr": [
+    "vous n'allez pas croire",
+    "choquant",
+    "urgent",
+    "dernière chance"
+   ],
+   "es": [
+    "no vas a creer",
+    "impactante",
+    "urgente",
+    "última oportunidad"
+   ],
+   "de": [
+    "unglaublich",
+    "schockierend",
+    "dringend",
+    "letzte chance"
+   ],
+   "hi": [
+    "चौंकाने वाला",
+    "जल्दी करें",
+    "आखिरी मौका"
+   ],
+   "ar": [
+    "صادم",
+    "عاجل",
+    "الفرصة الأخيرة"
+   ]
+  },
+  "safety_claim": {
+   "en": [
+    "100% safe",
+    "safest",
+    "safe building",
+    "earthquake-proof",
+    "earthquake proof",
+    "fireproof",
+    "fire-proof",
+    "structurally sound",
+    "completely safe",
+    "defect-free",
+    "no defects"
+   ],
+   "fr": [
+    "100 % sûr",
+    "antisismique garanti",
+    "ignifuge garanti"
+   ],
+   "es": [
+    "100% seguro",
+    "a prueba de terremotos",
+    "a prueba de fuego"
+   ],
+   "de": [
+    "100% sicher",
+    "erdbebensicher",
+    "feuerfest"
+   ],
+   "hi": [
+    "100% सुरक्षित",
+    "भूकंप-रोधी"
+   ],
+   "ar": [
+    "آمن 100%",
+    "مقاوم للزلازل"
+   ]
+  },
+  "sponsored": {
+   "en": [
+    "#ad",
+    "#sponsored",
+    "paid partnership",
+    "sponsored by",
+    "in partnership with the developer",
+    "promoted by"
+   ],
+   "fr": [
+    "#pub",
+    "partenariat rémunéré",
+    "sponsorisé par"
+   ],
+   "es": [
+    "#publi",
+    "colaboración pagada",
+    "patrocinado por"
+   ],
+   "de": [
+    "#werbung",
+    "bezahlte partnerschaft",
+    "gesponsert von"
+   ]
+  }
+ }
+}

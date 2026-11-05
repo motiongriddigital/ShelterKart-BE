@@ -732,6 +732,8 @@ The design was approved in the document "ShelterKart — V1 Pricing and Payments
 
 **Known follow-up: the deck's market sizing still uses the retired per-market prices.** TAM, SAM, SOM and the valuation in `deck/model/market_model.py` should be recomputed under this model. That needs each market's typical new-home price, which is sourced only for India and Dubai today. Rich markets will likely show a lower average price per report.
 
+**Update, 24 October 2026 (deck prices):** the investor model and deck now take India's price, the price ladder and the unit-economics prices from the active price book (`deck/model/prices_from_book.js`). Other markets still use scenario prices by design (a sourced typical new-home price exists only for India and Dubai). See `deck/INVESTOR_V2_NOTES.md`.
+
 ## AI engines: five vendors on equal terms, cheapest qualified first (October 2026)
 
 **Four agents use an AI model:** research (three parallel passes with web search), the adviser, the document check, and translation with its meaning check. Each asks `backend/engines`, never a vendor.

@@ -105,3 +105,30 @@ python3 tools/ui_smoke.py                   # browser test of every window and a
 ## 7. Rules that must not be broken
 
 `CONSTITUTION.md` governs the product. In short: no developer can pay to change a finding; every statement is a fact, an inference, an opinion or a prediction, and the reader knows which; if the evidence is not there the answer is "insufficient public data", never a guess; corrections are never silent. Nothing in a payment, a refund or a complaint may change a finding.
+
+## 8. Investor materials
+
+The investor deck (`deck/ShelterKart-Investor-Deck-v3.pdf`) and its model read every quoted price from the active price book through `deck/model/prices.json`. After any price-book release, run `node deck/model/prices_from_book.js`, then the rebuild in `deck/INVESTOR_V2_NOTES.md`; a test fails until you do. The deck also records the real test count from `tools/count_checks.py`, so rebuild it after the suite changes.
+
+## 9. Respond or correct (the right of reply and the right of correction)
+
+**What a visitor sees.** One panel, "Respond or correct", with no account: who are you (the developer, a reader or buyer, or someone named), what do you want to do, then a short form. It opens from a strip under every report preview (with live counts of replies and corrections), a line in the checkout, a link under every finding of the paid report, and the report footer. The demo shows it on a clearly fictional "Example Developers" record. The right of reply (developer or anyone named) and the right of correction (anyone) are separate in the panel and in the rules.
+
+**The rules (do not weaken them).** A reply is free, unconditional, published beside its finding, labelled, and never changes the finding. A correction changes a finding only with evidence, after the sources are checked; every correction is dated and public, the original wording stays visible, and buyers of the report are told by e-mail. There is no payment path. Engagement never counts.
+
+**How it works.** `POST /api/responses` stores the submission and e-mails a confirmation link (the sender confirms with `POST /api/responses/confirm`). A rule-based screen (`backend/engine/responses.js`, `screen()`) then decides: a clean reply is published at once; a flagged reply, every legal or privacy notice, and any reply that matches no finding are held for a person (`OPS_ALERT_EMAIL` is alerted); a correction waits for the research check. The public data is `GET /api/responses/:reportRef` (never an e-mail address). The sender reads status at `GET /api/responses/status/:ref?key=`. A person works the queue through `GET /api/admin/response-queue?status=held|in_review` and `POST /api/admin/response-queue/:id/resolve` (`outcome`: published, declined, corrected, not_changed, needs_info, with a plain-language `note`; a correction notifies every buyer who asked for e-mail delivery). Storage: Postgres (`backend/responses.sql`, added to the migration list) or memory when no database is set. An e-mail provider (Resend or Postmark) is REQUIRED: without one a response cannot be confirmed and is refused.
+
+**Not built yet.**
+- The AI classifier: `makeResponses({ classify })` is the one place to add it (it can only add reasons to hold a message; when it fails, the message is held).
+- The research agent's re-check of a correction: today a person resolves it through the admin route.
+- Admin screens for the queue: only the API exists.
+- Replies beside findings in the live (non-dossier) report view: they show in the reference and paid dossier reports; the live brief shows counts and the corrections list.
+- Developer verification beyond the domain label (for example, the registered contact in a RERA record).
+- The older `/api/dispute` and `/api/developer-response` routes and their tables still work for existing clients. Remove them when no client uses them.
+
+**Before launch.** The SQL has been run only against the test stub, not a real Postgres: run the migration and one submission on a scratch database. Counsel must approve the screening promise ("screened automatically; flagged items get a human look"), now in the policy pages, the privacy text and the legal drafts. The privacy notice covers storing responders' and delivery e-mails; keep it in step with the code.
+
+
+## The marketing desk (added 26 Oct 2026)
+
+Read `SOCIAL_ENGINE.md`. In short: off by default (`SOCIAL_ENGINE=on`), dry run by default (`SOCIAL_PUBLISH=live` to post), refuses to run without durable storage, empty knowledge base. Unverified: every live platform call, Postgres, a real judgement model, `sharp` rendering. Not built: video, the knowledge keeper, model polish, analytics loop. The first real task is filling the knowledge base (432 items for the first 12 weeks) and setting up a `verify`-role model.

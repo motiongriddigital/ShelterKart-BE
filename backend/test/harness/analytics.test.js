@@ -46,6 +46,12 @@ const AUTH = { authorization: 'Basic ' + Buffer.from('ops:pw-123456').toString('
 
   // Visitor 1 searches, opens the report by link, clicks unlock, starts checkout, pays in the browser, saves the PDF, shares.
   const s = await call(find('post', '/api/research'), { ip: '10.0.0.1', body: { query: 'Casagrand Casamia', market: 'in', country: 'IN' } });
+  // The new search runs in the shadow beside that research, and the researched project becomes a candidate for the next buyer.
+  const sh = await call(find('get', '/api/admin/search/shadow'), { headers: { authorization: 'Basic ' + Buffer.from('ops:pw-123456').toString('base64') } });
+  ok('search: the shadow compared that research, with nothing changed for the buyer (mode shadow)', sh.code === 200 && sh.body.mode === 'shadow' && sh.body.compared >= 1);
+  const cand = await call(find('post', '/api/search/candidates'), { body: { query: 'casagrand casamiya', market: 'in' } });
+  ok('search: the researched project is now found from a misspelling', cand.code === 200 && cand.body.candidates.length > 0 && /casamia/i.test(cand.body.candidates[0].name));
+  ok('search: the candidate route refuses an unknown market', (await call(find('post', '/api/search/candidates'), { body: { query: 'casagrand', market: 'zz' } })).code === 400);
   const qOf = async (ip, session) => (await call(find('post', '/api/research/quote'), { ip, body: { ref: s.body.brief.ref, country: 'IN', session } })).body.quote;
   const ref = s.body.brief.ref;
   await call(find('get', '/api/research/by-ref/:ref'), { ip: '10.0.0.1', params: { ref } });
@@ -116,4 +122,14 @@ const AUTH = { authorization: 'Basic ' + Buffer.from('ops:pw-123456').toString('
   ok('the buyer whose tab closed gets their report and access back from the receipt', back.code === 200 && back.body.ref === ref && back.body.token);
   const full = await call(find('get', '/api/research/by-ref/:ref'), { params: { ref }, headers: { 'x-report-access': back.body.token } });
   ok('...and that access really opens the full report', full.code === 200 && full.body.brief.locked === false);
+
+  // Keeping the visit's source on the visitor's device needs an explicit yes in the EEA, the UK and Switzerland, and where the country is unknown.
+  const sc = find('get', '/api/source-consent'), mode = async (country, env) => { const saved = process.env.SK_SOURCE_CONSENT; if (env == null) delete process.env.SK_SOURCE_CONSENT; else process.env.SK_SOURCE_CONSENT = env; try { return (await call(sc, { headers: { 'cf-ipcountry': country } })).body.mode; } finally { if (saved == null) delete process.env.SK_SOURCE_CONSENT; else process.env.SK_SOURCE_CONSENT = saved; } };
+  ok('consent: a visitor in India or the United States need only be told', (await mode('IN')) === 'notice' && (await mode('US')) === 'notice' && (await mode('AE')) === 'notice');
+  ok('consent: a visitor in France, Germany, Poland, Norway, the UK or Switzerland must be asked', (await Promise.all(['FR', 'DE', 'PL', 'NO', 'GB', 'CH', 'IE', 'IS'].map(c => mode(c)))).every(m => m === 'required'));
+  ok('consent: every EEA member state, the UK and Switzerland is on the list (27 + 3 + 1 + 1)', A.CONSENT_COUNTRIES.size === 32 && ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','GB','CH'].every(c => A.CONSENT_COUNTRIES.has(c)));
+  ok('consent: an unknown country is asked, the safe default', (await mode('')) === 'required' && (await mode('XX')) === 'required' && (await mode('not-a-code')) === 'required');
+  ok('consent: SK_SOURCE_CONSENT=all asks everywhere, =none never asks, and anything else is the default', (await mode('IN', 'all')) === 'required' && (await mode('FR', 'none')) === 'notice' && (await mode('IN', 'whatever')) === 'notice' && (await mode('FR', 'whatever')) === 'required');
+  ok('consent: the answer is never cached, because it differs by visitor', await new Promise(r => { const h = {}; const res = { code: 200, status(c) { this.code = c; return this; }, set(k, v) { h[String(k).toLowerCase()] = v; return this; }, json() { r(/no-store/.test(h['cache-control'] || '') && /private/.test(h['cache-control'] || '')); }, end() { r(false); } }; sc.handlers[sc.handlers.length - 1]({ headers: { 'cf-ipcountry': 'FR' }, body: {}, params: {}, query: {} }, res, () => {}); }));
+  ok('consent: the country reading is the same one the analytics events use (no drift between the two)', A.countryOf({ 'cf-ipcountry': 'de' }) === 'DE' && A.countryOf({ 'x-vercel-ip-country': 'FR' }) === 'FR' && A.countryOf({ 'cf-ipcountry': 'XX' }) === '' && A.makeEvent('page_view', { ip: '1.1.1.1', ua: MAC, headers: { 'cf-ipcountry': 'pl' } }).country === 'PL');
 })();

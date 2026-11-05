@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ShelterKart — Marketing desk</title>
+<style>
+  :root{
+    --navy-900:#061428; --ink:#0A1C33; --ink-2:#2F4460; --ink-3:#52657F;
+    --paper:#FAF8F5; --paper-2:#F1EDE6; --rule:#E4DDD1; --gold:#D3A245; --gold-deep:#865E1D; --white:#fff;
+    --ok:#1D6338; --ok-bg:#E3F0E8; --warn:#865E1D; --warn-bg:#F6ECD6; --bad:#A32B1C; --bad-bg:#F7E3DF; --blue:#163C64;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; }
+  body{ margin:0; font-family:'Instrument Sans','IBM Plex Sans',system-ui,-apple-system,'Segoe UI','Noto Sans','Noto Sans Devanagari','Noto Sans Arabic','Noto Sans JP','Noto Sans TC','Noto Sans Thai',Arial,sans-serif; background:var(--paper); color:var(--ink); font-size:16px; line-height:1.5; }
+  h1,h2,h3{ font-family:'Fraunces',Georgia,'Times New Roman',serif; font-weight:600; letter-spacing:-.01em; margin:0; }
+  h2{ font-size:22px; margin-bottom:6px; } h3{ font-size:18px; }
+  button,input,select,textarea{ font:inherit; color:inherit; }
+  button{ cursor:pointer; }
+  :focus-visible{ outline:3px solid var(--blue); outline-offset:2px; }
+  .top{ position:sticky; top:0; z-index:10; background:var(--navy-900); color:#F5E6C2; padding:12px 16px; display:flex; flex-wrap:wrap; align-items:center; gap:10px; border-bottom:3px solid var(--gold); }
+  .top h1{ font-size:20px; color:#F5E6C2; } .top .spacer{ flex:1; }
+  .pill{ display:inline-block; padding:4px 12px; border-radius:999px; font-size:14px; font-weight:600; border:1px solid currentColor; }
+  .pill.dry{ background:var(--warn-bg); color:var(--warn); } .pill.live{ background:var(--ok-bg); color:var(--ok); }
+  .wrap{ max-width:980px; margin:0 auto; padding:16px; }
+  section{ background:var(--white); border:1px solid var(--rule); border-radius:12px; padding:18px 16px; margin-bottom:16px; }
+  .muted{ color:var(--ink-3); font-size:15px; margin:0 0 12px; }
+  .btn{ min-height:44px; padding:10px 18px; border-radius:10px; border:1px solid var(--ink-3); background:var(--white); color:var(--ink); font-weight:600; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn.gold{ background:linear-gradient(178deg,#ECD093 0%,#D3A245 55%,#B6832B 100%); border-color:#B6832B; color:var(--navy-900); }
+  .btn.danger{ background:var(--bad); border-color:var(--bad); color:#fff; }
+  .btn.small{ min-height:44px; padding:8px 14px; font-size:15px; }
+  .row{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
+  .kpi{ background:var(--paper); border:1px solid var(--rule); border-radius:10px; padding:12px 14px; }
+  .kpi .n{ font-family:'Fraunces',Georgia,serif; font-size:28px; font-weight:600; line-height:1.1; }
+  .kpi .l{ font-size:14px; color:var(--ink-3); margin-top:4px; }
+  .banner{ padding:12px 14px; border-radius:10px; margin-bottom:16px; font-size:16px; }
+  .banner.warn{ background:var(--warn-bg); color:var(--warn); } .banner.bad{ background:var(--bad-bg); color:var(--bad); } .banner.ok{ background:var(--ok-bg); color:var(--ok); }
+  .list{ list-style:none; margin:0; padding:0; }
+  .list li{ border-top:1px solid var(--rule); padding:12px 0; display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; }
+  .list li:first-child{ border-top:none; }
+  .when{ font-weight:700; min-width:64px; } .what{ flex:1 1 220px; min-width:0; }
+  .what small{ display:block; color:var(--ink-3); font-size:14px; overflow-wrap:anywhere; }
+  .chip{ display:inline-block; padding:2px 10px; border-radius:999px; font-size:14px; font-weight:600; background:var(--paper-2); color:var(--ink-2); }
+  .chip.ok{ background:var(--ok-bg); color:var(--ok); } .chip.warn{ background:var(--warn-bg); color:var(--warn); } .chip.bad{ background:var(--bad-bg); color:var(--bad); }
+  label{ display:block; font-weight:600; margin:10px 0 4px; }
+  input[type=text],input[type=password],select,textarea{ width:100%; min-height:44px; padding:9px 12px; border:1px solid var(--ink-3); border-radius:8px; background:var(--white); }
+  input[type=checkbox]{ width:24px; height:24px; accent-color:var(--blue); flex:none; }
+  details.post{ border:1px solid var(--rule); border-radius:10px; margin:10px 0; background:var(--white); }
+  details.post>summary{ list-style:none; cursor:pointer; padding:12px; display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; min-height:48px; }
+  details.post>summary::-webkit-details-marker{ display:none; }
+  details.post[open]>summary{ border-bottom:1px solid var(--rule); background:var(--paper); }
+  .post-body{ padding:12px; }
+  .text{ white-space:pre-wrap; overflow-wrap:anywhere; background:var(--paper); border:1px solid var(--rule); border-radius:8px; padding:12px; margin:6px 0 12px; font-size:16px; }
+  .meta{ font-size:15px; color:var(--ink-2); margin:6px 0; overflow-wrap:anywhere; } .meta b{ color:var(--ink); }
+  .meta a{ color:var(--blue); }
+  .controls{ display:flex; flex-wrap:wrap; gap:16px; align-items:center; padding-top:8px; border-top:1px solid var(--rule); }
+  .controls label{ display:flex; align-items:center; gap:10px; margin:0; font-weight:600; min-height:44px; }
+  .approve{ border:2px solid var(--gold); background:var(--paper); border-radius:12px; padding:16px; margin-top:18px; }
+  .sr{ position:absolute; left:-9999px; }
+  table{ border-collapse:collapse; width:100%; font-size:15px; } td,th{ text-align:left; padding:8px 6px; border-top:1px solid var(--rule); vertical-align:top; } th{ color:var(--ink-3); font-weight:600; }
+  .audit{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:14px; overflow-wrap:anywhere; }
+  .toast{ position:fixed; left:12px; right:12px; bottom:12px; z-index:20; padding:14px 16px; border-radius:10px; background:var(--navy-900); color:#fff; font-size:16px; box-shadow:0 6px 24px rgba(0,0,0,.25); }
+  .toast.bad{ background:var(--bad); }
+  [hidden]{ display:none !important; }
+  @media (min-width:700px){ .wrap{ padding:24px; } section{ padding:22px; } .toast{ left:auto; max-width:460px; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>ShelterKart · Marketing desk</h1>
+  <span id="mode" class="pill dry">Loading…</span>
+  <span class="spacer"></span>
+  <button id="pauseAll" class="btn danger" type="button">Pause everything</button>
+</header>
+
+<main class="wrap" id="main">
+  <div id="banners"></div>
+
+  <section aria-labelledby="h-status">
+    <h2 id="h-status">Today</h2>
+    <p class="muted">Posts only go out if they were approved, are unchanged, passed the checker under today's rules, and nothing is paused.</p>
+    <div class="grid" id="kpis"></div>
+  </section>
+
+  <section aria-labelledby="h-queue">
+    <h2 id="h-queue">Going out in the next 24 hours</h2>
+    <p class="muted">Times are the market's local time. Veto stops a post until the minute it publishes.</p>
+    <ul class="list" id="queue"><li>Loading…</li></ul>
+  </section>
+
+  <section aria-labelledby="h-pack">
+    <h2 id="h-pack">The weekly pack</h2>
+    <p class="muted">Plan a week, build its pack, read the posts marked below, then approve once. Anything held or blocked stays out.</p>
+    <div class="row">
+      <div style="flex:1 1 220px"><label for="week">Week starting (Monday)</label><select id="week"></select></div>
+      <button id="plan" class="btn" type="button">Plan this week</button>
+      <button id="build" class="btn gold" type="button">Build the pack</button>
+    </div>
+    <p id="job" class="muted" role="status" aria-live="polite"></p>
+    <div id="pack" hidden></div>
+  </section>
+
+  <section aria-labelledby="h-facts">
+    <h2 id="h-facts">The facts behind the posts</h2>
+    <p class="muted" id="kSummary">Loading…</p>
+    <p class="muted">Every post restates a verified fact word for word. Add an official page, the keeper reads it and drafts facts with the exact words from the page, and you verify or reject each one.</p>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:1 1 130px"><label for="kMarket">Market</label><select id="kMarket"></select></div>
+      <div style="flex:2 1 200px"><label for="kTopic">Topic</label><select id="kTopic"></select></div>
+    </div>
+    <label for="kUrl">Official page address (https)</label><input type="text" id="kUrl" placeholder="https://…" inputmode="url" autocomplete="off">
+    <div class="row" style="margin-top:10px"><button id="kAdd" class="btn" type="button">Add this address and read it now</button></div>
+    <p id="kMsg" class="muted" role="status" aria-live="polite"></p>
+    <h3 style="margin-top:18px">Waiting for your check</h3><div id="kDrafts"></div>
+    <h3 style="margin-top:18px">Translations waiting for a native speaker</h3><div id="kTrans"></div>
+  </section>
+
+  <section aria-labelledby="h-pause">
+    <h2 id="h-pause">Pause and incidents</h2>
+    <p class="muted">A pause stops only what it names. Posts wait and publish after you resume if still inside their window.</p>
+    <ul class="list" id="pauses"></ul>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:1 1 130px"><label for="pScope">Pause</label><select id="pScope"><option value="market">One market</option><option value="platform">One platform</option><option value="global">Everything</option></select></div>
+      <div style="flex:1 1 130px" id="pKeyBox"><label for="pKey">Which one</label><select id="pKey"></select></div>
+      <div style="flex:2 1 200px"><label for="pWhy">Reason</label><input type="text" id="pWhy" placeholder="Why, in a few words"></div>
+      <button id="pDo" class="btn" type="button">Pause</button>
+    </div>
+    <h3 style="margin-top:22px">Report something that happened</h3>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:1 1 170px"><label for="iKind">What happened</label><select id="iKind"><option value="sensitivity">A tragedy or disaster in a market (holds it 24 hours)</option><option value="platform_warning">A platform sent a warning or strike</option><option value="legal_notice">A legal notice arrived</option><option value="negative_comments">Comments turned sharply negative</option><option value="security_alert">A security alert on an account</option></select></div>
+      <div style="flex:1 1 130px"><label for="iKey">Market or platform</label><select id="iKey"></select></div>
+      <div style="flex:2 1 200px"><label for="iWhy">Details</label><input type="text" id="iWhy" placeholder="What happened"></div>
+      <button id="iDo" class="btn" type="button">Report</button>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-audit">
+    <h2 id="h-audit">Audit log</h2>
+    <p class="muted" id="auditState"></p>
+    <ul class="list audit" id="audit"></ul>
+  </section>
+</main>
+<div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  'use strict';
+  var $ = function(id){ return document.getElementById(id); };
+  var MARKETS = [], PLATFORMS = ['X','FB','IG','LI','YT','TT','TH','TG','LN'];
+  var PLAT = { X:'X', FB:'Facebook', IG:'Instagram', LI:'LinkedIn', YT:'YouTube', TT:'TikTok', TH:'Threads', TG:'Telegram', LN:'LINE' };
+  var state = { status:null, pack:null, read:{}, removed:{}, busy:false };
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]; }); }
+  function el(tag, attrs, html){ var e = document.createElement(tag); for (var k in (attrs||{})) e.setAttribute(k, attrs[k]); if (html != null) e.innerHTML = html; return e; }
+  function toast(msg, bad){ var t = $('toast'); t.textContent = msg; t.className = 'toast' + (bad ? ' bad' : ''); t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function(){ t.hidden = true; }, bad ? 9000 : 4500); }
+  function api(method, path, body){
+    return fetch(path, { method: method, credentials: 'same-origin', headers: body ? { 'Content-Type':'application/json' } : {}, body: body ? JSON.stringify(body) : undefined })
+      .then(function(r){ return r.json().catch(function(){ return { ok:false, error:'The server sent something unreadable.' }; }).then(function(j){ j._http = r.status; return j; }); })
+      .catch(function(){ return { ok:false, error:'The desk could not be reached.', _http:0 }; });
+  }
+  function nextMondays(first){ var out = [], d = new Date(first + 'T00:00:00Z'); for (var i = 0; i < 4; i++){ out.push(d.toISOString().slice(0,10)); d = new Date(d.getTime() + 7*864e5); } return out; }
+
+  /* ---------- status, banners, pauses ---------- */
+  function renderStatus(s){
+    state.status = s; var d = s.desk, live = d.mode === 'live';
+    $('mode').textContent = live ? 'Live: posting for real' : 'Dry run: nothing is posted'; $('mode').className = 'pill ' + (live ? 'live' : 'dry');
+    var paused = d.pauses.some(function(p){ return p.scope === 'global'; });
+    $('pauseAll').textContent = paused ? 'Resume everything' : 'Pause everything'; $('pauseAll').className = 'btn ' + (paused ? 'gold' : 'danger');
+    var b = $('banners'); b.innerHTML = '';
+    if (!s.desk.audit.ok) b.appendChild(el('div', { 'class':'banner bad' }, '<b>The audit log chain is broken.</b> Stop and investigate before approving anything.'));
+    if (paused) b.appendChild(el('div', { 'class':'banner bad' }, '<b>Everything is paused.</b> Nothing will be published until you resume.'));
+    if (!live) b.appendChild(el('div', { 'class':'banner warn' }, 'The desk is in <b>dry-run mode</b>: approved posts are recorded but not sent. Live posting needs SOCIAL_PUBLISH=live and the platform keys.'));
+    if (!s.renderer) b.appendChild(el('div', { 'class':'banner warn' }, 'Card images cannot be drawn yet (no image library is installed), so posts that need an image wait. Video posts wait for the video renderer, which is not built.'));
+    var k = $('kpis'); k.innerHTML = '';
+    var items = [[d.bufferDays + ' d', 'Approved and waiting ahead'], [d.approvedAhead, 'Posts approved ahead'], [(d.byStatus.held || 0), 'Held for a person'], [d.pauses.length, 'Active pauses'], [d.audit.ok ? 'Intact' : 'BROKEN', 'Audit chain'], [d.rulesVersion.slice(0,8), 'Rules version'], [s.kb.usableNextWeek + '/' + s.kb.markets, 'Markets with facts for next week']];
+    items.forEach(function(x){ k.appendChild(el('div', { 'class':'kpi' }, '<div class="n">' + esc(x[0]) + '</div><div class="l">' + esc(x[1]) + '</div>')); });
+    var ul = $('pauses'); ul.innerHTML = ''; if (!d.pauses.length) ul.appendChild(el('li', null, '<span class="what">Nothing is paused.</span>'));
+    d.pauses.forEach(function(p){ var li = el('li'); li.appendChild(el('span', { 'class':'what' }, '<b>' + esc(p.scope === 'global' ? 'Everything' : p.scope + ' ' + p.key) + '</b>' + (p.auto ? ' <span class="chip warn">paused by itself</span>' : '') + '<small>' + esc(p.reason) + (p.expiresAt ? ' · lifts ' + esc(p.expiresAt.slice(0,16).replace('T',' ')) + ' UTC' : '') + '</small>')); var bt = el('button', { 'class':'btn small', type:'button' }, 'Resume'); bt.onclick = function(){ api('POST', '/api/admin/social/resume', { scope:p.scope, key:p.key }).then(function(r){ if (r.ok) { toast('Resumed.'); refresh(); } else toast(r.error, true); }); }; li.appendChild(bt); ul.appendChild(li); });
+    var sel = $('week'), keep = sel.value; sel.innerHTML = ''; nextMondays(s.nextWeek).forEach(function(w){ var o = el('option', { value:w }, esc(w)); sel.appendChild(o); }); if (keep) sel.value = keep;
+    fillKeys();
+  }
+  function fillKeys(){
+    var scope = $('pScope').value; $('pKeyBox').hidden = scope === 'global'; var sel = $('pKey'), keep = sel.value; sel.innerHTML = '';
+    (scope === 'market' ? MARKETS : PLATFORMS.map(function(p){ return { code:p, name:PLAT[p] }; })).forEach(function(m){ sel.appendChild(el('option', { value:m.code }, esc(m.name || m.code))); }); if (keep) sel.value = keep;
+    var ik = $('iKey'), k2 = ik.value; ik.innerHTML = ''; var kind = $('iKind').value; (kind === 'platform_warning' ? PLATFORMS.map(function(p){ return { code:p, name:PLAT[p] }; }) : MARKETS).forEach(function(m){ ik.appendChild(el('option', { value:m.code }, esc(m.name || m.code))); }); if (k2) ik.value = k2; ik.disabled = kind === 'security_alert'; ik.parentNode.hidden = kind === 'security_alert';
+  }
+
+  /* ---------- the next 24 hours ---------- */
+  function renderQueue(items){
+    var ul = $('queue'); ul.innerHTML = ''; if (!items.length) { ul.appendChild(el('li', null, '<span class="what">Nothing is scheduled in the next 24 hours.</span>')); return; }
+    items.forEach(function(p){
+      var li = el('li'); li.appendChild(el('span', { 'class':'when' }, esc(p.localTime)));
+      li.appendChild(el('span', { 'class':'what' }, '<b>' + esc(p.marketName) + '</b> · ' + esc(PLAT[p.platform] || p.platform) + ' <span class="chip">' + esc(p.lang) + '</span><small dir="auto">' + esc((p.body || '').split('\n').filter(Boolean).slice(0,2).join(' · ').slice(0,140)) + '</small>'));
+      var b = el('button', { 'class':'btn small', type:'button', 'aria-label':'Veto the ' + (PLAT[p.platform]||p.platform) + ' post for ' + p.marketName }, 'Veto');
+      b.onclick = function(){ if (!confirm('Veto this ' + (PLAT[p.platform]||p.platform) + ' post for ' + p.marketName + '? It will not be published.')) return; api('POST', '/api/admin/social/veto', { id:p.id, reason:'vetoed from the desk' }).then(function(r){ if (r.ok) { toast('Vetoed.'); refresh(); } else toast(r.error, true); }); };
+      li.appendChild(b); ul.appendChild(li);
+    });
+  }
+
+  /* ---------- the pack ---------- */
+  function postCard(it, opts){
+    var d = el('details', { 'class':'post', 'data-id':it.id });
+    var sum = el('summary'); sum.innerHTML = '<span class="when">' + esc(it.localDate.slice(5)) + ' ' + esc(it.localTime) + '</span><span class="what"><b>' + esc(it.marketName) + '</b> · ' + esc(PLAT[it.platform]||it.platform) + ' <span class="chip">' + esc(it.lang) + '</span>' + (it.fellBackToEnglish ? ' <span class="chip warn">English fallback</span>' : '') + '</span><span class="chip ' + (it.verdict === 'pass' ? 'ok' : 'warn') + '" data-state></span>';
+    d.appendChild(sum);
+    var body = el('div', { 'class':'post-body' });
+    var h = ''; if (it.title) h += '<div class="meta"><b>Title:</b> <span dir="auto">' + esc(it.title) + '</span></div>';
+    h += '<div class="text" dir="auto">' + esc(it.body) + '</div>';
+    if (it.hashtags && it.hashtags.length) h += '<div class="meta"><b>Hashtags:</b> <span dir="auto">' + it.hashtags.map(esc).join(' ') + '</span></div>';
+    it.claims.forEach(function(c){ h += '<div class="meta"><b>' + esc(c.type) + ':</b> source <a href="' + esc(c.sourceUrl) + '" target="_blank" rel="noopener noreferrer">' + esc(c.sourceUrl) + '</a>, checked ' + esc(c.checkedOn) + '</div>'; });
+    if (it.backtranslationEn) h += '<div class="meta"><b>What this says in English:</b></div><div class="text">' + esc(it.backtranslationEn) + '</div>';
+    it.media.forEach(function(m){ h += '<div class="meta"><b>' + esc(m.kind) + ' card says:</b> <span dir="auto">' + esc((m.text||'').replace(/\n/g,' · ')) + '</span></div><div class="meta"><b>Alt text:</b> <span dir="auto">' + esc(m.alt) + '</span></div>'; });
+    body.innerHTML = h;
+    var c = el('div', { 'class':'controls' });
+    if (opts.mustRead) { var l1 = el('label'); var cb = el('input', { type:'checkbox', 'aria-label':'I have read this post' }); cb.checked = !!state.read[it.id]; cb.onchange = function(){ state.read[it.id] = cb.checked; refreshGate(); }; l1.appendChild(cb); l1.appendChild(document.createTextNode('I have read this')); c.appendChild(l1); }
+    var l2 = el('label'); var rb = el('input', { type:'checkbox', 'aria-label':'Leave this post out of the approval' }); rb.checked = !!state.removed[it.id]; rb.onchange = function(){ state.removed[it.id] = rb.checked; refreshGate(); }; l2.appendChild(rb); l2.appendChild(document.createTextNode('Leave this one out')); c.appendChild(l2);
+    body.appendChild(c); d.appendChild(body); return d;
+  }
+  function refreshGate(){
+    var p = state.pack; if (!p) return; var sample = p.items.filter(function(i){ return p.sampleIds.indexOf(i.id) >= 0; });
+    var needRead = sample.filter(function(i){ return !state.removed[i.id]; }), read = needRead.filter(function(i){ return state.read[i.id]; }).length;
+    var out = Object.keys(state.removed).filter(function(k){ return state.removed[k]; }).length, n = p.items.length - out;
+    $('readCount').textContent = read + ' of ' + needRead.length + ' sample posts read'; $('approveN').textContent = n;
+    $('approveBtn').disabled = state.busy || read < needRead.length;
+    document.querySelectorAll('details.post').forEach(function(d){ var id = d.getAttribute('data-id'), s = d.querySelector('[data-state]'); if (!s) return; s.textContent = state.removed[id] ? 'Left out' : (p.sampleIds.indexOf(id) >= 0 ? (state.read[id] ? 'Read' : 'Read me') : 'Passed'); s.className = 'chip ' + (state.removed[id] ? 'bad' : (p.sampleIds.indexOf(id) >= 0 && !state.read[id] ? 'warn' : 'ok')); });
+  }
+  function renderPack(pack){
+    state.pack = pack; state.read = {}; state.removed = {}; var box = $('pack'); box.hidden = false; box.innerHTML = '';
+    var s = pack.summary, h = '<div class="grid">' + [[s.approvable, 'Ready to approve'], [s.held.length, 'Held for you'], [s.blocked.length, 'Blocked by the checker'], [s.waitingForMedia.length, 'Waiting for an image or video'], [s.gaps.length, 'Gaps in the facts']].map(function(x){ return '<div class="kpi"><div class="n">' + esc(x[0]) + '</div><div class="l">' + esc(x[1]) + '</div></div>'; }).join('') + '</div>';
+    box.innerHTML = h;
+    [['held', 'Held for you', 'warn'], ['blocked', 'Blocked', 'bad']].forEach(function(g){ if (!s[g[0]].length) return; var dd = el('details', { 'class':'post' }); dd.appendChild(el('summary', null, '<span class="what"><b>' + esc(g[1]) + ' (' + s[g[0]].length + ')</b></span>')); var b = el('div', { 'class':'post-body' }); s[g[0]].forEach(function(x){ b.appendChild(el('div', { 'class':'meta' }, '<b>' + esc(x.market) + ' · ' + esc(PLAT[x.platform]||x.platform) + '</b> <span class="chip ' + g[2] + '">' + esc(x.id) + '</span><br>' + x.reasons.map(esc).join('<br>'))); }); dd.appendChild(b); box.appendChild(dd); });
+    if (s.gaps.length) { var gd = el('details', { 'class':'post' }); gd.appendChild(el('summary', null, '<span class="what"><b>Gaps in the facts (' + s.gaps.length + ')</b> <span class="chip warn">no post was written for these</span></span>')); var gb = el('div', { 'class':'post-body' }); gb.appendChild(el('div', { 'class':'meta' }, s.gaps.map(function(g){ return esc(g.market + ' · ' + (PLAT[g.platform]||g.platform) + ': ' + g.reason.replace(/_/g,' ')); }).join('<br>'))); gd.appendChild(gb); box.appendChild(gd); }
+    var sample = pack.items.filter(function(i){ return pack.sampleIds.indexOf(i.id) >= 0; });
+    box.appendChild(el('h3', { style:'margin-top:20px' }, 'Read these first (' + sample.length + ')'));
+    box.appendChild(el('p', { 'class':'muted' }, 'One or two posts in every language and on every platform. Read each one in full, including the English back-translation. If a post is wrong in any way, tick “Leave this one out”. Some of them may contain a mistake that must not be approved.'));
+    sample.forEach(function(it){ box.appendChild(postCard(it, { mustRead:true })); });
+    var rest = pack.items.filter(function(i){ return pack.sampleIds.indexOf(i.id) < 0; });
+    var all = el('details', { 'class':'post' }); all.appendChild(el('summary', null, '<span class="what"><b>All other posts (' + rest.length + ')</b> <span class="chip">open to read or leave any out</span></span>')); var ab = el('div', { 'class':'post-body' });
+    var f = el('input', { type:'text', placeholder:'Filter by market, platform or language', 'aria-label':'Filter the posts' }); ab.appendChild(f); var holder = el('div'); ab.appendChild(holder); all.appendChild(ab); box.appendChild(all);
+    var rendered = false; all.addEventListener('toggle', function(){ if (all.open && !rendered) { rendered = true; draw(''); } });
+    function draw(q){ holder.innerHTML = ''; q = q.toLowerCase(); rest.filter(function(i){ return !q || (i.marketName + ' ' + (PLAT[i.platform]||i.platform) + ' ' + i.lang).toLowerCase().indexOf(q) >= 0; }).slice(0, 60).forEach(function(i){ holder.appendChild(postCard(i, { mustRead:false })); }); refreshGate(); }
+    f.oninput = function(){ draw(f.value); };
+    var ap = el('div', { 'class':'approve' }); ap.innerHTML = '<h3>Approve</h3><p class="muted" id="readCount"></p><p>This approves <b id="approveN"></b> posts. Each goes out at its own time unless you veto it first.</p><label for="pin">Approval PIN</label><input type="password" id="pin" autocomplete="off" inputmode="numeric"><div class="row" style="margin-top:12px"><button id="approveBtn" class="btn gold" type="button" disabled>Approve the pack</button></div>';
+    box.appendChild(ap); $('approveBtn').onclick = approve; refreshGate();
+  }
+  function approve(){
+    if (state.busy) return; var p = state.pack, ex = Object.keys(state.removed).filter(function(k){ return state.removed[k]; });
+    state.busy = true; refreshGate();
+    api('POST', '/api/admin/social/pack/' + encodeURIComponent(p.id) + '/approve', { exceptions: ex, pin: $('pin').value }).then(function(r){
+      state.busy = false;
+      if (r.ok) { toast('Approved ' + r.approved + ' posts' + (r.excluded ? ', left out ' + r.excluded : '') + (r.stale && r.stale.length ? ', ' + r.stale.length + ' were out of date and went back for a re-check' : '') + (r.late ? ', ' + r.late + ' were too late and expired' : '') + '.'); $('pack').hidden = true; state.pack = null; refresh(); }
+      else { toast(r.error || 'Not approved.', true); if (r.code === 'canary_approved') { $('pack').hidden = true; state.pack = null; refresh(); } refreshGate(); }
+    });
+  }
+  function pollJob(name){
+    api('GET', '/api/admin/social/jobs').then(function(r){ var j = (r.jobs || []).filter(function(x){ return x.name === name; })[0]; if (!j) return; if (j.state === 'running') { $('job').textContent = 'Planning is running: drafting and checking 252 posts…'; setTimeout(function(){ pollJob(name); }, 2500); } else if (j.state === 'done') { $('job').textContent = 'Planned: ' + j.result.created + ' posts drafted' + (j.result.gaps.length ? ', ' + j.result.gaps.length + ' gaps in the facts' : '') + '. Now build the pack.'; refresh(); } else { $('job').textContent = 'Planning failed: ' + j.error; toast(j.error, true); } });
+  }
+
+  /* ---------- audit and refresh ---------- */
+  function renderAudit(a){
+    $('auditState').textContent = a.verify.ok ? 'The chain is intact: ' + a.verify.length + ' entries, none changed or removed.' : 'The chain is BROKEN at entry ' + a.verify.brokenAt + '.';
+    var ul = $('audit'); ul.innerHTML = ''; a.entries.slice(-15).reverse().forEach(function(e){ ul.appendChild(el('li', null, '<span class="what"><b>#' + esc(e.seq) + ' ' + esc(e.kind) + '</b> <span class="chip">' + esc(e.at.slice(0,16).replace('T',' ')) + ' UTC</span><small>' + esc(JSON.stringify(e.data).slice(0, 200)) + '</small></span>')); });
+  }
+  function refresh(){
+    return Promise.all([api('GET', '/api/admin/social/status'), api('GET', '/api/admin/social/queue?hours=24'), api('GET', '/api/admin/social/audit?limit=15')]).then(function(r){
+      if (!r[0].ok) { $('banners').innerHTML = ''; $('banners').appendChild(el('div', { 'class':'banner bad' }, esc(r[0]._http === 503 ? (r[0].error || 'The desk is switched off.') : (r[0].error || 'Could not load the desk.')))); $('mode').textContent = 'Unavailable'; return; }
+      if (!MARKETS.length) MARKETS = (r[0].marketList || []);
+      renderStatus(r[0]); fillFacts(r[0]); loadFacts(); if (r[1].ok) renderQueue(r[1].queue); if (r[2].ok) renderAudit(r[2]);
+    });
+  }
+
+  /* ---------- the facts ---------- */
+  var TOPICS = [];
+  function loadFacts(){
+    return Promise.all([api('GET', '/api/admin/social/keeper'), api('GET', '/api/admin/social/kb?status=draft'), api('GET', '/api/admin/social/kb?status=verified')]).then(function(r){
+      if (!r[0].ok) return; var k = r[0], drafts = r[1].ok ? r[1].items : [], ver = r[2].ok ? r[2].items : [];
+      $('kSummary').textContent = k.verified + ' verified facts, ' + drafts.length + ' waiting for a check. ' + (k.autoVerify ? 'Auto-verify is ON (writer and checker on different providers: ' + (k.providersDiffer === true ? 'yes' : 'not confirmed') + ').' : 'Every fact needs your check: auto-verify is off.');
+      var box = $('kDrafts'); box.innerHTML = ''; if (!drafts.length) box.appendChild(el('p', { 'class':'muted' }, 'Nothing is waiting.'));
+      drafts.slice(0, 40).forEach(function(i){
+        var d = el('details', { 'class':'post' }); d.appendChild(el('summary', null, '<span class="what"><b>' + esc(i.market) + '</b> · ' + esc(i.topic) + ' <small dir="auto">' + esc(i.statement.slice(0, 110)) + '</small></span>'));
+        var b = el('div', { 'class':'post-body' }); b.innerHTML = '<div class="text" dir="auto">' + esc(i.statement) + '</div><div class="meta"><b>The words on the page:</b> <span dir="auto">' + esc(i.evidence ? i.evidence.quote : '') + '</span></div><div class="meta"><b>Source:</b> <a href="' + esc(i.source.url) + '" target="_blank" rel="noopener noreferrer">' + esc(i.source.name) + '</a>, read ' + esc(i.checkedOn) + '</div>';
+        var c = el('div', { 'class':'controls' }); var ok = el('button', { 'class':'btn gold small', type:'button' }, 'Verify this fact'), no = el('button', { 'class':'btn small', type:'button' }, 'Reject');
+        ok.onclick = function(){ api('POST', '/api/admin/social/kb/' + encodeURIComponent(i.id) + '/verify', { by:'founder' }).then(function(x){ toast(x.ok ? 'Verified.' : x.error, !x.ok); loadFacts(); }); };
+        no.onclick = function(){ api('POST', '/api/admin/social/kb/' + encodeURIComponent(i.id) + '/reject', { why:'rejected from the desk' }).then(function(x){ toast(x.ok ? 'Rejected.' : x.error, !x.ok); loadFacts(); }); };
+        c.appendChild(ok); c.appendChild(no); b.appendChild(c); d.appendChild(b); box.appendChild(d);
+      });
+      var tb = $('kTrans'); tb.innerHTML = ''; var pend = []; ver.forEach(function(i){ Object.keys(i.translations || {}).forEach(function(l){ if (!i.translations[l].approvedBy) pend.push({ i:i, l:l }); }); });
+      if (!pend.length) tb.appendChild(el('p', { 'class':'muted' }, 'Nothing is waiting.'));
+      pend.slice(0, 40).forEach(function(x){ var d = el('details', { 'class':'post' }); d.appendChild(el('summary', null, '<span class="what"><b>' + esc(x.i.market) + '</b> · ' + esc(x.l) + '</span>')); var b = el('div', { 'class':'post-body' }); b.innerHTML = '<div class="text" dir="auto">' + esc(x.i.translations[x.l].text) + '</div><div class="meta"><b>Back in English:</b> ' + esc(x.i.translations[x.l].backEn) + '</div>'; var c = el('div', { 'class':'controls' }); var ok = el('button', { 'class':'btn gold small', type:'button' }, 'Approve this translation'); ok.onclick = function(){ var who = prompt('Your name, as the native-speaker reviewer:'); if (!who) return; api('POST', '/api/admin/social/kb/' + encodeURIComponent(x.i.id) + '/translation/' + encodeURIComponent(x.l) + '/approve', { by:who }).then(function(r2){ toast(r2.ok ? 'Approved.' : r2.error, !r2.ok); loadFacts(); }); }; c.appendChild(ok); b.appendChild(c); d.appendChild(b); tb.appendChild(d); });
+    });
+  }
+  function fillFacts(s){
+    if (!TOPICS.length) TOPICS = s.topicList || []; var m = $('kMarket'), t = $('kTopic'), km = m.value, kt = t.value; m.innerHTML = ''; (MARKETS || []).forEach(function(x){ m.appendChild(el('option', { value:x.code }, esc(x.name))); }); t.innerHTML = ''; TOPICS.forEach(function(x){ t.appendChild(el('option', { value:x.id }, esc(x.title))); }); if (km) m.value = km; if (kt) t.value = kt;
+  }
+  $('kAdd').onclick = function(){
+    var url = $('kUrl').value.trim(); if (!url) return toast('Paste the address of an official page first.', true); var market = $('kMarket').value, topic = $('kTopic').value; $('kMsg').textContent = 'Adding the address…';
+    api('POST', '/api/admin/social/keeper/seeds', { market:market, topic:topic, urls:[url] }).then(function(r){
+      if (!r.ok) { $('kMsg').textContent = ''; return toast(r.error, true); } $('kMsg').textContent = 'Reading the page and drafting facts…';
+      api('POST', '/api/admin/social/keeper/run', { market:market, topic:topic, wait:true }).then(function(x){ if (!x.ok) { $('kMsg').textContent = ''; return toast(x.error, true); } var rep = x.result, why = rep.sources.map(function(s){ return s.status === 'read' ? '' : s.status.replace(/_/g, ' '); }).filter(Boolean).join(', ');
+        $('kMsg').textContent = rep.created.length ? 'Drafted ' + rep.created.length + ' fact' + (rep.created.length > 1 ? 's' : '') + ' for you to check.' : 'Nothing was drafted' + (rep.gap ? ' (' + rep.gap.replace(/_/g, ' ') + ')' : '') + (why ? ': ' + why : '') + '.'; $('kUrl').value = ''; loadFacts(); });
+    });
+  };
+  /* ---------- wiring ---------- */
+  $('pauseAll').onclick = function(){ var paused = state.status && state.status.desk.pauses.some(function(p){ return p.scope === 'global'; });
+    if (paused) api('POST', '/api/admin/social/resume', { scope:'global' }).then(function(r){ toast(r.ok ? 'Posting resumed.' : r.error, !r.ok); refresh(); });
+    else { if (!confirm('Pause everything? Nothing will be published until you resume.')) return; api('POST', '/api/admin/social/pause', { scope:'global', reason:'paused from the desk' }).then(function(r){ toast(r.ok ? 'Everything is paused.' : r.error, !r.ok); refresh(); }); } };
+  $('plan').onclick = function(){ var w = $('week').value; $('job').textContent = 'Starting…'; api('POST', '/api/admin/social/plan', { week:w }).then(function(r){ if (!r.ok) { $('job').textContent = ''; return toast(r.error, true); } pollJob('plan:' + w); }); };
+  $('build').onclick = function(){ var w = $('week').value; api('POST', '/api/admin/social/pack', { week:w }).then(function(r){ if (!r.ok) return toast(r.error, true); renderPack(r.pack); $('pack').scrollIntoView({ behavior:'smooth', block:'start' }); }); };
+  $('pScope').onchange = fillKeys; $('iKind').onchange = fillKeys;
+  $('pDo').onclick = function(){ var scope = $('pScope').value; api('POST', '/api/admin/social/pause', { scope:scope, key: scope === 'global' ? null : $('pKey').value, reason: $('pWhy').value || 'paused from the desk' }).then(function(r){ toast(r.ok ? 'Paused.' : r.error, !r.ok); $('pWhy').value = ''; refresh(); }); };
+  $('iDo').onclick = function(){ var kind = $('iKind').value; api('POST', '/api/admin/social/incident', { kind:kind, key: kind === 'security_alert' ? null : $('iKey').value, detail: $('iWhy').value }).then(function(r){ toast(r.ok ? 'Reported. What it affects is paused.' : r.error, !r.ok); $('iWhy').value = ''; refresh(); }); };
+  refresh();
+  setInterval(function(){ if (!document.hidden && !state.busy) refresh(); }, 30000);
+})();
+</script>
+</body>
+</html>

@@ -131,6 +131,15 @@ const BOT = require('./engine/botguard');             // proof-of-work before NE
 const { makeReviewStore, senderCheck, findingMatch } = require('./engine/reviews');
 // Disputes and developer replies: Postgres when configured, memory otherwise, so the right of reply works in every mode.
 const REVIEWS = makeReviewStore(process.env.DATABASE_URL ? pool : null);
+// Respond or correct: the right of reply and the right of correction (engine/responses.js). Every outside thing is passed in.
+const { makeResponses, makeResponseStore } = require('./engine/responses');
+const RESPONSES = makeResponses({
+  store: makeResponseStore(process.env.DATABASE_URL ? pool : null),
+  getBrief: ref => getByRefAsync(ref).catch(() => null),
+  sendMail: m => require('./engine/delivery').sendEmail(process.env, m),
+  alert: (subject, text) => require('./engine/delivery').alertOperator(process.env, subject, text),
+  siteBase: () => SITE_BASE(), refOk: ref => REF_RE.test(ref),
+});
 const { makePgStore } = require('./engine/persistence');
 // With a database configured, reports, aliases and the daily ceiling are
 // durable: a deploy or crash no longer erases what buyers paid for.
@@ -190,7 +199,9 @@ async function markPurchasePaid(db, { purchaseId, ref, provider, paymentId }, ct
   if (r.rows.length) {
     // Recorded only here, where a purchase is actually settled, so revenue
     // on the dashboard can never exceed what was really paid.
-    track('purchase_paid', ctx.req, { ref, value: Number(r.rows[0].amount), currency: r.rows[0].currency, detail: provider }, { serverSide: !ctx.req });
+    // The paid event carries the market and the source saved at checkout; 'provider:src' marks a payment whose source is known.
+    let a = {}; try { const s = await db.query(`SELECT attribution FROM report_purchases WHERE id=$1`, [purchaseId]); a = (s.rows[0] && s.rows[0].attribution) || {}; if (typeof a === 'string') a = JSON.parse(a); } catch { a = {}; }
+    track('purchase_paid', ctx.req, { ref, value: Number(r.rows[0].amount), currency: r.rows[0].currency, detail: provider + (a.captured ? ':src' : ''), market: a.market || '', ...(a.captured ? { utm: a.utm, referrer: a.referrer } : {}) }, { serverSide: !ctx.req });
     await db.query(`INSERT INTO audit_log (actor, action, object_type, object_id, reason) VALUES ('system','RESEARCH_PURCHASE_PAID','report_purchase',$1,$2)`,
       [purchaseId, `${provider} payment ${paymentId}`]);
     await recordSale(r.rows[0]);
@@ -437,7 +448,12 @@ app.post('/api/research/checkout', checkoutResearchLimiter, ah(async (req, res) 
   // Razorpay's docs: store the order id against the transaction, and
   // verify every payment against THIS stored id.
   await pool.query(`UPDATE report_purchases SET provider_order_id=$2 WHERE id=$1`, [purchaseId, order.orderId]);
-  track('checkout_started', req, { ref, value: quote.gross, currency: quote.currency, lang: pickLanguage(req.body && req.body.lang) });      // new attempts only, not idempotent retries
+  // Where this buyer came from (the browser's first page of the visit) and the property's market, kept with the purchase so the
+  // payment, which arrives later from the provider's webhook, can be traced to its channel on the marketing dashboard. Best effort:
+  // a database without the column (migration purchase_attribution.sql not yet run) loses the trace, never the payment.
+  const source = ANALYTICS.sourceOf(req.body && req.body.source), forMarket = await getByRefAsync(ref).catch(() => null), attribution = { market: (forMarket && forMarket.market) || '', ...(source || {}) };
+  try { await pool.query(`UPDATE report_purchases SET attribution=$2 WHERE id=$1`, [purchaseId, JSON.stringify(attribution)]); } catch (e) { console.error('[checkout] attribution not saved:', e && e.message); }
+  track('checkout_started', req, { ref, value: quote.gross, currency: quote.currency, lang: pickLanguage(req.body && req.body.lang), market: attribution.market, ...(source ? { utm: source.utm, referrer: source.referrer } : {}) });      // new attempts only, not idempotent retries
   if (adapter.id === 'mor') return res.json({ ok: true, purchaseId, amount: quote.gross, currency: quote.currency, quoteId: quote.id, mor: { checkoutUrl: order.checkoutUrl } });
   res.json({ ok: true, purchaseId, amount: quote.gross, currency: quote.currency, quoteId: quote.id,
              razorpay: { keyId: order.publicKey, orderId: order.orderId, amountSubunits: order.amountSubunits } });
@@ -651,6 +667,7 @@ function deliverReport(job) {
   if (!contact || job.delivered || !process.env.ACCESS_TOKEN_SECRET) return null;
   job.delivered = true;
   const token = issueToken(job.ref, process.env.ACCESS_TOKEN_SECRET), link = reportLink(process.env, job.ref, token);
+  if (contact.email) RESPONSES.watch(job.ref, contact.email).catch(() => {});   // told if a finding in this report is corrected: that one purpose only
   return DELIVERY.send({ ref: job.ref, project: (brief && brief.project && brief.project.name) || job.input.query, email: contact.email, phone: contact.phone, link, pdfLink: link.replace(/\?t=/, '/pdf?t=') });
 }
 /** Run the paid part. Never twice. After a restart it resumes from the saved state, so the research is not paid for again. */
@@ -711,6 +728,11 @@ app.get('/start', ah(async (req, res) => {
 }));
 app.get('/assets/report-live.js', (req, res) => { res.set({ 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=300' }); res.send(PAGES.SCRIPT); });
 
+// The new search (backend/search): candidates before research, matched however the buyer typed. SEARCH_V2=shadow (default) runs it
+// silently beside every research request and keeps the comparison for the admin; =on lets the page show candidates; =off stops it.
+const SEARCH = require('./search/service').createSearch({ env: process.env });
+SEARCH.mount(app, { adminAuth, ah, jsonParser: express.json({ limit: '2mb' }), limiter: researchLimiter, stripPII, markets: MARKETS });
+
 app.post('/api/investigate', researchLimiter, ah(async (req, res) => {
   const b = req.body || {};
   const query = String(b.query || '').trim(), location = String(b.location || '').trim().slice(0, 120), country = PRICING.cleanCode(b.country) || '';
@@ -718,7 +740,10 @@ app.post('/api/investigate', researchLimiter, ah(async (req, res) => {
   const paused = pausedReason(process.env, country.toLowerCase());
   if (paused) return res.status(503).json({ ok: false, code: 'paused', error: paused });
   const key = DOSSIER_BRIEF.keyOf(query, location, country), seen = liveIndex.get(key);
-  if (seen && Date.now() - seen.at < 30 * 24 * 3600 * 1000 && (liveJobs.has(seen.ref) || await getByRefAsync(seen.ref))) return res.json({ ok: true, ref: seen.ref, reused: true });
+  if (seen && Date.now() - seen.at < 30 * 24 * 3600 * 1000 && (liveJobs.has(seen.ref) || await getByRefAsync(seen.ref))) {
+    try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: true }); } catch {}
+    return res.json({ ok: true, ref: seen.ref, reused: true });
+  }
   if (BOT.enabled(process.env)) { const v = BOT.verify(b.pow, process.env); if (!v.ok) return res.status(428).json({ ok: false, code: 'challenge', error: 'Please complete the quick check and try again.' }); }
   const today = new Date().toISOString().slice(0, 10);
   if (investigateDaily.day !== today) { investigateDaily.day = today; investigateDaily.count = 0; investigateDaily.byMarket = {}; }
@@ -733,8 +758,9 @@ app.post('/api/investigate', researchLimiter, ah(async (req, res) => {
   registerBrief(DOSSIER_BRIEF.briefOf({ ref, query, location, country, marketLabel: input.market, phase: 'starting' }));
   liveIndex.set(key, { ref, at: Date.now() });
   const job = newLiveJob(ref, input); job.key = key;
+  try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: false }); } catch {}   // the new search, in the shadow
   job.inv.sweep({ panel: previewPanel() })
-    .then(() => { job.status = 'preview'; persistJob(job); if (job.paid) completeLive(job); })
+    .then(() => { job.status = 'preview'; persistJob(job); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
     .catch(e => { job.status = 'failed'; persistJob(job); console.error('[investigate] sweep failed for ' + ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation could not run just now. Please try again later.' }); });
   res.status(202).json({ ok: true, ref });
 }));
@@ -1110,6 +1136,11 @@ app.get('/api/admin/analytics', adminAuth, ah(async (req, res) => {
   res.json({ ok: true, ...ANALYTICS.aggregate(rows, { days, now, truncated: rows.length >= LIMIT }), stored: Boolean(pgStore) });
 }));
 
+// Does this visitor have to agree before the page keeps the visit's source (the campaign link or website that brought them) in the
+// browser? Decided from the visitor's country; varies by visitor, so it is never cached. See SK_SOURCE_CONSENT in .env.example.
+app.get('/api/source-consent', (req, res) => {
+  res.set('Cache-Control', 'private, no-store'); res.json({ mode: ANALYTICS.sourceConsentMode(req.headers, process.env) });
+});
 app.get('/api/markets', (req, res) => {
   res.json(Object.entries(MARKETS).map(([code, m]) => {
     const off = Boolean(m.registry) && !HEALTH.isRegistryUsable(code);
@@ -1135,6 +1166,7 @@ app.post('/api/research', researchLimiter, ah(async (req, res) => {
   }
   try {
     const brief = await runResearch({ query: stripPII(query), location: stripPII(location), market }, { env: process.env, http: registryHttp });
+    try { SEARCH.afterResearch({ query: stripPII(query), location: stripPII(location), market, brief }); } catch {}   // shadow comparison; the project becomes findable
     res.set('X-Robots-Tag', 'noindex, nofollow'); // some sources forbid search-engine indexing of reused data
     res.set('Cache-Control', 'no-store');         // a paid brief must never sit in a shared cache
     track('search', req, { market, query: stripPII(query), ref: brief.ref, lang: pickLanguage(req.body && req.body.lang), detail: brief.matchedAs ? 'matched' : brief.cached ? 'cached' : 'fresh' });
@@ -1223,6 +1255,44 @@ const crypto = require('crypto');
 app.all(['/api/resolve', '/api/report/:type/:id', '/api/send-otp', '/api/verify-otp', '/api/checkout', '/api/report-checkout'],
   (req, res) => res.status(410).json({ ok: false, error: 'This endpoint has been retired.' }));
 
+/* ---- Respond or correct. The RIGHT OF REPLY (the developer or anyone named in a report) and the RIGHT OF CORRECTION (anyone).
+   Free. No account. The sender confirms by e-mail, a screen checks the message, a clean reply is published beside its finding at once,
+   and a correction changes a finding only with evidence, publicly and dated. Nothing here can be bought, and nothing here changes a
+   finding by itself. The older /api/dispute and /api/developer-response routes below still work for existing clients. ---- */
+const respondLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 8, message: { ok: false, error: 'Too many submissions. Please try again later.' } });
+const respondReadLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 240, message: { ok: false, error: 'Too many requests. Please try again later.' } });
+app.post('/api/responses', respondLimiter, ah(async (req, res) => {
+  const b = req.body || {};
+  const r = await RESPONSES.submit({ reportRef: b.reportRef, kind: b.kind, role: b.role, findingId: b.findingId, findingText: b.findingText, body: b.body,
+    evidenceUrls: b.evidenceUrls, senderName: b.senderName, email: b.email, website: b.website });
+  if (r.ok && !r.silent) track('respond_submit', req, { detail: r.kind });
+  res.status(r.status).json(r.ok ? { ok: true, publicRef: r.publicRef, statusKey: r.statusKey || null } : { ok: false, error: r.error });
+}));
+app.post('/api/responses/confirm', respondLimiter, ah(async (req, res) => {
+  const r = await RESPONSES.confirm(String((req.body || {}).token || ''));
+  res.status(r.status).json(r.ok ? { ok: true, publicRef: r.publicRef, state: r.state } : { ok: false, error: r.error });
+}));
+app.get('/api/responses/status/:publicRef', respondReadLimiter, ah(async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const r = await RESPONSES.statusOf(req.params.publicRef, String(req.query.key || ''));
+  res.status(r.status).json(r.ok ? { ok: true, publicRef: r.publicRef, kind: r.kind, state: r.state, createdAt: r.createdAt, resolution: r.resolution } : { ok: false, error: r.error });
+}));
+// Public: the published replies and the dated corrections of one report. Never an e-mail address.
+app.get('/api/responses/:reportRef', respondReadLimiter, ah(async (req, res) => {
+  if (!REF_RE.test(String(req.params.reportRef || ''))) return res.status(400).json({ ok: false, error: 'Unknown report reference.' });
+  res.set('Cache-Control', 'no-store');
+  res.json({ ok: true, ...(await RESPONSES.publicFor(req.params.reportRef)) });
+}));
+app.get('/api/admin/response-queue', adminAuth, ah(async (req, res) => {
+  const status = String(req.query.status || 'held');
+  if (!['held', 'in_review', 'needs_info'].includes(status)) return res.status(400).json({ ok: false, error: 'status must be held, in_review or needs_info' });
+  res.set('Cache-Control', 'no-store'); res.json({ ok: true, status, responses: await RESPONSES.list(status) });
+}));
+app.post('/api/admin/response-queue/:id/resolve', adminAuth, ah(async (req, res) => {
+  const r = await RESPONSES.resolve(req.params.id, req.body || {});
+  res.status(r.status).json(r.ok ? { ok: true, publicRef: r.publicRef, outcome: r.outcome, notified: r.notified } : { ok: false, error: r.error });
+}));
+
 app.post('/api/dispute', disputeLimiter, ah(async (req, res) => {
   const { contact, note, reportRef } = req.body || {};
   if (!note || typeof note !== 'string') return res.status(400).json({ ok: false, error: 'Please describe what is wrong.' });
@@ -1232,6 +1302,7 @@ app.post('/api/dispute', disputeLimiter, ah(async (req, res) => {
 }));
 
 // ============================================================
+// (The older reply route, kept for existing clients. New submissions use /api/responses, above: one panel, e-mail confirmation, screening.)
 // DEVELOPER RIGHT OF REPLY — Constitution rule 5. Free, unconditional,
 // admin-reviewed before publication (never auto-published — that's
 // what keeps this from becoming a channel for pressure or spam),
@@ -1607,6 +1678,19 @@ if (require.main === module) {
     } catch (e) {
       console.error('[persistence] startup reload failed, starting with empty memory:', e && e.message);
     }
+    // The marketing desk (backend/social): plans, checks, packs and publishes the daily posts for all 36 markets. It is OFF unless
+    // SOCIAL_ENGINE=on, posts nothing real unless SOCIAL_PUBLISH=live, and refuses to run without durable storage. Its routes answer 503 while off.
+    let social = null;
+    try {
+      social = await require('./social').createSocial({ env: process.env, pool: process.env.DATABASE_URL ? pool : null });
+      social.mount(app, { adminAuth, ah, jsonParser: express.json({ limit: '20kb' }) });
+      if (social.start()) console.log('[social] the marketing desk is running');
+    } catch (e) { console.error('[social] the marketing desk did not start: ' + (e && e.message)); }
+    // The marketing dashboard (backend/marketing): the weekly numbers per market, early warnings and decision triggers from the
+    // launch strategy, read from analytics, refunds, replies and the desk. Read-only except for the founder's own inputs.
+    try {
+      require('./marketing').mount(app, { adminAuth, ah, jsonParser: express.json({ limit: '20kb' }), loadRows: since => ANALYTICS.loadRows(since, 250000), pool: process.env.DATABASE_URL ? pool : null, social });
+    } catch (e) { console.error('[marketing] the dashboard did not start: ' + (e && e.message)); }
     // Run the nightly source-health check on ONE instance only
     // (SOURCE_HEALTH_SCHEDULE=true); run several and each would alert.
     if (process.env.SOURCE_HEALTH_SCHEDULE === 'true') {
