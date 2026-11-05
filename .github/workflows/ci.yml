@@ -44,7 +44,7 @@ jobs:
       - name: Apply the fourteen migrations
         run: node tools/migrate.js
       - name: "Re-run the migrations: nothing may apply twice"
-        run: node tools/migrate.js | tee /tmp/second.txt && grep -q "0 applied, 15 already applied" /tmp/second.txt
+        run: node tools/migrate.js | tee /tmp/second.txt && grep -q "0 applied, 16 already applied" /tmp/second.txt
       - name: Seed the pricing reference tables
         run: node tools/seed_pricing.js
       - name: Start the real server
