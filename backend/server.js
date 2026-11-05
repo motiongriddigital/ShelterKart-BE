@@ -85,7 +85,7 @@ const OWN_BODY_PARSER = new Set(['/api/payments/webhook', '/api/payments/razorpa
 const jsonSmall = express.json({ limit: '10kb' });
 app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = require('./engine/poolGuard').guardPool(new Pool({ connectionString: process.env.DATABASE_URL }));
 
 /* Express 4 does not catch errors thrown in async handlers: the request
    hangs and the error escapes as an unhandled rejection. Five admin
