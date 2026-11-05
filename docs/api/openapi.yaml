@@ -2653,6 +2653,36 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/audit:
+    get:
+      operationId: adminAuditLedger
+      tags: [Admin]
+      summary: What the operator did to legal and takedown matters
+      description: 'The append-only ledger (table audit_log): resolving a dispute (DISPUTE_RESOLVED), approving or rejecting a developer reply (REPLY_APPROVED, REPLY_REJECTED), releasing held adverse findings (HELD_FINDINGS_RELEASED) and purging a source (SOURCE_PURGED). Each row has the actor (admin:<username of the Basic login>; the login is still shared, so this says which username, not which person), the action, the object, the states and the reason. The action routes now answer audited: true when the row was written; false means the action happened but the row could not be written and the server log says why. Newest first, at most 200.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/adminAudit.js
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+        - {name: action, in: query, schema: {type: string}}
+        - {name: objectType, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  rows:
+                    type: array
+                    items:
+                      type: object
+                      properties: {id: {type: integer}, actor: {type: string}, action: {type: string}, objectType: {type: [string, 'null']}, objectId: {type: [string, 'null']}, before: {type: [object, 'null']}, after: {type: [object, 'null']}, reason: {type: [string, 'null']}, at: {type: string}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/search/premium:
     post:
       operationId: premiumSearch
