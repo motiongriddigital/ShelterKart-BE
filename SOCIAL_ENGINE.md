@@ -31,7 +31,7 @@ knowledge base (verified, dated, sourced)  ->  marketer drafts 252 posts (determ
 | `telegram.js` | Founder alerts, digest, /veto /pause /resume /status. No approve command, by design |
 | `store.js`, `audit.js`, `../social.sql` | Memory / file / Postgres storage; hash-chained audit log (insert-only table) |
 | `index.js` | Builds the desk from the environment, mounts the routes, runs the minute loop |
-| `../../admin-social.html` | The desk screen, at `/admin/social` behind the admin login |
+| `admin-social.html` (in `backend/social/`) | The desk screen, at `/admin/social` behind the admin login |
 | `../test/social/` | Tests, the 270-post red-team set, TEST-ONLY fixtures and a local demo (`devserver.js`) |
 
 ## Turning it on (in this order)

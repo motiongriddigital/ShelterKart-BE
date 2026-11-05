@@ -149,6 +149,11 @@ async function query(sql, p=[]) {
   if (/SELECT id, report_ref, amount, currency, status FROM report_purchases WHERE provider='razorpay' AND provider_order_id=\$1/.test(q)) return { rows: db.purchases.filter(x=>x.provider==='razorpay'&&x.provider_order_id===p[0]) };
   if (/SET status='paid', provider_payment_id=\$3/.test(q)) { const r = db.purchases.filter(x=>x.id===p[0]&&x.report_ref===p[1]&&x.status==='pending_payment'); r.forEach(x=>{x.status='paid'; x.provider_payment_id=p[2];}); return { rows: r.map(x=>({id:x.id, amount:String(x.amount), currency:x.currency, quote_id:x.quote_id ?? null, buyer_country:x.buyer_country ?? null, billing_country:x.billing_country ?? null, buyer_kind:x.buyer_kind ?? null, tax_id:x.tax_id ?? null})) }; }
   if (/INSERT INTO payment_events/.test(q)) { const lit = /'razorpay'/.test(q) ? 'razorpay' : /'mor'/.test(q) ? 'mor' : null, k = (lit || p[0]) + '|' + (lit ? p[0] : p[1]); if (db.events.has(k)) return { rows:[] }; db.events.add(k); return { rows:[{id:db.events.size}] }; }
+  if (/SELECT u\.email FROM report_purchases p JOIN users u ON u\.id = p\.user_id WHERE p\.id=\$1/.test(q)) { const e = db.payerEmail && db.payerEmail[p[0]]; return { rows: e ? [{ email: e }] : [] }; }
+  if (/UPDATE report_purchases SET user_id=\$2 WHERE id=\$1/.test(q)) { db.purchases.filter(x => x.id === p[0]).forEach(x => { x.user_id = p[1]; }); return { rows: [] }; }
+  if (/SELECT 1 FROM report_purchases WHERE user_id=\$1 AND report_ref=\$2 AND status='paid'/.test(q)) return { rows: db.purchases.filter(x => x.user_id === p[0] && x.report_ref === p[1] && x.status === 'paid').slice(0, 1).map(() => ({ '?column?': 1 })) };
+  if (/SELECT 1 FROM report_purchases WHERE id=\$1 AND user_id=\$2/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0] && x.user_id === p[1]).map(() => ({ '?column?': 1 })) };
+  if (/SELECT report_ref, amount, currency, status, created_at FROM report_purchases WHERE user_id=\$1/.test(q)) return { rows: db.purchases.filter(x => x.user_id === p[0]).map(x => ({ report_ref: x.report_ref, amount: x.amount, currency: x.currency, status: x.status, created_at: new Date() })) };
   return { rows: [] };
 }
 module.exports = { Pool: class { query(s,p){ return query(s,p); } async connect(){ return { query, release(){} }; } async end(){} }, _db: db };

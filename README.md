@@ -63,6 +63,8 @@ The chain runs the logic suites, the harness suites with stubbed services, the o
 
 ## How it works
 
+User accounts and sign-in (e-mail code, cookie session, My reports) are off by default: see [docs/accounts/PRD.md](docs/accounts/PRD.md) and [docs/accounts/TDD.md](docs/accounts/TDD.md).
+
 The diagrams are in [docs/architecture.md](docs/architecture.md): the components, the buyer journey and how a payment is decided. How changes reach production is in [docs/delivery-pipeline.md](docs/delivery-pipeline.md).
 
 ## Working on it

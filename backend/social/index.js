@@ -67,7 +67,7 @@ async function createSocial({ env = process.env, pool = null, fetchImpl = global
   const stop = () => { if (timer) clearInterval(timer); timer = null; };
 
   /* ---------- routes ---------- */
-  function mount(app, { adminAuth, ah, jsonParser, pageFile = path.join(__dirname, '..', '..', 'admin-social.html') }) {
+  function mount(app, { adminAuth, ah, jsonParser, pageFile = path.join(__dirname, 'admin-social.html') }) {
     const gate = (req, res, next) => on ? next() : res.status(503).json({ ok: false, error: 'The marketing desk is switched off. Set SOCIAL_ENGINE=on to use it.' });
     const reply = (res, data, code = 200) => { res.set('Cache-Control', 'no-store'); res.status(code).json({ ok: true, ...data }); };
     const wrap = fn => ah(async (req, res) => { try { await fn(req, res); } catch (e) { const code = STATUS[e && e.code]; if (code) return res.status(code).json({ ok: false, error: e.message, code: e.code, ...(e.problems ? { problems: e.problems } : {}) }); log.error('[social] ' + req.path + ': ' + (e && e.stack || e)); res.status(500).json({ ok: false, error: 'The desk could not do that. See the server log.' }); } });

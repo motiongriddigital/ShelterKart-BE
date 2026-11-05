@@ -33,7 +33,7 @@ async function boot(extra = {}) {
   const mediaDir = fs.mkdtempSync(path.join(os.tmpdir(), 'media-')), sent = [], net = async (url, init) => { sent.push({ url, body: init && init.body ? JSON.parse(init.body) : null }); return { ok: true, status: 200, json: async () => ({ ok: true }) }; };
   const social = await createSocial({ env: { ...ENV, SOCIAL_MEDIA_DIR: mediaDir, ...extra }, now: () => CLOCK, judge: async () => ({ pass: true, issues: [] }), renderer: null, fetchImpl: net, keeperEngines: { ...keeperEngines, async run(role, op, a) { if (role === 'verify' && /Translate into English/.test(a.prompt)) return { text: GOODSTMT.statement }; return keeperEngines.run(role, op, a); } }, keeperFetch, log: { log() {}, error() {} } });
   for (const it of F.buildKb(() => '2026-10-25').all()) social.kb.put(it);
-  const app = fakeApp(); social.mount(app, { adminAuth, ah, jsonParser, pageFile: path.join(__dirname, '..', '..', '..', 'admin-social.html') }); return { social, app, mediaDir, sent };
+  const app = fakeApp(); social.mount(app, { adminAuth, ah, jsonParser, pageFile: path.join(__dirname, '..', '..', 'social', 'admin-social.html') }); return { social, app, mediaDir, sent };
 }
 const J = r => r.payload;
 
