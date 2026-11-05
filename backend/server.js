@@ -22,7 +22,10 @@ const rateLimit = require('express-rate-limit');
 const { Pool } = require('pg');
 
 const app = express();
-app.set('trust proxy', 1); // needed for correct req.ip behind any real load balancer/proxy
+const TRUST = require('./engine/trustproxy').parse(process.env.TRUST_PROXY);
+app.set('trust proxy', TRUST.setting);
+if (TRUST.problem) console.error('[proxy] ' + TRUST.problem);
+else if (!TRUST.setting && process.env.NODE_ENV === 'production') console.warn('[proxy] TRUST_PROXY is not set: every client is counted by the address that connects to this server. Behind a load balancer that is one address for everyone; set the number of proxies in front, or their addresses.');
 /* helmet()'s bare default sets script-src 'self' with no allowance for
    Razorpay, and script-src-attr 'none' -- meaning the moment payments
    are switched on, Razorpay's checkout script, its own payment iframe,

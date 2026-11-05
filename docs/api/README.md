@@ -81,6 +81,6 @@ Observations that need a human decision or a code change (the contract documents
 8. A comment above `POST /api/track` says four event names are accepted; the code accepts seven.
 9. In `POST /api/admin/investigate`, the failure alert text reads `job.ref`, which the admin job does not have, so the e-mail says "Report undefined".
 10. State that lives in process memory: rate limit counters, the proof-of-work token replay set, running investigations, the daily research and investigation counters. The code comments assume one server instance. Behaviour behind more than one instance was not examined.
-11. `app.set('trust proxy', 1)` means rate limits key on the client address as seen through exactly one proxy. A deployment with a different number of proxies in front changes what is counted.
+11. Rate limits, IP bans and the sign-in log key on `req.ip`. How much of `X-Forwarded-For` is believed is set by `TRUST_PROXY` (SHEL-35): unset means none (the connecting address is the client, a forged header changes nothing), a number means that many proxies in front, or a list of proxy addresses or named ranges (`loopback`, `10.0.0.0/8`). `true` is refused. Behind a load balancer it must be set, otherwise every client shares the balancer's address and one limit.
 12. The static website pages named in the sitemap (`/`, `about.html`, and so on) are not served by this backend.
 13. The contract is hand-written and there is no automated drift check in CI. The recount command above and the Control Room route list are the only checks used.
