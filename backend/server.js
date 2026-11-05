@@ -71,6 +71,7 @@ app.use(helmet({
 // directly from a browser — don't leave it at "*".
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
+  credentials: true,
   origin: (origin, cb) => {
     if (!origin) return cb(null, true); // server-to-server / curl / health checks
     if (allowedOrigins.includes(origin)) return cb(null, true);
@@ -90,6 +91,7 @@ app.use(cors({
 const OWN_BODY_PARSER = new Set(['/api/payments/webhook', '/api/payments/razorpay/webhook', '/api/payments/mor/webhook', '/api/research/document-check']);
 const jsonSmall = express.json({ limit: '10kb' });
 app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
+app.use((req, res, next) => ACCOUNTS.csrf(req, res, next));
 
 const pool = require('./engine/poolGuard').guardPool(new Pool({ connectionString: process.env.DATABASE_URL }));
 const { createErrorLog } = require('./engine/errorlog');
