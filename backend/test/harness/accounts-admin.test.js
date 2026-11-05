@@ -14,16 +14,17 @@ const MAILS = []; let _o=0; globalThis.fetch = async (url, o) => { const mk = c 
 const app = require(require('path').join(__dirname, '..', '..', 'server.js'));
 const { _db } = require('pg');
 const ANALYTICS = require('../../engine/analytics');
+const ERRS = [];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const eventsOf = name => ANALYTICS._memory.filter(e => e.event === name);
 const find = (m, p) => app.routes.find(r => r.method === m && r.path === p);
 function call(route, body, { headers = {}, params = {}, query = {}, path = '', ip = '3.3.3.3' } = {}) { return new Promise(resolve => {
   const h = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
   const res = { code: 200, headers: {}, cookies: [], status(c) { this.code = c; return this; }, set(k, v) { if (typeof k === 'object') Object.assign(this.headers, k); else this.headers[k] = v; return this; },
-    append(k, v) { if (k === 'Set-Cookie') this.cookies.push(v); return this; }, json(o) { resolve({ code: this.code, body: o, cookies: this.cookies }); },
+    append(k, v) { if (k === 'Set-Cookie') this.cookies.push(v); return this; }, json(o) { resolve({ code: this.code, body: o, cookies: this.cookies }); return this; },
     send(o) { resolve({ code: this.code, body: o, cookies: this.cookies }); }, redirect(c, u) { resolve({ code: c, location: u }); }, write() {}, end() { resolve({ code: this.code, ended: true }); }, flushHeaders() {} };
   const req = { body, params, query, ip, path, headers: h, originalUrl: path, get: k => h[k.toLowerCase()], on() {} };
-  const hs = route.handlers; let i = 0; const next = err => { if (err) return resolve({ code: 500, body: { error: err.message } }); const fn = hs[i++]; if (fn) fn(req, res, next); }; next(); }); }
+  const hs = route.handlers; let i = 0; const next = err => { if (err) { ERRS.push(err.message); return resolve({ code: 500, body: { error: err.message } }); } const fn = hs[i++]; if (fn) fn(req, res, next); }; next(); }); }
 let failures = 0;
 const ok = (label, c) => { if (!c) failures++; console.log((c ? '  ok   ' : '  FAIL ') + label); };
 process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : '\nall passing'); if (failures) process.exitCode = 1; });
@@ -88,6 +89,9 @@ const admin = (m, p, body, o = {}) => call(find(m, p), body, { headers: ADMIN, p
   const bad1 = await admin('post', '/api/admin/bans', { kind: 'account', target: 'not-an-email', reason: 'long enough reason' });
   const bad2 = await admin('post', '/api/admin/bans', { kind: 'account', target: email, reason: 'short' });
   ok('a ban needs a real target and a reason', bad1.code === 400 && bad2.code === 400);
+  const dayBad = await admin('post', '/api/admin/bans', { kind: 'account', target: 'days-bad@example.com', reason: 'long enough reason', days: 99999 });
+  await sleep(30);
+  ok('a refused ban answers once and raises no error afterwards', dayBad.code === 400 && ERRS.length === 0);
   const signed = (await signIn('ban-me@example.com')).cookie;
   ok('the account has a working session first', (await call(find('get', '/api/me'), undefined, { headers: { cookie: signed } })).code === 200);
   const ban = await admin('post', '/api/admin/bans', { kind: 'account', target: 'Ban-Me@Example.com', reason: 'chargeback and abuse', days: 7 });
@@ -125,6 +129,9 @@ const admin = (m, p, body, o = {}) => call(find(m, p), body, { headers: ADMIN, p
   ok('one session can be ended', endOne.code === 200 && (await call(find('get', '/api/me'), undefined, { headers: { cookie: own.cookie } })).code === 401);
   const own2 = await signIn('from-nine@example.com');
   const mine2 = (await admin('get', '/api/admin/sessions')).body.sessions.find(x => x.email === 'from-nine@example.com');
+  const refusedIp = await admin('post', '/api/admin/sessions/:id/ban-ip', { reason: 'short' }, { params: { id: mine2.id } });
+  await sleep(30);
+  ok('a refused ban from a session leaves the session alive and raises no error', refusedIp.code === 400 && ERRS.length === 0 && (await call(find('get', '/api/me'), undefined, { headers: { cookie: own2.cookie } })).code === 200);
   const banHash = await admin('post', '/api/admin/sessions/:id/ban-ip', { reason: 'abuse seen on this session', days: 3 }, { params: { id: mine2.id } });
   ok('an address is banned from its session, by hash', banHash.code === 200 && /^hash:[0-9a-f]{12}$/.test(banHash.body.ban.target));
   ok('the banned address is refused from then on', (await call(find('post', '/api/auth/request-code'), { email: 'z@example.com' }, { headers: UA })).body.code === 'ip_banned' && own2.cookie);

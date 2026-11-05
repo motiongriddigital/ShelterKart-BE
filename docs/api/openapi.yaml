@@ -2722,6 +2722,134 @@ paths:
                   recent: {type: array, items: {type: object}}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/backups:
+    get:
+      operationId: adminListBackups
+      tags: [Admin]
+      summary: Database backups
+      description: 'The newest backup attempts (scheduled and manual), the schedule and whether backups are set up. Backups are encrypted with AES-256-GCM; the response never contains key material. Off until BACKUP_KEY_ID and a matching BACKUP_KEY_<id> are set.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/backups.js
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 30}}
+      responses:
+        '200':
+          description: The attempts, newest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  enabled: {type: boolean}
+                  everyDays: {type: integer}
+                  keep: {type: integer}
+                  destination: {type: string}
+                  backups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: integer}
+                        startedAt: {type: string, format: date-time}
+                        finishedAt: {type: [string, 'null']}
+                        trigger: {type: string, enum: [schedule, manual]}
+                        status: {type: string, enum: [running, ok, failed]}
+                        fileName: {type: [string, 'null']}
+                        sizeBytes: {type: [integer, 'null']}
+                        sha256: {type: [string, 'null']}
+                        keyId: {type: [string, 'null']}
+                        destination: {type: [string, 'null']}
+                        error: {type: [string, 'null'], description: A scrubbed reason; never a connection string or password.}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/backups/run:
+    post:
+      operationId: adminRunBackup
+      tags: [Admin]
+      summary: Take a backup now
+      description: 'Runs one backup and waits for it (pg_dump, encrypt, store, verify the hash). At most three a hour. 409 when backups are not set up or one is already running; 502 when the attempt failed (the reason is recorded).'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/backups.js
+      responses:
+        '200':
+          description: The backup that was taken.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  backup:
+                    type: object
+                    properties:
+                      id: {type: integer}
+                      fileName: {type: string}
+                      sizeBytes: {type: integer}
+                      sha256: {type: string}
+                      keyId: {type: string}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '409': {description: 'Not set up (code not_configured) or already running (code running).'}
+        '429': {description: Too many manual backups this hour.}
+        '502': {description: 'The backup failed (code failed); error holds a scrubbed reason.'}
+  /api/admin/backups/notice:
+    get:
+      operationId: adminBackupNotice
+      tags: [Admin]
+      summary: The backup notice for the admin header
+      description: 'level is off (not set up), ok, warn (none yet, or overdue by more than two days) or error (the last attempt failed). Includes the last good time and when the next is due.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/backups.js
+      responses:
+        '200':
+          description: The notice.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  notice:
+                    type: object
+                    properties:
+                      level: {type: string, enum: [off, ok, warn, error]}
+                      text: {type: string}
+                      lastOkAt: {type: [string, 'null']}
+                      nextDueAt: {type: [string, 'null']}
+                      overdue: {type: boolean}
+                      everyDays: {type: integer}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+  /api/admin/backups/keys:
+    get:
+      operationId: adminBackupKeys
+      tags: [Admin]
+      summary: Backup key ids and ages
+      description: 'Key ids and how long each has been in use (from its first backup). Never key material.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/backups.js
+      responses:
+        '200':
+          description: The keys.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  keys:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: {type: string}
+                        active: {type: boolean}
+                        firstUsedAt: {type: [string, 'null']}
+                        ageDays: {type: [integer, 'null']}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
   /api/admin/errors:
     get:
       operationId: adminListErrors
