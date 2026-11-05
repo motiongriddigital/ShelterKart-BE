@@ -2653,6 +2653,75 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/search/premium:
+    post:
+      operationId: premiumSearch
+      tags: [Research]
+      summary: Premium search
+      description: 'A wider search for a signed-in reader who holds at least one paid, not refunded purchase. Present only when `PREMIUM_SEARCH=on`; with the flag off the route does not exist (404). The reader''s name for the project is searched under its other spellings and known names by a panel of engines, each finding is accepted only with an official source or two independent sites, and weak or disputed findings get a second pass, all within a per-search dollar budget (`PREMIUM_SEARCH_BUDGET_USD`, default 2.5, never above `PREMIUM_SEARCH_BUDGET_MAX_USD`). The answer carries no cost, no episode id and no personal data. A policy chooses how deep to go and every decision is logged for later tuning (premium-search-design.md).'
+      security: [{sessionCookie: []}]
+      x-source: backend/search/premium/routes.js
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query: {type: string, minLength: 2, maxLength: 120, description: 'The project or developer name. Personal details are removed before use.'}
+                location: {type: string, maxLength: 120}
+                country: {type: string, description: 'Two-letter country code of the project.'}
+      responses:
+        '200':
+          description: Findings, by how well supported.
+          headers:
+            Cache-Control: {schema: {type: string, const: no-store}}
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  project: {type: object, properties: {name: {type: string}, location: {type: string}, developer: {type: string}, ids: {type: array, items: {type: string}}}}
+                  names: {type: array, items: {type: object, properties: {text: {type: string}, kind: {type: string, enum: [original, alias, developer, registration, suffix, numeral, and, joined, split, spelling]}}}, description: 'The names the project was searched under.'}
+                  findings: {type: array, items: {$ref: '#/components/schemas/PremiumFinding'}, description: 'Accepted: an official source, or two independent sites.'}
+                  unconfirmed: {type: array, items: {$ref: '#/components/schemas/PremiumFinding'}, description: One independent site so far.}
+                  disputed: {type: array, items: {$ref: '#/components/schemas/PremiumFinding'}, description: 'Sources disagree and no official source settles it.'}
+                  developerClaims: {type: array, items: {$ref: '#/components/schemas/PremiumFinding'}, description: 'The developer''s own word, never accepted as fact.'}
+                  counts: {type: object, properties: {accepted: {type: integer}, unconfirmed: {type: integer}, disputed: {type: integer}, developerClaims: {type: integer}, notShown: {type: integer, description: 'Findings that cited a page the search never returned.'}}}
+                  coverage: {type: object, properties: {engines: {type: array, items: {type: string}}, waves: {type: integer}, namesSearched: {type: integer}, secondPass: {type: boolean}, targetsChecked: {type: integer}, stopped: {type: string, enum: [complete, budget, marginal_low, engine_error]}}}
+        '400': {description: 'The query is not 2 to 120 characters (`bad_query`).', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {description: 'Signed in, but no paid purchase (`not_premium`).', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '500': {description: 'The search stopped early (`error`).', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '503': {description: 'No engine is set up (`no_engine`), or every engine failed (`unavailable`).', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+  /api/admin/search/premium/episodes:
+    get:
+      operationId: adminPremiumEpisodes
+      tags: [Admin]
+      summary: Premium search episode log
+      description: 'The premium search''s decision log in aggregate (episodes, average cost measured and modelled, average accepted findings, by depth, and how many findings were later corrected or disputed) and the latest lines, at most 200 (default 50). One line per decision: context features, the action the policy chose and its propensity, cost in dollars per step, latency, findings accepted, the episode outcome. Holds no personal data and no raw text: no query, no prompt, no answer, no user. Present only when `PREMIUM_SEARCH=on`. Kept in `premium-episodes.jsonl` in `PREMIUM_EPISODES_DIR` (else `SEARCH_DATA_DIR`), or in memory without a directory.'
+      security:
+        - adminBasic: []
+      x-source: backend/search/premium/routes.js
+      parameters:
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  enabled: {type: boolean, const: true}
+                  policy: {type: object, properties: {id: {type: string}, version: {type: integer}}}
+                  summary: {type: object, properties: {episodes: {type: integer}, avgSpentUsd: {type: number}, avgModelledUsd: {type: number}, avgAccepted: {type: number}, labelled: {type: integer}, corrected: {type: integer}, disputed: {type: integer}, byDepth: {type: object}}}
+                  recent: {type: array, items: {type: object}}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/backups:
     get:
       operationId: adminListBackups
@@ -4015,6 +4084,17 @@ components:
         ok: {type: boolean, const: false}
         error: {type: string}
         code: {type: string}
+    PremiumFinding:
+      type: object
+      properties:
+        area: {type: string}
+        field: {type: string}
+        value: {type: string}
+        claim: {type: string}
+        status: {type: string, enum: [verified, reported, claim, inference, conflict]}
+        corroboration: {type: object, properties: {sites: {type: integer, description: 'Independent sites that returned it.'}, official: {type: boolean}, engines: {type: integer}}}
+        sources: {type: array, items: {type: string, format: uri}, maxItems: 6}
+        reason: {type: string}
     Ok:
       type: object
       required: [ok]
