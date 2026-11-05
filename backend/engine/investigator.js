@@ -20,7 +20,29 @@
  */
 const D = require('./dossier');
 
-const DEFAULT_BUDGET = { rounds: 4, leadsPerRound: 6, searches: 25, fetches: 12, leadSearches: 10, leadFetches: 6, maxTokens: 16000, minutes: 15, panel: 0, leadPanel: 2 };
+const DEFAULT_BUDGET = { rounds: 4, leadsPerRound: 6, searches: 25, fetches: 12, leadSearches: 10, leadFetches: 6, maxTokens: 16000, minutes: 15, panel: 0, leadPanel: 2,
+  pauseRounds: 12, criticMaxTokens: 8000, questionMaxTokens: 12000, criticPanel: 2, questionPanel: 2, leadMaxTokens: 0, fetchMaxTokens: 0, rankLeads: false, leadLimit: 0 };
+
+const BUDGET_ENV = [
+  ['INVESTIGATE_LEAD_PANEL', 'leadPanel', 1, 3], ['INVESTIGATE_LEAD_SEARCHES', 'leadSearches', 1, 25], ['INVESTIGATE_LEAD_FETCHES', 'leadFetches', 1, 12],
+  ['INVESTIGATE_LEAD_ROUNDS', 'rounds', 1, 8], ['INVESTIGATE_LEADS_PER_ROUND', 'leadsPerRound', 1, 12], ['INVESTIGATE_PAUSE_ROUNDS', 'pauseRounds', 1, 12],
+  ['INVESTIGATE_LEAD_MAX_TOKENS', 'leadMaxTokens', 1000, 32000], ['INVESTIGATE_CRITIC_MAX_TOKENS', 'criticMaxTokens', 1000, 16000], ['INVESTIGATE_QUESTION_MAX_TOKENS', 'questionMaxTokens', 1000, 24000],
+  ['INVESTIGATE_CRITIC_PANEL', 'criticPanel', 1, 3], ['INVESTIGATE_QUESTION_PANEL', 'questionPanel', 1, 3], ['INVESTIGATE_FETCH_MAX_TOKENS', 'fetchMaxTokens', 1000, 100000],
+  ['INVESTIGATE_LEAD_LIMIT', 'leadLimit', 1, 100],
+];
+/** The cost levers a setting can turn (SHEL-60). Only keys that are set to a usable number are returned; a bad value is ignored; the rest are clamped. */
+function budgetFromEnv(env = process.env) {
+  const out = {};
+  for (const [k, key, lo, hi] of BUDGET_ENV) {
+    const raw = env[k]; if (raw === undefined || String(raw).trim() === '') continue;
+    const n = Number(raw); if (!Number.isFinite(n) || n < lo) continue;
+    out[key] = Math.min(hi, Math.floor(n));
+  }
+  const rank = String(env.INVESTIGATE_RANK_LEADS || '').toLowerCase();
+  if (rank === 'on' || rank === 'off') out.rankLeads = rank === 'on';
+  return out;
+}
+const LEAD_RANK = { 'company-id': 0, registration: 1, company: 2, case: 3, complaint: 4 };
 
 const SCHEMA = `{
  "project": {"name": "", "location": "", "country": "", "brand": "name it is marketed under", "promoter_legal_name": "the company on the registration or title", "registration_ids": [""], "developer_site": "domain"},
@@ -239,7 +261,8 @@ function createInvestigation({ query, location = '', market = '', country = '', 
   const ctx = { query, location, market, ratePct };
   const emit = ev => { try { onEvent(ev); } catch { /* a listener never breaks the investigation */ } };
   const snapshot = phase => { const x = build(state, ctx); x.phase = phase; return x; };
-  const panelArgs = (prompt, s, f) => ({ prompt, maxTokens: B.maxTokens, rounds: 12, fetchPages: true, maxUses: s, fetchUses: f });
+  const panelArgs = (prompt, s, f, stage, maxTokens = B.maxTokens) => ({ prompt, maxTokens, rounds: B.pauseRounds, fetchPages: true, maxUses: s, fetchUses: f, stage, ...(B.fetchMaxTokens ? { maxContentTokens: B.fetchMaxTokens } : {}) });
+  let followed = 0;
   const absorb = (res, round) => {
     for (const r of res.results) { state.used.add(r.engine); for (const x of r.retrieved || []) state.retrieved.add(x.url); ingest(state, parseLoose(r.text), r.engine, round); }
     for (const f of res.failed || []) state.failed.push({ engine: f.engine, round, error: f.error });
@@ -255,7 +278,7 @@ function createInvestigation({ query, location = '', market = '', country = '', 
 
   async function sweep({ panel } = {}) {
     emit({ type: 'progress', stage: 'sweep', message: 'Every engine on the panel is investigating the property' });
-    absorb(await engines.runEach('research', 'search', panelArgs(sweepPrompt({ query, location, market, languages, country }), B.searches, B.fetches), { env, fetchImpl, max: panel || B.panel || undefined }), 0);
+    absorb(await engines.runEach('research', 'search', panelArgs(sweepPrompt({ query, location, market, languages, country }), B.searches, B.fetches, 'sweep'), { env, fetchImpl, max: panel || B.panel || undefined }), 0);
     swept = true; d = snapshot('preview'); emit({ type: 'update', stage: 'sweep', dossier: d });
     return d;
   }
@@ -265,14 +288,17 @@ function createInvestigation({ query, location = '', market = '', country = '', 
     deadline = now() + B.minutes * 60000;   // the clock starts when the paid work starts, not at the preview
     const followRound = async label => {
       state.leads = D.extractLeads(d.sections.flatMap(s => s.facts), state.botLeads, state.leads);
-      const open = [...state.leads.values()].filter(l => l.state === 'open').slice(0, B.leadsPerRound);
+      let open = [...state.leads.values()].filter(l => l.state === 'open');
+      if (B.rankLeads) open = open.map((l, i) => [l, i]).sort((a, b) => (LEAD_RANK[a[0].kind] ?? 5) - (LEAD_RANK[b[0].kind] ?? 5) || a[1] - b[1]).map(x => x[0]);
+      open = open.slice(0, B.leadLimit ? Math.min(B.leadsPerRound, Math.max(0, B.leadLimit - followed)) : B.leadsPerRound);
       if (!open.length) return false;
+      followed += open.length;
       state.round++;
       emit({ type: 'progress', stage: label, round: state.round, message: `Following ${open.length} lead${open.length > 1 ? 's' : ''}: ${open.map(l => l.value).join('; ')}` });
       const context = digest(d, 6000);
       await Promise.all(open.map(async lead => {
         lead.state = 'working';
-        try { absorb(await engines.runEach('research', 'search', panelArgs(leadPrompt({ query, location, lead, context }), B.leadSearches, B.leadFetches), { env, fetchImpl, max: B.leadPanel }), state.round); lead.state = 'followed'; }
+        try { absorb(await engines.runEach('research', 'search', panelArgs(leadPrompt({ query, location, lead, context }), B.leadSearches, B.leadFetches, label === 'leads' ? 'leads' : 'reviewer-leads', B.leadMaxTokens || B.maxTokens), { env, fetchImpl, max: B.leadPanel }), state.round); lead.state = 'followed'; }
         catch (e) { lead.state = 'unreachable'; lead.note = String((e && e.message) || e).slice(0, 120); }
       }));
       d = snapshot('working'); emit({ type: 'update', stage: label, round: state.round, dossier: d });
@@ -286,7 +312,7 @@ function createInvestigation({ query, location = '', market = '', country = '', 
     if (going()) {
       emit({ type: 'progress', stage: 'critic', message: 'A reviewer is checking what is missing, weak or unasked' });
       try {
-        const res = await engines.runEach('verify', 'complete', { prompt: criticPrompt({ query, digest: digest(d) }), maxTokens: 8000 }, { env, fetchImpl, max: 2 });
+        const res = await engines.runEach('verify', 'complete', { prompt: criticPrompt({ query, digest: digest(d) }), maxTokens: B.criticMaxTokens, stage: 'reviewer' }, { env, fetchImpl, max: B.criticPanel });
         for (const r of res.results) {
           const o = parseLoose(r.text);
           for (const l of arr(o.leads)) if (l && l.value) state.botLeads.push({ ...l, why: (l.why || '') + ' (raised by the reviewer)' });
@@ -300,7 +326,7 @@ function createInvestigation({ query, location = '', market = '', country = '', 
     // The full question list
     emit({ type: 'progress', stage: 'questions', message: 'Writing the questions for each team at the developer' });
     if (!shouldStop()) try {
-      const res = await engines.runEach('verify', 'complete', { prompt: questionPrompt({ query, digest: digest(d) }), maxTokens: 12000 }, { env, fetchImpl, max: 2 });
+      const res = await engines.runEach('verify', 'complete', { prompt: questionPrompt({ query, digest: digest(d) }), maxTokens: B.questionMaxTokens, stage: 'questions' }, { env, fetchImpl, max: B.questionPanel });
       for (const r of res.results) for (const q of arr(parseLoose(r.text).questions)) if (q && q.question) {
         const facts = d.sections.flatMap(s => s.facts).filter(f => arr(q.facts).includes(f.id));
         state.questions.push({ ...q, notAccepted: q.not_accepted || '', sources: facts.flatMap(f => f.sources), basis: 'panel', engine: r.engine });
@@ -335,4 +361,4 @@ async function investigate(input, deps = {}) {
   return inv.complete();
 }
 
-module.exports = { investigate, createInvestigation, serialiseState, restoreState, playbookFor, build, ingest, parseLoose, digest, sweepPrompt, leadPrompt, criticPrompt, questionPrompt, DEFAULT_BUDGET };
+module.exports = { investigate, createInvestigation, serialiseState, restoreState, playbookFor, build, ingest, parseLoose, digest, sweepPrompt, leadPrompt, criticPrompt, questionPrompt, DEFAULT_BUDGET, budgetFromEnv };

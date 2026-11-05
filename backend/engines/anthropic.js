@@ -24,13 +24,13 @@ module.exports = {
   supports: (op, o = {}) => (op === 'read' ? Boolean(MEDIA[o.mediaType]) : op === 'search' || op === 'complete'),
 
   /** Research with the server-side web-search tool. retrieved = every page the search returned (what grounding checks claims against). */
-  async search({ prompt, maxUses, model, maxTokens = 4000, rounds = 4, fetchPages = false, fetchUses }, { env, fetchImpl }) {
+  async search({ prompt, maxUses, model, maxTokens = 4000, rounds = 4, fetchPages = false, fetchUses, maxContentTokens }, { env, fetchImpl }) {
     let messages = [{ role: 'user', content: prompt }];
     const blocks = []; let stop = ''; const usage = { input: 0, output: 0 };
     // Tool versions are configurable, so a new release can be adopted without a code change.
     const tools = [{ type: env.ANTHROPIC_WEB_SEARCH_TOOL || 'web_search_20250305', name: 'web_search', ...(maxUses ? { max_uses: maxUses } : {}) }];
     // Page reading: the API fetches a page the search returned and the model reads all of it, tables included.
-    if (fetchPages && env.ANTHROPIC_WEB_FETCH !== 'off') tools.push({ type: env.ANTHROPIC_WEB_FETCH_TOOL || 'web_fetch_20250910', name: 'web_fetch', ...(fetchUses ? { max_uses: fetchUses } : {}) });
+    if (fetchPages && env.ANTHROPIC_WEB_FETCH !== 'off') tools.push({ type: env.ANTHROPIC_WEB_FETCH_TOOL || 'web_fetch_20250910', name: 'web_fetch', ...(fetchUses ? { max_uses: fetchUses } : {}), ...(maxContentTokens ? { max_content_tokens: maxContentTokens } : {}) });
     for (let round = 0; round < rounds; round++) {
       const data = await post({ model: modelOf(env, model), max_tokens: maxTokens, messages, tools }, env, fetchImpl, 'research service error');
       blocks.push(...(data.content || [])); stop = data.stop_reason;

@@ -1,6 +1,7 @@
 'use strict';
 /** Admin routes for the AI engines' history and the cost of each paid report. Everything outside is passed in. Contract: docs/api/openapi.yaml, tag Admin. */
 
+const { stageTotals } = require('./jobCosts');
 const DAY = 24 * 3600 * 1000;
 const r4 = v => Math.round(v * 1e4) / 1e4;
 
@@ -30,8 +31,8 @@ function costRows(jobs, prices, since) {
     if (!j.paid) continue;
     const at = j.updatedAt || j.createdAt || 0;
     if (at < since) continue;
-    const cost = Number(j.costUsd) || 0, price = prices.get(j.ref);
-    out.push({ ref: j.ref, market: (j.input && j.input.country) || null, status: j.status, at: at ? new Date(at).toISOString() : null, costUsd: r4(cost), capUsd: j.capUsd == null ? null : r4(Number(j.capUsd)),
+    const cost = Number(j.costUsd) || 0, stages = stageTotals(j.stageCosts), price = prices.get(j.ref);
+    out.push({ ref: j.ref, market: (j.input && j.input.country) || null, status: j.status, at: at ? new Date(at).toISOString() : null, costUsd: r4(cost), stages, capUsd: j.capUsd == null ? null : r4(Number(j.capUsd)),
       priceUsd: price == null ? null : r4(price), costShare: price ? r4(cost / price) : null });
   }
   out.sort((a, b) => String(b.at).localeCompare(String(a.at)));

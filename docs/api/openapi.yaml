@@ -1801,6 +1801,7 @@ paths:
                         status: {type: string, description: 'Job status. Values seen in the code: sweeping, preview, completing, done, failed, interrupted.'}
                         paid: {type: boolean}
                         costUsd: {type: number}
+                        stages: {type: array, items: {type: object, properties: {stage: {type: string}, usd: {type: number}, calls: {type: integer}, input: {type: integer}, output: {type: integer}, searches: {type: integer}}}}
                         capUsd: {type: [number, 'null']}
                   pdf:
                     type: object
@@ -2628,7 +2629,7 @@ paths:
       operationId: adminEngineCosts
       tags: [Admin]
       summary: What each paid report cost in AI
-      description: 'Paid reports touched in the last N days (1 to 90, default 30), newest first, at most 200: the AI cost in US dollars from the investigation, its cap, what buyers paid for it in US dollars (null when there is no database or no paid purchase; a fully refunded one is not counted), and the cost as a share of that price. totals covers every report in the window.'
+      description: 'Paid reports touched in the last N days (1 to 90, default 30), newest first, at most 200: the AI cost in US dollars from the investigation, its cap, what buyers paid for it in US dollars (null when there is no database or no paid purchase; a fully refunded one is not counted), and the cost as a share of that price. stages splits the cost by stage (sweep, leads, reviewer, reviewer-leads, questions, other) with calls, tokens and searches; it is empty for reports run before the split was recorded. totals covers every report in the window.'
       security:
         - adminBasic: []
       x-source: backend/engine/enginesAdmin.js
@@ -2649,7 +2650,7 @@ paths:
                     type: array
                     items:
                       type: object
-                      properties: {ref: {type: string}, market: {type: [string, 'null']}, status: {type: string}, at: {type: [string, 'null']}, costUsd: {type: number}, capUsd: {type: [number, 'null']}, priceUsd: {type: [number, 'null']}, costShare: {type: [number, 'null']}}
+                      properties: {ref: {type: string}, market: {type: [string, 'null']}, status: {type: string}, at: {type: [string, 'null']}, costUsd: {type: number}, stages: {type: array, items: {type: object, properties: {stage: {type: string}, usd: {type: number}, calls: {type: integer}, input: {type: integer}, output: {type: integer}, searches: {type: integer}}}}, capUsd: {type: [number, 'null']}, priceUsd: {type: [number, 'null']}, costShare: {type: [number, 'null']}}
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}

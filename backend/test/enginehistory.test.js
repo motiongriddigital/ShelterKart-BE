@@ -114,6 +114,13 @@ const okEv = (o = {}) => ({ engine: 'anthropic', role: 'research', ok: true, tok
     assert.deepStrictEqual(out.reports.map(r => r.ref), ['SK-A', 'SK-B']); assert.strictEqual(out.reports[0].costShare, 0.05); assert.strictEqual(out.reports[1].priceUsd, null); assert.strictEqual(out.reports[1].costShare, null);
     assert.deepStrictEqual(out.totals, { reports: 2, costUsd: 1.5, avgCostUsd: 0.75, priced: 1, priceUsd: 10 });
   });
+  await t('a cost row carries the per-stage split, dearest first, and an empty list for an older report', async () => {
+    const jobs = [{ ref: 'SK-S', paid: true, updatedAt: T0, costUsd: 1, input: { country: 'IN' }, stageCosts: { questions: { usd: 0.1, calls: 1, input: 5, output: 6, searches: 0 }, leads: { usd: 0.9, calls: 3, input: 100, output: 20, searches: 30 } } },
+      { ref: 'SK-OLD', paid: true, updatedAt: T0 - 1000, costUsd: 2, input: { country: 'IN' } }];
+    const out = costRows(jobs, new Map(), 0).reports;
+    assert.deepStrictEqual(out.find(r => r.ref === 'SK-S').stages.map(x => x.stage), ['leads', 'questions']);
+    assert.deepStrictEqual(out.find(r => r.ref === 'SK-OLD').stages, []);
+  });
   await t('no paid reports gives zero totals, not NaN', async () => { const out = costRows([], new Map(), 0); assert.deepStrictEqual(out.totals, { reports: 0, costUsd: 0, avgCostUsd: 0, priced: 0, priceUsd: 0 }); });
 
   console.log('\n' + (failed ? failed + ' FAILED' : 'all ' + passed + ' passing'));
