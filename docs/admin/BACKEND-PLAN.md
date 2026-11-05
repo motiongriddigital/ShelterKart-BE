@@ -44,7 +44,10 @@ Written 4 November 2026. The admin panel UI (frontend repository, branch `admin-
 - Safety: a range wider than /8 is refused; an admin cannot ban the address they are using; a repeat ban is a 409.
 - Open: the frontend must switch the Users screens from seed data to these routes (read first, then the actions). Retention of `auth_events` is 90 days (owner to confirm).
 
-### S2 Health and error log
+### S2 Health and error log (part 1, the error log, built 4 Nov on `feature/admin-error-log`; part 2 below is still to do)
+
+- Built: `error_log` and `error_hits` tables (the fourteenth migration, `error_log.sql`), `backend/engine/errorlog.js`: every `console.error` and `console.warn` is mirrored into a grouped, scrubbed log (a `[tag]` becomes the source; the central error handler now tags its line), flood-throttled, kept 30 days, switch off with `ERROR_LOG=off`. Routes `GET /api/admin/errors`, `/errors/summary`, `/errors/:id`. 17 unit checks, 5 server checks, real-Postgres run.
+- Not built yet: failed-jobs list and retry, health history per register (below).
 
 - `error_log(id, at, level, source, message, detail, fingerprint, count, first_at, last_at)`, grouped by fingerprint so a flood is one row with a count.
 - Feed it from: the central Express error handler, the investigation job runner, the delivery layer, the payment webhooks, engine failures.
