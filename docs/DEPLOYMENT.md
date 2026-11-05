@@ -18,6 +18,7 @@ The image (`Dockerfile`) holds `backend/` and `tools/`, runs as the unprivileged
 - One instance only until saved investigations move off local files (`LIVE_JOBS_DIR`); mount a persistent volume there.
 - On every release, before starting the new version: `node tools/migrate.js` (idempotent; applies only new migrations). The first time only: `node tools/seed_pricing.js`.
 - `TRUST_PROXY` set to the number of proxies in front of the API (usually 1 for one load balancer) or to their addresses. Left unset the API trusts no proxy and counts every client by the address that connects, which behind a load balancer is one address for everyone. Use `loopback` for a proxy on the same machine: it covers `127.0.0.1` and `::1`, while `127.0.0.1` alone does not match a client that connects as `::1`. Never `true`; a forged `X-Forwarded-For` is only believed when it arrives through a trusted proxy, so the API must not be reachable except through it.
+- Encrypted database backups (optional, off until a key is set): `pg_dump` must be installed on the API host; set `BACKUP_KEY_ID`, `BACKUP_KEY_<id>` and `BACKUP_DIR` (see `backend/.env.example`). Read `docs/admin/BACKUPS-DESIGN.md` first: where the files go and who holds the key are the owner's decisions.
 - A health check on `/api/health`.
 
 ## Not built yet: the last step

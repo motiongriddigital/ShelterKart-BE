@@ -62,7 +62,7 @@ function makePgStore(pool) {
       return { ...rowOf(r), hits };
     },
     async hourly(since) {
-      return (await pool.query(`SELECT date_trunc('hour', at) AS h, level, SUM(n)::int AS n FROM error_hits WHERE at >= $1 GROUP BY 1, 2`, [since]))
+      return (await pool.query(`SELECT to_timestamp(floor(extract(epoch FROM at) / 3600) * 3600) AS h, level, SUM(n)::int AS n FROM error_hits WHERE at >= $1 GROUP BY 1, 2`, [since]))
         .rows.map(r => ({ hour: new Date(r.h), level: r.level, n: Number(r.n) }));
     },
     async topSources(since, limit) {
