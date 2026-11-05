@@ -27,7 +27,7 @@ t('the loader sends no allowed host unless a person approved it, even when asked
   const bad = JSON.parse(JSON.stringify(hostsDoc)); bad.hosts = bad.hosts.filter(h => h.host !== 'nhbrc.org.za'); bad.hosts.forEach(h => { h.approved = true; }); r = buildJobs(doc, bad, { allowHosts: true }); assert(!r.jobs.some(j => j.market === 'ZA' && j.allowedHosts), 'a host missing from the reviewed list was sent'); assert(r.pendingHosts.some(x => /ZA:nhbrc.org.za/.test(x)));
 });
 t('the first-run checklist only names a market and topic that has a seed, and never names a market with no seed (Belgium, Malaysia, Taiwan, Latvia, Thailand, the Czech Republic, Lithuania)', () => {
-  const md = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'KEEPER_FIRST_RUN.md'), 'utf8'), table = md.slice(md.indexOf('## 2.'), md.indexOf('Hosts that must be approved first')), pairs = [...table.matchAll(/\b([A-Z]{2}) (t\d\d)\b/g)].map(m => [m[1], m[2]]);
+  const md = fs.readFileSync(path.join(__dirname, '..', '..', '..', 'docs', 'KEEPER_FIRST_RUN.md'), 'utf8'), table = md.slice(md.indexOf('## 2.'), md.indexOf('Hosts that must be approved first')), pairs = [...table.matchAll(/\b([A-Z]{2}) (t\d\d)\b/g)].map(m => [m[1], m[2]]);
   assert(pairs.length >= 15, 'the run order should name at least 15 market-topic pairs'); for (const [m, tp] of pairs) assert(doc.markets[m] && doc.markets[m].topics[tp], `${m} ${tp} is in the checklist but has no seed`);
   assert(!pairs.some(([m]) => ['BE', 'MY', 'TW', 'LV', 'TH', 'CZ', 'LT'].includes(m)), 'a market with no seed is in the run order');
 });

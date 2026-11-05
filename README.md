@@ -1,4 +1,4 @@
-> **Developers: start with [`DEVELOPER_GUIDE.md`](DEVELOPER_GUIDE.md)** (how the website works, where each piece of code lives, how to change it safely).
+> **Developers: start with [`docs/architecture.md`](docs/architecture.md)** (the components, the buyer journey and how a payment is decided), then the table below.
 
 # ShelterKart backend
 
@@ -12,7 +12,7 @@ This repository holds the API, the investigation engine, pricing and payments, t
 | --- | --- |
 | 859 automated checks pass on a clean install; CI runs them, a real-Postgres run with the smoke test, and a Docker image build | Any run with real credentials: Razorpay, Dodo Payments sandbox, a live AI run, e-mail and WhatsApp delivery, the backup restore drill |
 | `docker compose up --build` gives a working local stack | A deploy: no hosting target is chosen ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)) |
-| Local checks on the container: non-root user, health check, Chromium prints a PDF | A real register connector feeding search (see [LATEST.md](LATEST.md) and [HANDOVER.md](HANDOVER.md)) |
+| Local checks on the container: non-root user, health check, Chromium prints a PDF | A real register connector feeding search (see [docs/HANDOVER.md](docs/HANDOVER.md)) |
 
 ## Run it
 
@@ -41,7 +41,7 @@ cd backend && npm ci && npx playwright install chromium
 npm test
 ```
 
-The chain runs the logic suites, the harness suites with stubbed services, the offline market acceptance check and the brand check (which needs only `python3`). It expects 625 checks and exit code 0. The Python packages in `tools/requirements.txt` are needed only to run the brand and guide builders.
+The chain runs the logic suites, the harness suites with stubbed services, and the offline market acceptance check. It must finish with exit code 0.
 
 ## What is where
 
@@ -56,10 +56,9 @@ The chain runs the logic suites, the harness suites with stubbed services, the o
 | `backend/*.sql` | Database migrations; `tools/migrate.js` applies exactly nine of them, the older files are inert |
 | `backend/test/` | The test suites |
 | `tools/` | Migration and seed scripts, smoke test, benchmarks, golden checks, audit scripts |
-| `brand/`, `guide/`, `i18n/` | Design tokens and checks, the buyer guide, nine languages |
-| `ops/`, `legal/` | Backup and restore scripts, the legal drafts for counsel |
+| `ops/` | Backup and restore scripts |
 | `Dockerfile`, `docker-compose.yml`, `.github/workflows/` | Container image, local stack, CI and release |
-| `docs/` | Architecture, delivery pipeline, deployment, and `archive/` for historical documents |
+| `docs/` | Architecture, delivery pipeline, deployment, the product rules (`CONSTITUTION.md`), the handover notes, and `archive/` for historical documents |
 
 ## How it works
 
@@ -69,4 +68,4 @@ The diagrams are in [docs/architecture.md](docs/architecture.md): the components
 
 ## Working on it
 
-Short-lived branches, a pull request for every change, CI must pass: see [CONTRIBUTING.md](CONTRIBUTING.md). The go-live checklist (company, tax registration, merchant approval, legal review, credentials) is in [HANDOVER.md](HANDOVER.md). Older documents (`LAUNCH.md`, the original README and hand-off) are kept for history; where they disagree with `HANDOVER.md` and `LATEST.md`, those two win.
+Short-lived branches, a pull request for every change, CI must pass: see [CONTRIBUTING.md](CONTRIBUTING.md). The go-live checklist (company, tax registration, merchant approval, legal review, credentials) is in [docs/HANDOVER.md](docs/HANDOVER.md). Older documents (`docs/LAUNCH.md`, the original README, the release notes and the October audit) are kept in `docs/archive/` or `docs/` for history; where they disagree with `docs/HANDOVER.md`, that one wins.
