@@ -115,6 +115,29 @@ function harness(over = {}, envOver = {}) {
     h.clock.t += 61000; const sixth = await h.call('post', '/api/auth/request-code', r); assert.strictEqual(sixth.code, 429); assert.strictEqual(sixth.body.code, 'rate_limited');
     h.clock.t += 3600000; assert.strictEqual((await h.call('post', '/api/auth/request-code', r)).code, 202);
   });
+  await t('another address asking inside a minute of an open code gets the same reply and no mail, so a stranger cannot cancel the owner code', async () => {
+    const h = harness(); const r = { body: { email: 'a@example.com' } };
+    assert.strictEqual((await h.call('post', '/api/auth/request-code', r)).code, 202); const first = h.codeOf();
+    const other = await h.call('post', '/api/auth/request-code', { ...r, ip: '2.2.2.2' });
+    assert.strictEqual(other.code, 202); assert.deepStrictEqual(other.body, { ok: true, cooldownSeconds: 60, codeLength: 6 }); assert.strictEqual(h.mails.length, 1);
+    assert.strictEqual((await h.call('post', '/api/auth/verify-code', { body: { email: 'a@example.com', code: first, termsAccepted: true } })).code, 200);
+  });
+  await t('after a minute a second address is sent a fresh code; each address has its own five an hour', async () => {
+    const h = harness(); const r = ip => ({ body: { email: 'a@example.com' }, ip });
+    await h.call('post', '/api/auth/request-code', r('1.1.1.1')); h.clock.t += 61000;
+    assert.strictEqual((await h.call('post', '/api/auth/request-code', r('2.2.2.2'))).code, 202); assert.strictEqual(h.mails.length, 2);
+    for (let i = 0; i < 4; i++) { h.clock.t += 61000; assert.strictEqual((await h.call('post', '/api/auth/request-code', r('1.1.1.1'))).code, 202); }
+    h.clock.t += 61000; assert.strictEqual((await h.call('post', '/api/auth/request-code', r('1.1.1.1'))).body.code, 'rate_limited');
+    h.clock.t += 61000; assert.strictEqual((await h.call('post', '/api/auth/request-code', r('3.3.3.3'))).code, 202);
+  });
+  await t('past twenty codes an hour for one address, requests are answered without mail while the last code is open, an operator is told once, and mail resumes when it expires', async () => {
+    const h = harness({}, { AUTH_CODE_MINUTES: '10' }); const ask = i => h.call('post', '/api/auth/request-code', { body: { email: 'a@example.com' }, ip: '10.0.0.' + i });
+    for (let i = 0; i < 20; i++) { h.clock.t += 61000 * (i ? 1 : 0); assert.strictEqual((await ask(i)).code, 202); }
+    assert.strictEqual(h.mails.length, 20); assert.strictEqual(h.alerts.length, 0);
+    h.clock.t += 61000; assert.strictEqual((await ask(40)).code, 202); assert.strictEqual(h.mails.length, 20); assert.strictEqual(h.alerts.length, 1);
+    h.clock.t += 61000; await ask(41); assert.strictEqual(h.mails.length, 20); assert.strictEqual(h.alerts.length, 1);
+    h.clock.t += 11 * 60000; assert.strictEqual((await ask(42)).code, 202); assert.strictEqual(h.mails.length, 21);
+  });
   await t('when the proof of work is on, a request without it is refused before any code exists', async () => {
     const bot = { enabled: () => true, verify: p => (p === 'good' ? { ok: true } : { ok: false, reason: 'missing' }) };
     const h = harness({ bot });
