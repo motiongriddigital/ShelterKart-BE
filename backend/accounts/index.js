@@ -43,6 +43,27 @@ function createAccounts(deps = {}) {
   const clearCookie = res => res.append('Set-Cookie', S.clearedCookie(cfg.secure));
   const audit = (actor, action, userId, reason) => Promise.resolve(store.audit(actor, action, userId, reason)).catch(e => console.error('[accounts] audit failed:', e && e.message));
 
+  const ev = (kind, { email, userId, req, detail } = {}) => Promise.resolve(store.recordEvent({ emailLower: email || null, userId: userId || null, ipHash: req ? S.hashIp(cfg.pepper, req.ip) : null, kind, detail, at: at() }))
+    .catch(e => console.error('[accounts] event not recorded:', e && e.message));
+
+  let banCache = { at: 0, list: [] };
+  const activeBans = async () => {
+    const t = now();
+    if (t - banCache.at > 30000) {
+      try { banCache = { at: t, list: await store.listBans({ activeOnly: true, now: at() }) }; }
+      catch (e) { console.error('[accounts] bans not read:', e && e.message); banCache = { at: t, list: banCache.list }; }
+    }
+    return banCache.list;
+  };
+  const dropBanCache = () => { banCache = { at: 0, list: banCache.list }; };
+  const ipBanned = async req => {
+    const list = (await activeBans()).filter(b => b.kind === 'ip');
+    if (!list.length) return false;
+    const ip = String(req.ip || '').replace(/^::ffff:/, ''), h = S.hashIp(cfg.pepper, req.ip);
+    return list.some(b => S.ipMatches(b.target, ip, h));
+  };
+  const accountBanned = async email => { const e = String(email || '').toLowerCase(); return (await activeBans()).some(b => b.kind === 'account' && b.target === e); };
+
   async function user(req) {
     if (!enabled) return null;
     if (req.accountUser !== undefined) return req.accountUser;
@@ -50,7 +71,7 @@ function createAccounts(deps = {}) {
     const token = tokenOf(req);
     if (!token) return null;
     const hash = S.hashToken(token), found = await store.sessionByHash(hash, at());
-    if (!found || found.user.disabledAt) return null;
+    if (!found || found.user.disabledAt || await accountBanned(found.user.email)) return null;
     const t = now();
     if (t - new Date(found.lastSeenAt).getTime() > DAY) {
       const until = Math.min(t + cfg.sessionDays * DAY, new Date(found.createdAt).getTime() + cfg.sessionMaxDays * DAY);
@@ -63,7 +84,10 @@ function createAccounts(deps = {}) {
 
   const guard = wrap(async (req, res, next) => {
     if (!enabled) return next();
-    if (await user(req)) return next();
+    if (await user(req)) {
+      if (await ipBanned(req)) return fail(res, 403, 'ip_banned', 'This address is blocked.');
+      return next();
+    }
     return fail(res, 401, 'auth_required', 'Sign in to continue.');
   });
 
@@ -105,26 +129,30 @@ function createAccounts(deps = {}) {
 
   function mount(app) {
     if (!enabled) return;
-    const limCode = rateLimit({ windowMs: 3600e3, max: 20, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' } });
-    const limVerify = rateLimit({ windowMs: 3600e3, max: 30, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' } });
+    const tooMany = where => (req, res) => { ev('ip_rate_limited', { req, detail: where }); res.status(429).json({ ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' }); };
+    const limCode = rateLimit({ windowMs: 3600e3, max: 20, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' }, handler: tooMany('request-code') });
+    const limVerify = rateLimit({ windowMs: 3600e3, max: 30, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' }, handler: tooMany('verify-code') });
     const limMe = rateLimit({ windowMs: 3600e3, max: 120, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' } });
 
     app.post('/api/auth/request-code', limCode, wrap(async (req, res) => {
       const b = req.body || {}, email = S.normEmail(b.email);
       if (!email) return fail(res, 400, 'invalid_email', 'Enter a valid e-mail address.');
+      if (await ipBanned(req)) { await ev('login_blocked_ip', { email, req, detail: 'request-code' }); return fail(res, 403, 'ip_banned', 'This address is blocked.'); }
+      if (await accountBanned(email)) { await ev('login_blocked_account', { email, req, detail: 'request-code' }); return fail(res, 403, 'account_banned', 'This account is disabled. Write to us if you think that is a mistake.'); }
       if (bot.enabled(env)) {
         const v = bot.verify(b.pow, env);
-        if (!v.ok) return fail(res, 428, 'challenge', 'Please complete the quick check and try again.');
+        if (!v.ok) { await ev('challenge_failed', { email, req }); return fail(res, 428, 'challenge', 'Please complete the quick check and try again.'); }
       }
       const t = now(), last = await store.lastCodeAt(email);
-      if (last && t - last.getTime() < 60000) return fail(res, 429, 'cooldown', 'Please wait a minute before asking for another code.', { retryAfter: Math.ceil((60000 - (t - last.getTime())) / 1000) });
-      if (await store.countCodesSince(email, new Date(t - 3600e3)) >= 5) return fail(res, 429, 'rate_limited', 'Too many codes were requested for this address. Please try again later.', { retryAfter: 3600 });
+      if (last && t - last.getTime() < 60000) { await ev('cooldown', { email, req }); return fail(res, 429, 'cooldown', 'Please wait a minute before asking for another code.', { retryAfter: Math.ceil((60000 - (t - last.getTime())) / 1000) }); }
+      if (await store.countCodesSince(email, new Date(t - 3600e3)) >= 5) { await ev('rate_limited_email', { email, req }); return fail(res, 429, 'rate_limited', 'Too many codes were requested for this address. Please try again later.', { retryAfter: 3600 }); }
       const code = S.newCode();
       await store.createCode({ emailLower: email, codeHash: S.hashCode(cfg.pepper, email, code), expiresAt: new Date(t + cfg.codeMinutes * 60000), ipHash: S.hashIp(cfg.pepper, req.ip), now: at() });
       const sent = await mail({ to: email, subject: 'Your ShelterKart sign-in code',
         text: `Your ShelterKart sign-in code is ${code}\n\nIt works for ${cfg.codeMinutes} minutes. If you did not ask for it, ignore this e-mail: nobody can sign in without the code.` }).catch(() => false);
       if (!sent) { console.error('[accounts] the sign-in code could not be sent'); alert('sign-in codes are not being sent', 'The e-mail provider refused or is not configured.').catch(() => {}); }
       track('signin_code_requested', req, { detail: sent ? 'sent' : 'failed' });
+      await ev('code_requested', { email, req, detail: sent ? 'sent' : 'send_failed' });
       const out = { ok: true, cooldownSeconds: 60, codeLength: 6 };
       if (cfg.devEcho && !cfg.production) out.devCode = code;
       res.status(202).json(out);
@@ -133,23 +161,28 @@ function createAccounts(deps = {}) {
     app.post('/api/auth/verify-code', limVerify, wrap(async (req, res) => {
       const b = req.body || {}, email = S.normEmail(b.email), code = String(b.code == null ? '' : b.code).trim();
       if (!email || !/^\d{6}$/.test(code)) return fail(res, 400, 'invalid_code', 'That code is not right. Check the latest e-mail and try again.');
+      if (await ipBanned(req)) { await ev('login_blocked_ip', { email, req, detail: 'verify-code' }); return fail(res, 403, 'ip_banned', 'This address is blocked.'); }
+      if (await accountBanned(email)) { await ev('login_blocked_account', { email, req, detail: 'verify-code' }); return fail(res, 403, 'account_banned', 'This account is disabled. Write to us if you think that is a mistake.'); }
       const open = await store.latestOpenCode(email, at());
-      if (!open) return fail(res, 400, 'invalid_code', 'That code is not right or has expired. Ask for a new one.');
+      if (!open) { await ev('code_expired', { email, req }); return fail(res, 400, 'invalid_code', 'That code is not right or has expired. Ask for a new one.'); }
       const tries = await store.bumpAttempts(open.id);
       if (tries > cfg.codeAttempts) {
+        await ev('code_locked', { email, req });
         await store.consumeCode(open.id);
         await audit('anonymous', 'auth.login_failed', null, 'too many wrong codes');
         return fail(res, 429, 'too_many_attempts', 'Too many wrong codes. Ask for a new one.');
       }
-      if (!S.sameHash(open.codeHash, S.hashCode(cfg.pepper, email, code)))
+      if (!S.sameHash(open.codeHash, S.hashCode(cfg.pepper, email, code))) {
+        await ev('code_wrong', { email, req, detail: String(tries) });
         return fail(res, 400, 'invalid_code', 'That code is not right. Check the latest e-mail and try again.', { attemptsLeft: Math.max(0, cfg.codeAttempts - tries) });
+      }
       let u = await store.findUserByEmail(email), isNewUser = false;
       if (!u) {
-        if (b.termsAccepted !== true) return fail(res, 400, 'consent_required', 'Please accept the terms and the privacy notice to create your account.');
+        if (b.termsAccepted !== true) { await ev('consent_required', { email, req }); return fail(res, 400, 'consent_required', 'Please accept the terms and the privacy notice to create your account.'); }
         u = await store.createUser({ email, language: LANG_RE.test(String(b.language || '')) ? String(b.language) : null, country: null, termsVersion: cfg.termsVersion, privacyVersion: cfg.privacyVersion, now: at() });
         isNewUser = true;
       }
-      if (u.disabledAt) return fail(res, 403, 'account_disabled', 'This account is disabled. Write to us if you think that is a mistake.');
+      if (u.disabledAt) { await ev('login_blocked_disabled', { email, userId: u.id, req }); return fail(res, 403, 'account_disabled', 'This account is disabled. Write to us if you think that is a mistake.'); }
       await store.consumeCode(open.id);
       await store.markLogin(u.id, at());
       const token = S.newToken(), t = now();
@@ -157,6 +190,7 @@ function createAccounts(deps = {}) {
       setCookie(res, token, cfg.sessionDays * DAY / 1000);
       await audit('user:' + u.id, 'auth.login', u.id, isNewUser ? 'new account' : null);
       track('signin_verified', req, { detail: isNewUser ? 'new' : 'returning' });
+      await ev('login_ok', { email, userId: u.id, req, detail: isNewUser ? 'new' : 'returning' });
       res.json({ ok: true, isNewUser, user: publicUser({ ...u, lastLoginAt: at() }) });
     }));
 
@@ -236,7 +270,12 @@ function createAccounts(deps = {}) {
 
   const cleanup = () => store.purge(at());
 
-  return { enabled, settings: cfg, problems, store, user, guard, guardStart, guardPage, entitled, touch, mount, cleanup, publicUser };
+  function mountAdmin(app, { adminAuth }) {
+    if (!enabled) return;
+    require('./admin').mountAdmin(app, { store, adminAuth, wrap, fail, audit, at, now, S, purchasesOf, reportsOf, dropBanCache, activeBans, rateLimit });
+  }
+
+  return { enabled, settings: cfg, problems, store, user, guard, guardStart, guardPage, entitled, touch, mount, mountAdmin, cleanup, publicUser };
 }
 
 module.exports = { createAccounts, publicUser };

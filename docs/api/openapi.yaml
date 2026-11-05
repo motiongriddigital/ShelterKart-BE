@@ -2152,6 +2152,343 @@ paths:
               schema: {$ref: '#/components/schemas/Error'}
         '429': {$ref: '#/components/responses/RateLimitedJson'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [Admin]
+      summary: Find users
+      description: 'Newest sign-in first. q matches part of an e-mail address or a name. Present only when ACCOUNTS_ENABLED=on.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {name: q, in: query, schema: {type: string, maxLength: 80}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}, users: {type: array, items: {type: object, properties: {id: {type: string, format: uuid}, email: {type: string}, displayName: {type: [string, 'null']}, country: {type: [string, 'null']}, createdAt: {type: string, format: date-time}, lastLoginAt: {type: [string, 'null'], format: date-time}, disabled: {type: boolean}, activeSessions: {type: integer}}}}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/users/{id}:
+    get:
+      operationId: adminGetUser
+      tags: [Admin]
+      summary: One user, with sign-in activity
+      description: 'Profile, active sessions (an address is only a short hash), purchases, opened reports, and the sign-in counts for the last 24 hours, 7 days and 30 days: codesRequested, signIns, wrongCodes, locked, expiredCodes, cooldownHits, rateLimited, blocked. Also the last 50 events, newest first. No code and no raw address is returned.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}, user: {type: object}, banned: {type: boolean}, sessions: {type: array, items: {type: object}}, purchases: {type: array, items: {type: object}}, reports: {type: array, items: {type: object}}, signIn: {type: object}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/users/{id}/disable:
+    post:
+      operationId: adminDisableUser
+      tags: [Admin]
+      summary: Disable an account
+      description: 'Sets the account disabled and ends all of its sessions. Written to the audit log.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason: {type: string, maxLength: 300}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/users/{id}/enable:
+    post:
+      operationId: adminEnableUser
+      tags: [Admin]
+      summary: Enable an account
+      description: 'Reverses a disable. Does not lift a ban.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/users/{id}/sessions/revoke:
+    post:
+      operationId: adminRevokeUserSessions
+      tags: [Admin]
+      summary: End every session of a user
+      description: 'The user must sign in again.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/sessions:
+    get:
+      operationId: adminListSessions
+      tags: [Admin]
+      summary: Active sessions
+      description: 'Up to 500, last seen first. The address is a short peppered hash.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}, sessions: {type: array, items: {type: object}}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/sessions/{id}/revoke:
+    post:
+      operationId: adminRevokeSession
+      tags: [Admin]
+      summary: End one session
+      description: ''
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[0-9a-f]{16}$'}, description: The first 16 characters of the session, as the sessions list shows them.}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/sessions/{id}/ban-ip:
+    post:
+      operationId: adminBanSessionIp
+      tags: [Admin]
+      summary: Ban the address a session came from
+      description: 'Bans by the peppered hash, so the raw address is never needed. The session is ended too.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[0-9a-f]{16}$'}, description: The first 16 characters of the session, as the sessions list shows them.}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: {type: string, minLength: 8, maxLength: 500}
+                days: {type: [integer, 'null'], minimum: 1, maximum: 3650, description: 'Empty or 0 means until lifted.'}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}, ban: {type: object}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '409':
+          description: That address is already banned.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/bans:
+    get:
+      operationId: adminListBans
+      tags: [Admin]
+      summary: Bans
+      description: 'status=active (default) or all.'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {name: status, in: query, schema: {type: string, enum: [active, all], default: active}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}, bans: {type: array, items: {type: object}}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/bans:
+    post:
+      operationId: adminAddBan
+      tags: [Admin]
+      summary: Ban an account or an IP address
+      description: "kind account takes an e-mail address and ends its sessions; kind ip takes an IPv4 address or a range from /8 to /32. Refused: a range that would block the operator's own address (code self_ban), a repeat of an active ban (409)."
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, target, reason]
+              properties:
+                kind: {type: string, enum: [account, ip]}
+                target: {type: string}
+                reason: {type: string, minLength: 8, maxLength: 500}
+                days: {type: [integer, 'null'], minimum: 1, maximum: 3650}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}, ban: {type: object}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '409':
+          description: That is already banned.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/bans/{id}/lift:
+    post:
+      operationId: adminLiftBan
+      tags: [Admin]
+      summary: Lift a ban
+      description: ''
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {$ref: '#/components/parameters/UuidPath'}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}, ban: {type: object}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '404':
+          description: Not found.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/auth/summary:
+    get:
+      operationId: adminAuthSummary
+      tags: [Admin]
+      summary: Sign-in activity across everyone
+      description: 'Counts per kind for the last N hours (1 to 2160, default 24).'
+      security:
+        - adminBasic: []
+      x-source: backend/accounts/admin.js
+      parameters:
+        - {name: hours, in: query, schema: {type: integer, minimum: 1, maximum: 2160, default: 24}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {ok: {type: boolean, const: true}, hours: {type: integer}, summary: {type: object}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/disputes:
     get:
       operationId: adminListDisputes
@@ -3256,6 +3593,11 @@ components:
       headers:
         WWW-Authenticate:
           schema: {type: string, examples: ['Basic realm="ShelterKart Admin"']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    AdminBadRequest:
+      description: 'The request was not valid: the message says what to change (for example a missing reason, a bad address, or code self_ban).'
       content:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}

@@ -13,6 +13,11 @@ function userFromRow(r) {
   };
 }
 
+function banFromRow(r) {
+  if (!r) return null;
+  return { id: r.id, kind: r.kind, target: r.target, reason: r.reason, createdAt: new Date(r.created_at), expiresAt: r.expires_at ? new Date(r.expires_at) : null, createdBy: r.created_by, liftedAt: r.lifted_at ? new Date(r.lifted_at) : null, liftedBy: r.lifted_by };
+}
+
 const USER_COLS = 'id, email, email_verified_at, display_name, country, language, phone, phone_consent_at, terms_version, privacy_version, terms_accepted_at, created_at, last_login_at, disabled_at, deleted_at';
 const PATCH_COLS = { displayName: 'display_name', country: 'country', language: 'language', phone: 'phone', phoneConsentAt: 'phone_consent_at' };
 
@@ -90,6 +95,7 @@ function makePgStore(pool) {
       await pool.query(`DELETE FROM sessions WHERE user_id=$1`, [userId]);
       await pool.query(`DELETE FROM user_reports WHERE user_id=$1`, [userId]);
       if (u) await pool.query(`DELETE FROM auth_codes WHERE email_lower=$1`, [u.e]);
+      if (u) await pool.query(`DELETE FROM auth_events WHERE email_lower=$1 OR user_id=$2`, [u.e, userId]); else await pool.query(`DELETE FROM auth_events WHERE user_id=$1`, [userId]);
       await pool.query(
         `UPDATE users SET email='deleted-'||id::text||'@deleted.invalid', display_name=NULL, country=NULL, language=NULL, phone=NULL, phone_consent_at=NULL,
                           terms_version=NULL, privacy_version=NULL, terms_accepted_at=NULL, deleted_at=$2 WHERE id=$1`, [userId, iso(now)]);
@@ -97,7 +103,57 @@ function makePgStore(pool) {
     async purge(now) {
       const a = await pool.query(`DELETE FROM auth_codes WHERE created_at < $1`, [new Date(iso(now).getTime() - 24 * 3600 * 1000)]);
       const s = await pool.query(`DELETE FROM sessions WHERE expires_at < $1 OR revoked_at < $2`, [iso(now), new Date(iso(now).getTime() - 7 * 24 * 3600 * 1000)]);
-      return { codes: a.rowCount || 0, sessions: s.rowCount || 0 };
+      const e = await pool.query(`DELETE FROM auth_events WHERE at < $1`, [new Date(iso(now).getTime() - 90 * 24 * 3600 * 1000)]);
+      return { codes: a.rowCount || 0, sessions: s.rowCount || 0, events: e.rowCount || 0 };
+    },
+    async recordEvent({ emailLower, userId, ipHash, kind, detail, at }) {
+      await pool.query(`INSERT INTO auth_events (at, email_lower, user_id, ip_hash, kind, detail) VALUES ($1,$2,$3,$4,$5,$6)`,
+        [iso(at || new Date()), emailLower || null, userId || null, ipHash || null, kind, detail || null]);
+    },
+    async eventsFor({ emailLower, userId, limit }) {
+      return (await pool.query(`SELECT at, kind, detail, ip_hash FROM auth_events WHERE ($1::text IS NOT NULL AND email_lower=$1) OR ($2::uuid IS NOT NULL AND user_id=$2) ORDER BY at DESC, id DESC LIMIT $3`, [emailLower || null, userId || null, limit]))
+        .rows.map(r => ({ at: new Date(r.at), kind: r.kind, detail: r.detail, ipHash: r.ip_hash }));
+    },
+    async eventCounts({ emailLower, userId, since }) {
+      const out = {};
+      for (const r of (await pool.query(`SELECT kind, COUNT(*)::int AS n FROM auth_events WHERE at >= $3 AND (($1::text IS NOT NULL AND email_lower=$1) OR ($2::uuid IS NOT NULL AND user_id=$2)) GROUP BY kind`, [emailLower || null, userId || null, iso(since)])).rows) out[r.kind] = Number(r.n);
+      return out;
+    },
+    async eventSummary(since) {
+      const out = {};
+      for (const r of (await pool.query(`SELECT kind, COUNT(*)::int AS n FROM auth_events WHERE at >= $1 GROUP BY kind`, [iso(since)])).rows) out[r.kind] = Number(r.n);
+      return out;
+    },
+    async listUsersAdmin({ q, limit, offset }) {
+      const like = q ? '%' + q.toLowerCase().replace(/[%_]/g, '') + '%' : null;
+      return (await pool.query(
+        `SELECT ${USER_COLS.split(', ').map(c => 'u.' + c).join(', ')},
+                (SELECT COUNT(*)::int FROM sessions s WHERE s.user_id=u.id AND s.revoked_at IS NULL AND s.expires_at > now()) AS active_sessions
+           FROM users u WHERE u.deleted_at IS NULL AND ($1::text IS NULL OR lower(u.email) LIKE $1 OR lower(COALESCE(u.display_name,'')) LIKE $1)
+          ORDER BY COALESCE(u.last_login_at, u.created_at) DESC LIMIT $2 OFFSET $3`, [like, limit, offset]))
+        .rows.map(r => ({ ...userFromRow(r), activeSessions: Number(r.active_sessions) }));
+    },
+    async setDisabled(userId, disabledAt) { await pool.query(`UPDATE users SET disabled_at=$2 WHERE id=$1 AND deleted_at IS NULL`, [userId, disabledAt ? iso(disabledAt) : null]); },
+    async sessionsFull(userId) {
+      return (await pool.query(`SELECT token_hash, user_id, created_at, last_seen_at, expires_at, ip_hash, user_agent FROM sessions WHERE ($1::uuid IS NULL OR user_id=$1) AND revoked_at IS NULL AND expires_at > now() ORDER BY last_seen_at DESC LIMIT $2`, [userId || null, userId ? 100 : 500]))
+        .rows.map(r => ({ id: r.token_hash.slice(0, 16), userId: r.user_id, createdAt: new Date(r.created_at), lastSeenAt: new Date(r.last_seen_at), expiresAt: new Date(r.expires_at), ipHash: r.ip_hash, userAgent: r.user_agent }));
+    },
+    async revokeByPrefix(prefix) {
+      const r = one(await pool.query(`UPDATE sessions SET revoked_at=now() WHERE token_hash LIKE $1 AND revoked_at IS NULL RETURNING user_id, ip_hash`, [prefix + '%']));
+      return r ? { userId: r.user_id, ipHash: r.ip_hash } : null;
+    },
+    async sessionByPrefix(prefix) {
+      const r = one(await pool.query(`SELECT user_id, ip_hash FROM sessions WHERE token_hash LIKE $1 AND revoked_at IS NULL LIMIT 1`, [prefix + '%']));
+      return r ? { userId: r.user_id, ipHash: r.ip_hash } : null;
+    },
+    async addBan({ kind, target, reason, expiresAt, by }) {
+      return banFromRow(one(await pool.query(`INSERT INTO bans (kind, target, reason, expires_at, created_by) VALUES ($1,$2,$3,$4,$5) RETURNING *`, [kind, target, reason, expiresAt ? iso(expiresAt) : null, by])));
+    },
+    async liftBan(id, by) {
+      return banFromRow(one(await pool.query(`UPDATE bans SET lifted_at=now(), lifted_by=$2 WHERE id=$1 AND lifted_at IS NULL RETURNING *`, [id, by])));
+    },
+    async listBans({ activeOnly, now }) {
+      return (await pool.query(`SELECT * FROM bans WHERE ($1::boolean IS NOT TRUE OR (lifted_at IS NULL AND (expires_at IS NULL OR expires_at > $2))) ORDER BY created_at DESC LIMIT 500`, [Boolean(activeOnly), iso(now || new Date())])).rows.map(banFromRow);
     },
     async audit(actor, action, userId, reason) {
       await pool.query(`INSERT INTO audit_log (actor, action, object_type, object_id, reason) VALUES ($1,$2,'user',$3,$4)`, [actor, action, userId || null, reason || null]);
@@ -106,12 +162,12 @@ function makePgStore(pool) {
 }
 
 function makeMemoryStore() {
-  const users = new Map(), codes = [], sessions = new Map(), opened = new Map(), auditLog = [];
+  const users = new Map(), codes = [], sessions = new Map(), opened = new Map(), auditLog = [], events = [], bans = [];
   const live = () => [...users.values()].filter(u => !u.deletedAt);
   const copy = u => (u ? { ...u } : null);
   return {
     kind: 'memory',
-    _users: users, _codes: codes, _sessions: sessions, _audit: auditLog,
+    _users: users, _codes: codes, _sessions: sessions, _audit: auditLog, _events: events, _bans: bans,
     async createCode({ emailLower, codeHash, expiresAt, ipHash, now = new Date() }) {
       for (const c of codes) if (c.emailLower === emailLower && !c.consumedAt) c.consumedAt = now;
       codes.push({ id: crypto.randomUUID(), emailLower, codeHash, attempts: 0, expiresAt: iso(expiresAt), consumedAt: null, ipHash: ipHash || null, createdAt: now });
@@ -165,13 +221,52 @@ function makeMemoryStore() {
       for (const [h, s] of sessions) if (s.userId === userId) sessions.delete(h);
       for (const k of [...opened.keys()]) if (k.startsWith(userId + '|')) opened.delete(k);
       for (let i = codes.length - 1; i >= 0; i--) if (codes[i].emailLower === u.email.toLowerCase()) codes.splice(i, 1);
+      for (let i = events.length - 1; i >= 0; i--) if (events[i].userId === userId || events[i].emailLower === u.email.toLowerCase()) events.splice(i, 1);
       Object.assign(u, { email: `deleted-${u.id}@deleted.invalid`, displayName: null, country: null, language: null, phone: null, phoneConsentAt: null, termsVersion: null, privacyVersion: null, termsAcceptedAt: null, deletedAt: iso(now) });
     },
     async purge(now) {
       const n = iso(now).getTime(); let c = 0, s = 0;
       for (let i = codes.length - 1; i >= 0; i--) if (codes[i].createdAt.getTime() < n - 24 * 3600 * 1000) { codes.splice(i, 1); c++; }
       for (const [h, x] of sessions) if (x.expiresAt.getTime() < n || (x.revokedAt && x.revokedAt.getTime() < n - 7 * 24 * 3600 * 1000)) { sessions.delete(h); s++; }
-      return { codes: c, sessions: s };
+      let ev = 0;
+      for (let i = events.length - 1; i >= 0; i--) if (events[i].at.getTime() < n - 90 * 24 * 3600 * 1000) { events.splice(i, 1); ev++; }
+      return { codes: c, sessions: s, events: ev };
+    },
+    async recordEvent({ emailLower, userId, ipHash, kind, detail, at }) { events.push({ at: iso(at || new Date()), emailLower: emailLower || null, userId: userId || null, ipHash: ipHash || null, kind, detail: detail || null }); },
+    async eventsFor({ emailLower, userId, limit }) {
+      return events.map((e, i) => ({ e, i })).filter(({ e }) => (emailLower && e.emailLower === emailLower) || (userId && e.userId === userId))
+        .sort((a, b) => (b.e.at - a.e.at) || (b.i - a.i)).slice(0, limit).map(({ e }) => ({ at: e.at, kind: e.kind, detail: e.detail, ipHash: e.ipHash }));
+    },
+    async eventCounts({ emailLower, userId, since }) {
+      const out = {};
+      for (const e of events) if (e.at >= iso(since) && ((emailLower && e.emailLower === emailLower) || (userId && e.userId === userId))) out[e.kind] = (out[e.kind] || 0) + 1;
+      return out;
+    },
+    async eventSummary(since) { const out = {}; for (const e of events) if (e.at >= iso(since)) out[e.kind] = (out[e.kind] || 0) + 1; return out; },
+    async listUsersAdmin({ q, limit, offset }) {
+      const t = q ? q.toLowerCase() : null;
+      return live().filter(u => !t || u.email.toLowerCase().includes(t) || (u.displayName || '').toLowerCase().includes(t))
+        .sort((a, b) => new Date(b.lastLoginAt || b.createdAt) - new Date(a.lastLoginAt || a.createdAt)).slice(offset, offset + limit)
+        .map(u => ({ ...u, activeSessions: [...sessions.values()].filter(s => s.userId === u.id && !s.revokedAt && s.expiresAt > new Date()).length }));
+    },
+    async setDisabled(userId, disabledAt) { const u = users.get(userId); if (u && !u.deletedAt) u.disabledAt = disabledAt ? iso(disabledAt) : null; },
+    async sessionsFull(userId) {
+      return [...sessions.values()].filter(s => (!userId || s.userId === userId) && !s.revokedAt && s.expiresAt > new Date()).sort((a, b) => b.lastSeenAt - a.lastSeenAt).slice(0, userId ? 100 : 500)
+        .map(s => ({ id: s.tokenHash.slice(0, 16), userId: s.userId, createdAt: s.createdAt, lastSeenAt: s.lastSeenAt, expiresAt: s.expiresAt, ipHash: s.ipHash, userAgent: s.userAgent }));
+    },
+    async revokeByPrefix(prefix) {
+      const s = [...sessions.values()].find(x => x.tokenHash.startsWith(prefix) && !x.revokedAt);
+      if (!s) return null; s.revokedAt = new Date(); return { userId: s.userId, ipHash: s.ipHash };
+    },
+    async sessionByPrefix(prefix) { const s = [...sessions.values()].find(x => x.tokenHash.startsWith(prefix) && !x.revokedAt); return s ? { userId: s.userId, ipHash: s.ipHash } : null; },
+    async addBan({ kind, target, reason, expiresAt, by }) {
+      const b = { id: crypto.randomUUID(), kind, target, reason, createdAt: new Date(), expiresAt: expiresAt ? iso(expiresAt) : null, createdBy: by, liftedAt: null, liftedBy: null };
+      bans.push(b); return { ...b };
+    },
+    async liftBan(id, by) { const b = bans.find(x => x.id === id && !x.liftedAt); if (!b) return null; b.liftedAt = new Date(); b.liftedBy = by; return { ...b }; },
+    async listBans({ activeOnly, now }) {
+      const n = iso(now || new Date());
+      return bans.filter(b => !activeOnly || (!b.liftedAt && (!b.expiresAt || b.expiresAt > n))).sort((a, b) => b.createdAt - a.createdAt).slice(0, 500).map(b => ({ ...b }));
     },
     async audit(actor, action, userId, reason) { auditLog.push({ actor, action, userId: userId || null, reason: reason || null, at: new Date() }); },
   };

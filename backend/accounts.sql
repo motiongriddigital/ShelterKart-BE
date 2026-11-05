@@ -56,3 +56,32 @@ CREATE TABLE IF NOT EXISTS user_reports (
 
 ALTER TABLE report_purchases ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_report_purchases_user ON report_purchases (user_id, report_ref) WHERE user_id IS NOT NULL;
+
+-- Sign-in activity: every code request, wrong code, lock, rate-limit hit and sign-in, so an admin can see how often a person tried.
+-- No code and no e-mail body is stored. The IP address is kept only as a peppered hash. Rows older than 90 days are deleted by the daily clean-up.
+CREATE TABLE IF NOT EXISTS auth_events (
+  id          BIGSERIAL PRIMARY KEY,
+  at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+  email_lower TEXT,
+  user_id     UUID REFERENCES users(id) ON DELETE SET NULL,
+  ip_hash     TEXT,
+  kind        TEXT NOT NULL,
+  detail      TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_auth_events_email ON auth_events (email_lower, at DESC);
+CREATE INDEX IF NOT EXISTS idx_auth_events_user ON auth_events (user_id, at DESC) WHERE user_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_auth_events_at ON auth_events (at);
+
+-- Bans by an admin: an account (by e-mail) or an IP address (a raw IPv4 or range, or "hash:<peppered hash>" taken from a session).
+CREATE TABLE IF NOT EXISTS bans (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  kind       TEXT NOT NULL CHECK (kind IN ('account', 'ip')),
+  target     TEXT NOT NULL,
+  reason     TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ,
+  created_by TEXT NOT NULL,
+  lifted_at  TIMESTAMPTZ,
+  lifted_by  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_bans_active ON bans (kind, target) WHERE lifted_at IS NULL;
