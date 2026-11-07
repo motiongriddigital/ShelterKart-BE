@@ -61,6 +61,8 @@ jobs:
           AUTH_PEPPER: ci-pepper-not-a-secret-0123456789abcdef
           ACCOUNTS_DEV_ECHO: 'on'
           ACCOUNTS_CSRF: 'on'
+          API_VALIDATION: enforce
+          API_VALIDATION_ENFORCE: /api/auth,/api/me
           ALLOWED_ORIGINS: 'http://localhost:5173'
         run: (node backend/server.js > /tmp/server-accounts.log 2>&1 &) && for i in $(seq 1 30); do curl -sf localhost:3001/api/health && break; sleep 1; done
       - name: Smoke test sign-in, sessions and the wall against the real database
