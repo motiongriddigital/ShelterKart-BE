@@ -15,7 +15,7 @@ backend/
     asyncHandler.js      ah(): forwards async errors to Express
     rateLimit.js         the express-rate-limit wrapper
     errors.js            the last handler: no stack traces, no database text
-  modules/             one file per feature: its routes, in the order they must be matched
+  modules/             one file per feature: its routes, in the order they must be matched; handler logic lives in the domain folder
     site.js              robots.txt, sitemap.xml, /api/health
     payments.js          quote, checkout, Razorpay and Dodo verification and webhooks, access
     investigate.js       buyer investigations (/start, /api/investigate, /r/:ref) and the admin investigator
@@ -70,6 +70,6 @@ The front-end developer's layout (`config`, `controllers`, `middlewares`, `model
 
 ## What is not done yet
 
-- Handlers are still written inside the module files, so `modules/payments.js` (about 450 lines) holds the checkout and webhook logic. The next step is to move each handler's logic into a function in the domain folder (checkout first, then the Razorpay and Dodo webhooks) and leave the route as a thin call, one pull request per feature, with the route snapshot and the existing tests as the guard.
+- Payments is done: `modules/payments.js` is only routes (84 lines), and the logic of each handler is in `payments/handlers/` (checkout, quote, access, webhooks) as functions that read the request and return `{ status, body, headers? }`. `middleware/respond.js` turns such a function into an Express handler. The other modules (`research`, `investigate`, `admin`, `responses`, `guides`) still write their handlers inline; the same step applies to each, one feature per pull request, guarded by the route snapshot and the existing tests.
 - `services/core.js` builds many unrelated things. It can be split once the handlers no longer reach into it directly.
 - Moving the whole tree under `src/` was left out on purpose: it touches every test path and the Dockerfile for no gain.
