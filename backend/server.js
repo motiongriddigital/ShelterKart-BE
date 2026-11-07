@@ -92,6 +92,8 @@ const OWN_BODY_PARSER = new Set(['/api/payments/webhook', '/api/payments/razorpa
 const jsonSmall = express.json({ limit: '10kb' });
 app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
 app.use((req, res, next) => ACCOUNTS.csrf(req, res, next));
+const CONTRACT = require('./engine/contract').createContract();
+app.use(CONTRACT.middleware);
 
 const pool = require('./engine/poolGuard').guardPool(new Pool({ connectionString: process.env.DATABASE_URL }));
 const { createErrorLog } = require('./engine/errorlog');
@@ -1682,6 +1684,7 @@ function requireUuid(req, res, next) {
   next();
 }
 
+app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
 app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
   try {
     // "Purchases" means PAID: a pending checkout is not a sale. Leads were

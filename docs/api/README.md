@@ -14,6 +14,12 @@ The code is the source of truth. If the two disagree, the contract is wrong.
 - Route count: 58 routes are registered with `app.get` or `app.post` in `server.js`, and the contract has 58 operations for them. The six retired paths are one more registration (`app.all`). To recount: `grep -cE "app\.(get|post|put|patch|delete)\(" backend/server.js` prints 58.
 - Validate with `npx --yes @redocly/cli@latest lint docs/api/openapi.yaml`.
 
+## Request validation
+
+The server can check each request against this contract (`backend/engine/contract.js`, `express-openapi-validator`). `API_VALIDATION=off` (default) loads nothing. `report` counts mismatches (`GET /api/admin/contract`) and logs the first of each, and refuses nothing. `enforce` answers 400 `{ "ok": false, "code": "invalid_request", "error": "...", "fields": [{ "path", "message" }] }` for the path prefixes in `API_VALIDATION_ENFORCE`; other paths stay report-only. Webhooks and the document check are never checked. A contract that fails to load turns validation off and is logged once.
+
+Because the contract now has teeth, it must stay a valid OpenAPI 3.1 file with unique keys: `node backend/test/contract.test.js` fails if it does not load. A request body is not type-coerced (a number where text is documented is a mismatch); query and path values are read from strings. To make a body field strict, add `additionalProperties: false` to its schema.
+
 ## Authentication
 
 | Scheme | Used by | How |
