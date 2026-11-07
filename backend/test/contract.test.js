@@ -99,9 +99,9 @@ async function serve(env, opts = {}) {
 
   console.log('the contract file');
   await t('it has no duplicate keys and the validator accepts it', async () => {
-    const YAML = require('yaml'), fs = require('fs');
-    const doc = YAML.parseDocument(fs.readFileSync(require('../engine/contract').SPEC, 'utf8'), { uniqueKeys: true });
-    assert.deepStrictEqual(doc.errors.map(e => e.message.split('\n')[0]), []);
+    const fs = require('fs'), YAML = require(require.resolve('js-yaml', { paths: [require.resolve('express-openapi-validator')] }));
+    assert.doesNotThrow(() => YAML.load(fs.readFileSync(require('../engine/contract').SPEC, 'utf8')), 'duplicate key or bad YAML in the contract');
+    assert.throws(() => YAML.load('a: 1\na: 2\n'), /duplicated mapping key/);
     const s = await serve({ API_VALIDATION: 'report' });
     await s.call('POST', '/api/auth/request-code', { email: 'a@b.co' });
     assert(!s.log.lines.some(l => /could not be loaded/.test(l)), s.log.lines.join(' ')); s.close();
