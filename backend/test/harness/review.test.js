@@ -82,6 +82,19 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
   ok('with a solved puzzle the new research runs', solved.code === 200 && solved.body.ok === true);
   const replay = await call(research, { body: { query: 'Another New Tower', market: 'in', country: 'IN', pow } });
   ok('the same solved puzzle cannot start a second new research', replay.code === 428 && replay.body.reason === 'used');
+  // SHEL-39: the document check starts new research too, so it needs the same proof of work, and must not spend the day's allowance without it
+  const doc = find('post', '/api/research/document-check'), RS = require('../../engine/research');
+  const used0 = RS._daily.count;
+  const d0 = await call(doc, { body: { query: 'Yet Another Tower', market: 'in', file: 'x', mediaType: 'image/png' } });
+  ok('guard on: the document check refuses new research without proof of work (428), like /api/research', d0.code === 428 && d0.body.code === 'challenge');
+  ok('...and the refusal did not use any of the day\'s research allowance', RS._daily.count === used0);
+  const d1 = await call(doc, { body: { query: 'Hubtown Celeste', market: 'in', file: 'x', mediaType: 'image/png' } });
+  ok('guard on: an already-researched report needs no check for the document check either', d1.code !== 428);
+  const ch2 = await call(find('get', '/api/research/challenge'));
+  const d2 = await call(doc, { body: { query: 'Yet Another Tower', market: 'in', file: 'x', mediaType: 'image/png', pow: { token: ch2.body.token, solution: solve(ch2.body.token, ch2.body.bits) } } });
+  ok('with a solved puzzle the document check goes through the guard', d2.code !== 428);
+  const d3 = await call(doc, { body: { query: 'Fifth New Tower', market: 'in', file: 'x', mediaType: 'image/png', pow: { token: ch2.body.token, solution: solve(ch2.body.token, ch2.body.bits) } } });
+  ok('and the same puzzle cannot be used twice there either', d3.code === 428 && d3.body.reason === 'used');
   delete process.env.BOT_GUARD; delete process.env.BOT_POW_BITS;
 
   // Emergency pause: new research stops, researched reports still open
