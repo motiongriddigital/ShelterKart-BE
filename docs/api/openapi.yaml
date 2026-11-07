@@ -3832,6 +3832,7 @@ paths:
       security: [{sessionCookie: []}]
       responses:
         '200': {description: Signed out; the cookie is cleared., content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
+        '403': {$ref: '#/components/responses/CsrfRefused'}
         '401': {$ref: '#/components/responses/AuthRequired'}
   /api/auth/logout-all:
     post:
@@ -3841,7 +3842,28 @@ paths:
       security: [{sessionCookie: []}]
       responses:
         '200': {description: All sessions ended; the cookie is cleared., content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
+        '403': {$ref: '#/components/responses/CsrfRefused'}
         '401': {$ref: '#/components/responses/AuthRequired'}
+  /api/auth/session:
+    get:
+      operationId: getAuthSession
+      tags: [Accounts]
+      summary: Is this browser signed in
+      description: 'Never answers 401: a missing, expired, revoked or banned session is the anonymous shape. Not cached. Does not extend the session more often than a guarded call does.'
+      security: []
+      responses:
+        '200':
+          description: Signed in or not.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, authenticated]
+                properties:
+                  ok: {type: boolean, const: true}
+                  authenticated: {type: boolean}
+                  emailVerified: {type: boolean, description: 'Present when authenticated.'}
+                  expiresAt: {type: string, format: date-time, description: 'Present when authenticated.'}
   /api/me:
     get:
       operationId: getMe
@@ -4053,6 +4075,11 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
+    CsrfRefused:
+      description: 'A state-changing request carried the session cookie from an origin that is not allowed, and ACCOUNTS_CSRF is on. Body `{ "ok": false, "code": "csrf", "error": "This request came from an origin that is not allowed." }`.'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
     OriginNotAllowed:
       description: 'The request carried an `Origin` header that is not in `ALLOWED_ORIGINS`. The body is `{ "ok": false, "error": "Origin not allowed" }`. Applies to every route.'
       content:
@@ -4105,6 +4132,7 @@ components:
         displayName: {type: [string, 'null']}
         country: {type: [string, 'null']}
         language: {type: [string, 'null']}
+        emailVerified: {type: boolean}
         phone: {type: [string, 'null']}
         createdAt: {type: [string, 'null'], format: date-time}
     Error:

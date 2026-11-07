@@ -8,6 +8,7 @@ const S = require('./secrets');
 const { settings, validate } = require('./config');
 const { makeAccountStore } = require('./store');
 const { countryFromRequest } = require('./geo');
+const { csrfGuard } = require('./csrf');
 
 const DAY = 24 * 3600 * 1000;
 const LANG_RE = /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/;
@@ -15,7 +16,7 @@ const clip = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]
 
 const publicUser = u => (u ? {
   id: u.id, email: u.email, displayName: u.displayName || null, country: u.country || null, language: u.language || null,
-  phone: u.phone || null, createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : null,
+  emailVerified: Boolean(u.emailVerifiedAt), phone: u.phone || null, createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : null,
 } : null);
 
 function createAccounts(deps = {}) {
@@ -80,6 +81,7 @@ function createAccounts(deps = {}) {
       await store.slideSession(hash, new Date(until), at());
     }
     req.accountSession = hash;
+    req.accountExpiresAt = found.expiresAt;
     req.accountUser = found.user;
     return found.user;
   }
@@ -92,6 +94,9 @@ function createAccounts(deps = {}) {
     }
     return fail(res, 401, 'auth_required', 'Sign in to continue.');
   });
+
+  const csrf = csrfGuard({ mode: enabled ? cfg.csrf : 'off', cookieName: S.cookieName(cfg.secure), openWhenEmpty: !cfg.production,
+    allowedOrigins: String(env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean), log: deps.csrfLog });
 
   const guardStart = cfg.searchGate === 'start' ? guard : (req, res, next) => next();
 
@@ -202,7 +207,7 @@ function createAccounts(deps = {}) {
       await audit('user:' + u.id, 'auth.login', u.id, isNewUser ? 'new account' : null);
       track('signin_verified', req, { detail: isNewUser ? 'new' : 'returning' });
       await ev('login_ok', { email, userId: u.id, req, detail: isNewUser ? 'new' : 'returning' });
-      res.json({ ok: true, isNewUser, user: publicUser({ ...u, lastLoginAt: at() }) });
+      res.json({ ok: true, isNewUser, user: publicUser({ ...u, emailVerifiedAt: u.emailVerifiedAt || at(), lastLoginAt: at() }) });
     }));
 
     app.post('/api/auth/logout', limMe, guard, wrap(async (req, res) => {
@@ -219,6 +224,13 @@ function createAccounts(deps = {}) {
       clearCookie(res);
       await audit('user:' + u.id, 'auth.logout', u.id, 'all sessions');
       res.json({ ok: true });
+    }));
+
+    app.get('/api/auth/session', limMe, wrap(async (req, res) => {
+      res.set('Cache-Control', 'no-store');
+      const u = await user(req);
+      if (!u || await ipBanned(req)) return res.json({ ok: true, authenticated: false });
+      res.json({ ok: true, authenticated: true, emailVerified: Boolean(u.emailVerifiedAt), expiresAt: new Date(req.accountExpiresAt).toISOString() });
     }));
 
     app.get('/api/me', limMe, guard, wrap(async (req, res) => {
@@ -286,7 +298,7 @@ function createAccounts(deps = {}) {
     require('./admin').mountAdmin(app, { store, adminAuth, wrap, fail, audit, at, now, S, purchasesOf, reportsOf, dropBanCache, activeBans, rateLimit });
   }
 
-  return { enabled, settings: cfg, problems, store, user, guard, guardStart, guardPage, entitled, touch, mount, mountAdmin, cleanup, publicUser };
+  return { enabled, settings: cfg, problems, store, user, csrf, guard, guardStart, guardPage, entitled, touch, mount, mountAdmin, cleanup, publicUser };
 }
 
 module.exports = { createAccounts, publicUser };

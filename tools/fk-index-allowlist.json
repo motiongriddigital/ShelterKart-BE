@@ -1,0 +1,92 @@
+[
+  {
+    "table": "entity_aliases",
+    "column": "entity_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "entity_aliases",
+    "column": "source_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "evidence",
+    "column": "document_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "evidence",
+    "column": "superseded_by",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "evidence_conflicts",
+    "column": "entity_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "evidence_conflicts",
+    "column": "evidence_a",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "evidence_conflicts",
+    "column": "evidence_b",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "report_versions",
+    "column": "methodology_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "report_versions",
+    "column": "supersedes",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "ai_extraction_candidates",
+    "column": "document_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "ai_extraction_candidates",
+    "column": "promoted_evidence_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "ingestion_jobs",
+    "column": "entity_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "ingestion_jobs",
+    "column": "result_document",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "ingestion_jobs",
+    "column": "source_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "source_change_events",
+    "column": "new_evidence",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "source_change_events",
+    "column": "old_evidence",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "source_change_events",
+    "column": "source_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  },
+  {
+    "table": "entitlements",
+    "column": "report_version_id",
+    "reason": "evidence schema: no code path writes or deletes it yet; index when it is put to use"
+  }
+]
