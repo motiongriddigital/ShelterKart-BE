@@ -5,7 +5,7 @@
 // 23505, exactly as real Postgres reports it), so the server's own
 // race-condition handling is exercised for real, not just its
 // read-first happy path.
-const db = { purchases: [], events: new Set(), briefs: new Map(), aliases: new Map(), daily: new Map(), health: new Map(), analyticsEvents: [], salt: new Map(), translations: new Map(), quotes: new Map(), pricingEvents: [], ledger: new Map(), refunds: [], counters: new Map(), invoices: [] };
+const db = { purchases: [], events: new Map(), briefs: new Map(), aliases: new Map(), daily: new Map(), health: new Map(), analyticsEvents: [], salt: new Map(), translations: new Map(), quotes: new Map(), pricingEvents: [], ledger: new Map(), refunds: [], counters: new Map(), invoices: [] };
 function delBriefs(match) { const out = []; for (const [ref, r] of db.briefs) if (match(r)) { db.briefs.delete(ref); out.push({ cache_key: r.cache_key }); } return out; } let n = 0;
 const uuid = () => (++n).toString(16).padStart(8,'0') + '-0000-4000-8000-000000000000';
 async function query(sql, p=[]) {
@@ -148,7 +148,13 @@ async function query(sql, p=[]) {
   if (/SELECT status FROM report_purchases/.test(q)) return { rows: db.purchases.filter(x=>x.id===p[0]&&x.report_ref===p[1]).map(x=>({status:x.status})) };
   if (/SELECT id, report_ref, amount, currency, status FROM report_purchases WHERE provider='razorpay' AND provider_order_id=\$1/.test(q)) return { rows: db.purchases.filter(x=>x.provider==='razorpay'&&x.provider_order_id===p[0]) };
   if (/SET status='paid', provider_payment_id=\$3/.test(q)) { const r = db.purchases.filter(x=>x.id===p[0]&&x.report_ref===p[1]&&x.status==='pending_payment'); r.forEach(x=>{x.status='paid'; x.provider_payment_id=p[2];}); return { rows: r.map(x=>({id:x.id, amount:String(x.amount), currency:x.currency, quote_id:x.quote_id ?? null, buyer_country:x.buyer_country ?? null, billing_country:x.billing_country ?? null, buyer_kind:x.buyer_kind ?? null, tax_id:x.tax_id ?? null})) }; }
-  if (/INSERT INTO payment_events/.test(q)) { const lit = /'razorpay'/.test(q) ? 'razorpay' : /'mor'/.test(q) ? 'mor' : null, k = (lit || p[0]) + '|' + (lit ? p[0] : p[1]); if (db.events.has(k)) return { rows:[] }; db.events.add(k); return { rows:[{id:db.events.size}] }; }
+  if (/INSERT INTO payment_events/.test(q)) {
+    const lit = /'razorpay'/.test(q) ? 'razorpay' : /'mor'/.test(q) ? 'mor' : null, k = (lit || p[0]) + '|' + (lit ? p[0] : p[1]), old = db.events.get(k);
+    const reclaim = /DO UPDATE/.test(q) && old && old.status === 'received' && (Date.now() - old.at) / 1000 >= Number(p[2]);
+    if (old && !reclaim) return { rows:[] };
+    const id = old ? old.id : db.events.size + 1; db.events.set(k, { id, status: 'received', at: Date.now() }); return { rows:[{id}] };
+  }
+  if (/UPDATE payment_events SET process_status/.test(q)) { for (const e of db.events.values()) if (e.id === p[0]) e.status = p[1]; return { rows:[] }; }
   if (/SELECT u\.email FROM report_purchases p JOIN users u ON u\.id = p\.user_id WHERE p\.id=\$1/.test(q)) { const e = db.payerEmail && db.payerEmail[p[0]]; return { rows: e ? [{ email: e }] : [] }; }
   if (/UPDATE report_purchases SET user_id=\$2 WHERE id=\$1/.test(q)) { db.purchases.filter(x => x.id === p[0]).forEach(x => { x.user_id = p[1]; }); return { rows: [] }; }
   if (/SELECT 1 FROM report_purchases WHERE user_id=\$1 AND status='paid'( AND created_at >= \$2)? LIMIT 1/.test(q)) return { rows: db.purchases.filter(x => x.user_id === p[0] && x.status === 'paid').slice(0, 1).map(() => ({ '?column?': 1 })) };

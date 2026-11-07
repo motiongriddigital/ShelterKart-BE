@@ -57,6 +57,21 @@ Tax rule: where the merchant sells, ShelterKart adds no tax of its own, even if 
 ### C. India (Razorpay)
 Keys and webhook secret in the environment, `GSTIN` set, `RAZORPAY_INTERNATIONAL` left `false` (foreign buyers go through the merchant). Razorpay settings are in `backend/.env.example`.
 
+#### Razorpay international (optional, off by default)
+
+Foreign buyers normally pay through the merchant (section B). To let Razorpay take foreign cards too:
+
+1. In Razorpay's dashboard, ask for **International Payments** to be activated and get the list of currencies it confirms in writing.
+2. Set `RAZORPAY_INTERNATIONAL=true` and `RAZORPAY_CURRENCIES=USD,AED,...` (only the confirmed ones). A tax profile must also be complete for each country (`backend/data/tax-profiles.json`), because Razorpay is not the seller.
+3. Subscribe the webhook `https://HOST/api/payments/razorpay/webhook` to `payment.authorized`, `payment.captured`, `order.paid`, `payment.failed` and `refund.created`, `refund.processed`, `refund.failed`.
+4. Run `node tools/razorpay_sandbox_check.js` with TEST keys: it opens one order per currency. Pay each, then `node tools/razorpay_sandbox_check.js --check-order <order id> --expect-sub <amount> --currency <code>`.
+5. International payments are often only **authorized**. The server captures them (for exactly the quote's total, in its currency) on `payment.authorized`, or when the buyer returns and the order is checked, and settles the purchase on the capture.
+6. Foreign-currency fees settle in rupees at Razorpay's rate: reconcile them from the settlement report. They are not written to `provider_fee`.
+
+#### If a webhook fails halfway
+
+A webhook is claimed before it is processed and marked finished afterwards. A failure answers 500, so the provider sends it again, and the retry is processed (it used to be swallowed as a duplicate, which could leave a paid purchase locked). A buyer who returns before the webhook settles is checked against the provider's own record of the order (Razorpay and the merchant alike): only the exact amount in the exact currency unlocks.
+
 ### D. Infrastructure
 `LAUNCH.md` covers the server, the database migrations and the backups. Two items are still open: the **restore drill has never been run** (`ops/restore_drill.sh`; needs `pg_dump`), and the saved-job store is file-based, so more than one server needs a database. Set `OPS_ALERT_EMAIL` so a failed paid report reaches a person.
 
