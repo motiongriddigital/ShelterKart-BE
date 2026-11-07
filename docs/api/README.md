@@ -20,6 +20,8 @@ The server can check each request against this contract (`backend/engine/contrac
 
 Because the contract now has teeth, it must stay a valid OpenAPI 3.1 file with unique keys: `node backend/test/contract.test.js` fails if it does not load. A request body is not type-coerced (a number where text is documented is a mismatch); query and path values are read from strings. To make a body field strict, add `additionalProperties: false` to its schema.
 
+Waves (SHEL-64): wave 1 is `/api/auth` and `/api/me`. Their request bodies are closed (`additionalProperties: false`) and typed, and the CI accounts server runs with `API_VALIDATION=enforce API_VALIDATION_ENFORCE=/api/auth,/api/me`. Rules a route reports with its own code (`invalid_email`, `invalid_code`, `invalid_country`, `invalid_phone`, `confirm_required`, `consent_required`) are not repeated in the schema, so the frontend keeps seeing those codes. Next waves, in order: checkout, payments, quote and the document check; then `/api/admin`; then the rest. To enforce a wave in production, set the two variables; to roll back, remove the prefix.
+
 ## Authentication
 
 | Scheme | Used by | How |

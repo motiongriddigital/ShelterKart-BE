@@ -3840,8 +3840,9 @@ paths:
             schema:
               type: object
               required: [email]
+              additionalProperties: false
               properties:
-                email: {type: string, maxLength: 254}
+                email: {type: string, description: 'Checked by the route: an invalid or over-long address answers 400 `invalid_email`.'}
                 language: {type: string, description: 'Optional, for later use.'}
                 pow: {type: object, description: 'The solved proof of work, as for POST /api/investigate.'}
       responses:
@@ -3875,9 +3876,10 @@ paths:
             schema:
               type: object
               required: [email, code]
+              additionalProperties: false
               properties:
                 email: {type: string}
-                code: {type: string, pattern: '^[0-9]{6}$'}
+                code: {type: string, description: 'Six digits. A wrong or malformed code is counted as a try and answers 400 `invalid_code`, so the format is not checked here.'}
                 termsAccepted: {type: boolean}
                 language: {type: string}
       responses:
@@ -3957,7 +3959,7 @@ paths:
       operationId: updateMe
       tags: [Accounts]
       summary: Change the profile
-      description: 'Accepts `displayName` (80 characters), `country` (two letters), `language`, and `phone` together with `whatsappConsent` set to true. Anything else is ignored; the e-mail cannot be changed.'
+      description: 'Accepts `displayName` (80 characters), `country` (two letters), `language`, and `phone` together with `whatsappConsent` set to true. The e-mail cannot be changed. A field that is not listed is ignored, or refused with 400 `invalid_request` when `API_VALIDATION=enforce` covers `/api/me`.'
       security: [{sessionCookie: []}]
       requestBody:
         required: true
@@ -3965,11 +3967,12 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
-                displayName: {type: string, maxLength: 80}
-                country: {type: string, minLength: 2, maxLength: 2}
-                language: {type: string}
-                phone: {type: string, description: 'Seven to fifteen digits, an optional leading +. An empty string removes it.'}
+                displayName: {type: [string, 'null'], description: 'Clipped to 80 characters. Empty or null clears it.'}
+                country: {type: [string, 'null'], description: 'Two letters; anything else answers 400 `invalid_country`. Empty or null clears it.'}
+                language: {type: [string, 'null'], description: 'A language the site offers; anything else answers 400 `invalid_language`. Empty or null clears it.'}
+                phone: {type: [string, 'null'], description: 'Seven to fifteen digits, an optional leading +. Empty or null removes it.'}
                 whatsappConsent: {type: boolean}
       responses:
         '200':
@@ -3996,8 +3999,9 @@ paths:
             schema:
               type: object
               required: [confirm]
+              additionalProperties: false
               properties:
-                confirm: {type: string, enum: [DELETE]}
+                confirm: {type: string, description: 'Must be `DELETE`; any other text answers 400 `confirm_required`.'}
       responses:
         '200': {description: Deleted; the cookie is cleared., content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
         '400': {description: 'code `confirm_required`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}

@@ -89,6 +89,27 @@ async function serve(env, opts = {}) {
     assert.strictEqual((await s.call('POST', '/api/auth/request-code', {})).status, 200); s.close();
   });
 
+  console.log('wave 1: /api/auth and /api/me');
+  const W1 = { API_VALIDATION: 'enforce', API_VALIDATION_ENFORCE: '/api/auth,/api/me' };
+  await t('shapes the frontend sends today pass', async () => {
+    const s = await serve(W1);
+    const ok = [['POST', '/api/auth/request-code', { email: 'a@b.co', language: 'en', pow: { n: 1 } }], ['POST', '/api/auth/verify-code', { email: 'a@b.co', code: '123456', termsAccepted: true }],
+      ['PATCH', '/api/me', { displayName: 'A', country: 'IN', language: 'en', phone: '+911234567', whatsappConsent: true }], ['PATCH', '/api/me', { displayName: null, country: '' }], ['DELETE', '/api/me', { confirm: 'DELETE' }]];
+    for (const [m, p, b] of ok) assert.strictEqual((await s.call(m, p, b)).status, 200, `${m} ${p} ${JSON.stringify(b)}`); s.close();
+  });
+  await t('an unknown field, a missing field or a wrong type is refused with the envelope', async () => {
+    const s = await serve(W1);
+    const bad = [['POST', '/api/auth/request-code', { email: 'a@b.co', extra: 1 }], ['POST', '/api/auth/request-code', { email: 5 }], ['POST', '/api/auth/verify-code', { email: 'a@b.co' }],
+      ['POST', '/api/auth/verify-code', { email: 'a@b.co', code: '123456', termsAccepted: 'yes' }], ['PATCH', '/api/me', { email: 'new@b.co' }], ['PATCH', '/api/me', { whatsappConsent: 'true' }], ['DELETE', '/api/me', {}]];
+    for (const [m, p, b] of bad) { const r = await s.call(m, p, b); assert.strictEqual(r.status, 400, `${m} ${p} ${JSON.stringify(b)}`); assert.strictEqual(r.json.code, 'invalid_request'); }
+    assert.strictEqual(s.reached.length, 0); s.close();
+  });
+  await t('rules the route reports with its own code are left to the route', async () => {
+    const s = await serve(W1);
+    const pass = [['POST', '/api/auth/request-code', { email: 'not-an-address' }], ['POST', '/api/auth/verify-code', { email: 'a@b.co', code: '12' }], ['PATCH', '/api/me', { country: 'India' }], ['PATCH', '/api/me', { phone: 'abc' }], ['DELETE', '/api/me', { confirm: 'nope' }]];
+    for (const [m, p, b] of pass) assert.strictEqual((await s.call(m, p, b)).status, 200, `${m} ${p} ${JSON.stringify(b)}`); s.close();
+  });
+
   console.log('a broken contract');
   await t('a missing contract file is logged once and every request passes', async () => {
     const s = await serve({ API_VALIDATION: 'enforce', API_VALIDATION_ENFORCE: '/api' }, { spec: '/nonexistent/openapi.yaml' });
