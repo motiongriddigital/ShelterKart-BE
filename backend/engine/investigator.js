@@ -262,7 +262,7 @@ function createInvestigation({ query, location = '', market = '', country = '', 
   const emit = ev => { try { onEvent(ev); } catch { /* a listener never breaks the investigation */ } };
   const snapshot = phase => { const x = build(state, ctx); x.phase = phase; return x; };
   const panelArgs = (prompt, s, f, stage, maxTokens = B.maxTokens) => ({ prompt, maxTokens, rounds: B.pauseRounds, fetchPages: true, maxUses: s, fetchUses: f, stage, ...(B.fetchMaxTokens ? { maxContentTokens: B.fetchMaxTokens } : {}) });
-  let followed = 0;
+  let followed = 0, outage = false;
   const absorb = (res, round) => {
     for (const r of res.results) { state.used.add(r.engine); for (const x of r.retrieved || []) state.retrieved.add(x.url); ingest(state, parseLoose(r.text), r.engine, round); }
     for (const f of res.failed || []) state.failed.push({ engine: f.engine, round, error: f.error });
@@ -302,10 +302,12 @@ function createInvestigation({ query, location = '', market = '', country = '', 
         catch (e) { lead.state = 'unreachable'; lead.note = String((e && e.message) || e).slice(0, 120); }
       }));
       d = snapshot('working'); emit({ type: 'update', stage: label, round: state.round, dossier: d });
+      // Every lead of a round failed (after the adapter's own retry): the service is down or out of credit. More leads would only fail the same way.
+      if (open.length >= 2 && open.every(l => l.state === 'unreachable')) { outage = true; emit({ type: 'progress', stage: label, message: 'Every lead in this round failed, so no more leads are followed now' }); return false; }
       return true;
     };
-    // shouldStop is a spending stop: when it says so, no new round, review or question pass starts.
-    const going = () => now() < deadline && !shouldStop();
+    // shouldStop is a spending stop: when it says so, no new round, review or question pass starts. An outage stops the lead work too.
+    const going = () => now() < deadline && !shouldStop() && !outage;
     for (let i = 0; i < B.rounds && going(); i++) if (!(await followRound('leads'))) break;
 
     // The reviewer: what would the best lawyer, accountant, engineer and journalist still check?

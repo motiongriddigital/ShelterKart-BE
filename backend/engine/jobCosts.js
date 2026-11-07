@@ -10,14 +10,19 @@ function costedEngines(engines, onCost) {
   const info = (r, args) => ({ stage: (args && args.stage) || 'other', engine: r.engine, input: Number(r.usage && r.usage.input) || 0, output: Number(r.usage && r.usage.output) || 0, searches: Number(r.searches) || 0 });
   const price = r => { try { const c = CAT.costOf(r.engine, r.model, r.usage, r.searches || 0); return Number.isFinite(c) ? c : 0; } catch { return 0; } };
   const wrapped = Object.create(engines);
+  // A call that failed after some of its rounds were billed still cost money: it is priced into the job like any other call.
+  const failedSpend = (list, args) => { for (const f of list || []) if (f && f.usage) onCost(price(f), info(f, args)); };
   if (typeof engines.runEach === 'function') wrapped.runEach = async (...a) => {
-    const res = await engines.runEach(...a);
+    let res;
+    try { res = await engines.runEach(...a); } catch (e) { failedSpend(e && e.tried, a[2]); throw e; }
     for (const r of (res && res.results) || []) onCost(price(r), info(r, a[2]));
+    failedSpend(res && res.failed, a[2]);
     return res;
   };
   if (typeof engines.run === 'function') wrapped.run = async (...a) => {
-    const r = await engines.run(...a);
-    if (r) onCost(price(r), info(r, a[2]));
+    let r;
+    try { r = await engines.run(...a); } catch (e) { failedSpend(e && e.tried, a[2]); throw e; }
+    if (r) { onCost(price(r), info(r, a[2])); failedSpend(r.tried, a[2]); }
     return r;
   };
   return wrapped;
