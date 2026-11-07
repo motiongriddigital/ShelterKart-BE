@@ -74,6 +74,13 @@ function plan(role, env = process.env, op = OP[role], opts = { mediaType: 'image
 const available = (role, env = process.env, op = OP[role], opts = { mediaType: 'image/png' }) => plan(role, env, op, opts).candidates.length > 0;
 const order = (role, env = process.env) => plan(role, env).candidates.map(c => c.engine);
 
+/** What a failed call cost anyway (rounds that finished before the failure), priced from the catalogue; null when nothing was billed. */
+function spentOn(c, e) {
+  if (!e || !e.usage || !((e.usage.input || 0) + (e.usage.output || 0) + (e.searches || 0))) return null;
+  try { const v = CAT.costOf(c.engine, e.model || c.model, e.usage, e.searches || 0); return Number.isFinite(v) ? v : null; } catch { return null; }
+}
+const spendOf = (c, e) => (spentOn(c, e) == null ? {} : { usage: e.usage, searches: e.searches || 0, model: e.model || c.model });
+
 /** Run one operation for one agent: the cheapest qualified engine first, the next on failure. */
 async function run(role, op, args, { env = process.env, fetchImpl = globalThis.fetch } = {}) {
   const p = plan(role, env, op, args); const tried = [...p.excluded.map(x => ({ engine: x.engine, skipped: x.reason }))]; let last = null;
@@ -84,8 +91,8 @@ async function run(role, op, args, { env = process.env, fetchImpl = globalThis.f
       meter.ok(c.engine, role, r, Date.now() - t0, tried.some(t => t.error), CAT.costOf(c.engine, r.model || c.model, r.usage, r.searches || 0));
       return { ...r, engine: c.engine, model: r.model || c.model, tried };
     } catch (e) {
-      meter.fail(c.engine, role, e, Date.now() - t0);
-      tried.push({ engine: c.engine, error: String((e && e.message) || e).slice(0, 160) }); last = e;
+      meter.fail(c.engine, role, e, Date.now() - t0, spentOn(c, e));
+      tried.push({ engine: c.engine, error: String((e && e.message) || e).slice(0, 160), ...spendOf(c, e) }); last = e;
     }
   }
   const err = last || Object.assign(new Error(`no AI engine is set up and allowed for ${role}`), { code: 'no_engine' });
@@ -116,8 +123,8 @@ async function runEach(role, op, args, { env = process.env, fetchImpl = globalTh
       meter.ok(c.engine, role, r, Date.now() - t0, false, CAT.costOf(c.engine, r.model || c.model, r.usage, r.searches || 0));
       return { ok: true, ...r, engine: c.engine, model: r.model || c.model };
     } catch (e) {
-      meter.fail(c.engine, role, e, Date.now() - t0);
-      return { ok: false, engine: c.engine, error: String((e && e.message) || e).slice(0, 160) };
+      meter.fail(c.engine, role, e, Date.now() - t0, spentOn(c, e));
+      return { ok: false, engine: c.engine, error: String((e && e.message) || e).slice(0, 160), ...spendOf(c, e) };
     }
   }));
   const results = settled.filter(r => r.ok), failed = settled.filter(r => !r.ok);

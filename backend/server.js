@@ -662,7 +662,7 @@ function finishedTwin(job) {
   }
   return null;
 }
-const { costedEngines } = require('./engine/jobCosts');
+const { costedEngines, addStageCost, stageTotals } = require('./engine/jobCosts');
 const JOBS = require('./engine/jobStore').createJobStore({ dir: process.env.LIVE_JOBS_DIR || require('path').join(__dirname, 'data', 'live-jobs') });
 const dayOf = () => new Date().toISOString().slice(0, 10);
 const num = (k, d) => { const v = process.env[k]; return v === undefined || v === '' ? d : Number(v); };
@@ -672,8 +672,9 @@ const marketCap = () => num('INVESTIGATE_MARKET_DAILY_CAP', Math.max(5, Math.cei
 
 /* What the AI is costing: today's total and by market, and each report's own total (from engine/jobCosts.js). */
 const spend = { day: '', usd: 0, byMarket: {}, alerted: false };
-function addSpend(job, usd) {
+function addSpend(job, usd, info) {
   if (!(usd > 0)) return;
+  addStageCost(job.stageCosts || (job.stageCosts = {}), usd, info);
   const d = dayOf(); if (spend.day !== d) Object.assign(spend, { day: d, usd: 0, byMarket: {}, alerted: false });
   const m = String(job.input.country || '').toUpperCase() || '??';
   spend.usd += usd; spend.byMarket[m] = (spend.byMarket[m] || 0) + usd; job.costUsd = (job.costUsd || 0) + usd;
@@ -693,7 +694,7 @@ function aiCapFor(brief) {
 }
 function persistJob(job) {
   JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), contact: job.contact || null,
-    costUsd: job.costUsd || 0, capUsd: job.capUsd == null ? null : job.capUsd, delivered: Boolean(job.delivered), createdAt: job.createdAt || Date.now(),
+    costUsd: job.costUsd || 0, stageCosts: job.stageCosts || null, capUsd: job.capUsd == null ? null : job.capUsd, delivered: Boolean(job.delivered), createdAt: job.createdAt || Date.now(),
     failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: Date.now(), saved: job.inv ? job.inv.exportState() : (job.saved || null) });
 }
 const tokenOk = (t, ref) => Boolean(t) && verifyToken(String(t), ref, process.env.ACCESS_TOKEN_SECRET);
@@ -718,8 +719,8 @@ function liveEmit(job, ev) {
 }
 /** The investigation behind a job: priced per call, stopped at its cap, and resumed from saved state when there is one. */
 function makeInv(job, resume) {
-  job.inv = INVESTIGATOR.createInvestigation({ query: job.input.query, location: job.input.location, market: job.input.market || job.input.country, country: job.input.country, budget: previewBudget() },
-    { onEvent: ev => liveEmit(job, ev), engines: costedEngines(require('./engines'), usd => addSpend(job, usd)),
+  job.inv = INVESTIGATOR.createInvestigation({ query: job.input.query, location: job.input.location, market: job.input.market || job.input.country, country: job.input.country, budget: { ...INVESTIGATOR.budgetFromEnv(process.env), ...previewBudget() } },
+    { onEvent: ev => liveEmit(job, ev), engines: costedEngines(require('./engines'), (usd, info) => addSpend(job, usd, info)),
       shouldStop: () => job.capUsd != null && (job.costUsd || 0) >= job.capUsd, resume });
   return job.inv;
 }
@@ -978,7 +979,7 @@ app.get('/api/admin/costs', adminAuth, (req, res) => {
       dailyCap: investigateCap(), marketCap: marketCap(), preview: { panel: previewPanel(), ...previewBudget() } },
     perPaidReport: paidDone.length ? r(paidDone.reduce((t, j) => t + (j.costUsd || 0), 0) / paidDone.length) : null,
     reports: jobs.sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0)).slice(0, 25)
-      .map(j => ({ ref: j.ref, market: j.input && j.input.country, status: j.status, paid: Boolean(j.paid), costUsd: r(j.costUsd), capUsd: j.capUsd == null ? null : r(j.capUsd) })),
+      .map(j => ({ ref: j.ref, market: j.input && j.input.country, status: j.status, paid: Boolean(j.paid), costUsd: r(j.costUsd), stages: stageTotals(j.stageCosts), capUsd: j.capUsd == null ? null : r(j.capUsd) })),
     pdf: PDF.queueState() });
 });
 app.get('/api/admin/delivery', adminAuth, (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ok: true, ...DELIVERY.status(), pdf: PDF.available() }); });

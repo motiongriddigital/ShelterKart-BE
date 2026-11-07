@@ -16,7 +16,14 @@ function ok(id, role, r, ms, rescued, cost) {
   told({ engine: id, role, ok: true, rescued: Boolean(rescued), tokensIn: (r.usage && r.usage.input) || 0, tokensOut: (r.usage && r.usage.output) || 0, searches: r.searches || 0, ms, costUsd: cost == null ? null : cost });
   if (cost == null) c.uncostedCalls++; else { c.costUsd += cost; c.costedCalls++; b.costUsd += cost; b.costedCalls++; }
 }
-function fail(id, role, err, ms) { const c = row(id); c.calls++; c.failed++; c.ms += ms; c.lastError = String((err && err.message) || err).slice(0, 160); c.lastErrorAt = new Date().toISOString(); told({ engine: id, role, ok: false, ms }); }
+/** A failed call can still have been billed (a lead that finished two rounds and then failed): `err.usage`, `err.searches` and `cost` carry that spend. */
+function fail(id, role, err, ms, cost) {
+  const c = row(id); c.calls++; c.failed++; c.ms += ms; c.lastError = String((err && err.message) || err).slice(0, 160); c.lastErrorAt = new Date().toISOString();
+  const u = (err && err.usage) || null, tin = (u && u.input) || 0, tout = (u && u.output) || 0, se = (err && err.searches) || 0;
+  c.tokensIn += tin; c.tokensOut += tout; c.searches += se;
+  if (cost != null && cost > 0) { c.costUsd += cost; c.wastedUsd = (c.wastedUsd || 0) + cost; }
+  told({ engine: id, role, ok: false, ms, ...(tin || tout || se ? { tokensIn: tin, tokensOut: tout, searches: se, costUsd: cost == null ? null : cost } : {}) });
+}
 /** Average measured cost of a successful call for this engine and agent, once there are at least `min` costed calls. */
 function measured(id, role, min = 5) { const b = state.has(id) && state.get(id).byRole[role]; return b && b.costedCalls >= min ? b.costUsd / b.costedCalls : null; }
 function snapshot() {
