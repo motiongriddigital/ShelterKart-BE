@@ -13,9 +13,10 @@
  *   ie  CRO open data         (CRO data dictionary read; CKAN; CC BY 4.0)
  *   tw  MOEA GCIS open data   (official Swagger read; usage notification required)
  *   in  IBBI claims register  (per-CIN pages; insolvency only)
+ *   pl  KRS Open API          (live extract seen 7 Nov 2026; by KRS number only, no name search)
+ *   us  SEC EDGAR             (documented endpoints; field names NOT yet seen live; off until SEC_USER_AGENT is set)
  * NOT built, because no real response structure could be confirmed from
- * an official source: Poland, Latvia (register not in a searchable
- * datastore) and New Zealand (raw API fields undocumented publicly).
+ * an official source: Latvia (a daily bulk file, not a lookup API: needs a loader) and New Zealand (raw API fields undocumented publicly).
  * A guessed parser is what this file exists to prevent.
  *
  * Parsers are defensive: a field that is missing or of an unexpected
@@ -444,7 +445,105 @@ const indiaIbbi = {
   }
 };
 
+/* ------------------------------------------------------------ POLAND */
+// KRS Open API (Ministry of Justice): an extract by KRS number only, no name search, no key. The shape below was read from a live
+// extract (PKP S.A., KRS 0000019193, 7 Nov 2026); only fields seen there are read. Board and supervisory-board members are never read:
+// the API masks them, and a due-diligence report on a developer does not need a person's name from here. The register's insolvency
+// and removal entries were not seen in any extract, so they are only flagged (any non-empty entry whose key names them), never
+// described and never reported as absent: "nothing flagged" is not "all clear".
+const KRS_RE = /^000\d{7}$/;                                   // not a NIP (10 digits, never starts 000) or a REGON
+const PL_FORMS = { 'SPÓŁKA AKCYJNA': 'joint-stock company (S.A.)', 'SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ': 'limited liability company (sp. z o.o.)',
+  'SPÓŁKA KOMANDYTOWA': 'limited partnership (sp. k.)', 'SPÓŁKA JAWNA': 'general partnership (sp. j.)', 'PROSTA SPÓŁKA AKCYJNA': 'simple joint-stock company (P.S.A.)' };
+const plDate = v => { const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(String(v || '').trim()); return m ? fmtDate(`${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`) : ''; };
+const plMoney = m => {
+  const v = m && typeof m.wartosc === 'string' && /^\d+(,\d+)?$/.test(m.wartosc) ? Number(m.wartosc.replace(',', '.')) : NaN;
+  return Number.isFinite(v) && typeof m.waluta === 'string' ? `${v.toLocaleString('en-GB', { maximumFractionDigits: 2 })} ${m.waluta}` : '';
+};
+const plFlag = (node, re) => {                                  // the first key matching re that holds something
+  const seen = [];
+  (function walk(o, depth) {
+    if (!o || typeof o !== 'object' || depth > 6) return;
+    for (const [k, v] of Object.entries(o)) {
+      if (re.test(k) && v && (Array.isArray(v) ? v.length : typeof v === 'object' ? Object.keys(v).length : v === true || (typeof v === 'string' && v.trim()))) seen.push(k);
+      walk(v, depth + 1);
+    }
+  })(node, 0);
+  return seen[0] || null;
+};
+const polandKrs = {
+  market: 'pl',
+  hosts: ['api-krs.ms.gov.pl'],
+  byIdOnly: true,
+  async lookup(name, { http, ids = [] }) {
+    const krs = ids.map(x => String(x).toUpperCase().replace(/^KRS\s*/, '').replace(/[\s-]/g, '')).find(x => KRS_RE.test(x));
+    if (!krs) return { match: null, findings: [], pages: [], note: 'no-krs' };
+    const url = `https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/${krs}?rejestr=P&format=json`;
+    const r = await http(url, {});
+    if (r.status !== 200) return { match: null, findings: [], pages: [] };
+    const o = (await r.json() || {}).odpis;
+    const head = o && o.naglowekA, d1 = o && o.dane && o.dane.dzial1;
+    const who = d1 && d1.danePodmiotu && str(d1.danePodmiotu.nazwa);
+    if (!head || head.numerKRS !== krs || !who) return { match: null, findings: [], pages: [] };       // not the extract we asked for, or not understood
+    const F = (id, topic, claim) => ({ id, topic, claim, kind: 'fact', urls: [url], lane: 'registry' });
+    const form = str(d1.danePodmiotu.formaPrawna), seat = d1.siedzibaIAdres && d1.siedzibaIAdres.siedziba || {};
+    const city = [str(seat.miejscowosc), str(seat.wojewodztwo).toLowerCase()].filter(Boolean).join(', ');
+    const reg = plDate(head.dataRejestracjiWKRS);
+    const findings = [F('r1', 'developer', `${who} (KRS ${krs}) is entered in Poland's National Court Register (KRS)${form ? ` as a ${PL_FORMS[form] || form.toLowerCase()}` : ''}${reg ? `, registered ${reg}` : ''}${city ? `, seat ${city}` : ''}.`)];
+    const cap = plMoney(d1.kapital && d1.kapital.wysokoscKapitaluZakladowego);
+    if (cap) findings.push(F('r2', 'financial', `The register records ${who}'s share capital as ${cap}.`));
+    const filed = (((o.dane.dzial3 || {}).wzmiankiOZlozonychDokumentach || {}).wzmiankaOZlozeniuRocznegoSprawozdaniaFinansowego || []);
+    const dated = filed.map(x => ({ at: String(x && x.dataZlozenia || ''), per: str(x && x.zaOkresOdDo) })).map(x => ({ ...x, t: (/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(x.at) || []).slice(1).reverse().join('') })).filter(x => x.t).sort((a, b) => a.t < b.t ? 1 : -1);
+    if (dated.length) findings.push(F('r3', 'financial', `The register records ${who}'s latest annual financial statement as filed on ${plDate(dated[0].at)}${dated[0].per ? `, for the period ${dated[0].per}` : ''}.`));
+    const last = plDate(head.dataOstatniegoWpisu);
+    if (last) findings.push(F('r4', 'legal', `The latest entry in the register for ${who} is dated ${last}${Number.isInteger(head.numerOstatniegoWpisu) ? ` (entry number ${head.numerOstatniegoWpisu})` : ''}.`));
+    if (plFlag(o.dane, /wykre[sś]l/i) || plFlag(o.dane, /likwidac|upadlo|upadło|restrukturyz|zawieszen/i))
+      findings.push(F('r5', 'legal', `The register extract for ${who} contains entries about removal from the register, liquidation, bankruptcy, restructuring or suspension. Read the extract at the cited link before relying on the other facts.`));
+    return { match: { name: who, id: krs, url, score: 1 }, findings, pages: [{ url, title: `KRS extract: ${who}` }] };
+  }
+};
+
+/* ------------------------------------------------------------ UNITED STATES */
+// SEC EDGAR: public companies only (a private developer is simply not found). Needs SEC_USER_AGENT, a declared identity as the SEC's
+// fair-access rule requires ("Company name contact@domain"); without it nothing is sent. 10 requests a second is the SEC's limit; one
+// lookup makes two requests. Endpoints are the ones the SEC documents; the FIELD NAMES below come from the SEC's published
+// submissions format and have NOT yet been seen live by us: the register's canary stays 'unconfirmed' until a health run with
+// SEC_USER_AGENT set finds the canary company, and every field that is missing or of another type produces no claim.
+const SEC_TICKERS = 'https://www.sec.gov/files/company_tickers.json';
+const SEC_SUBMISSIONS = 'https://data.sec.gov/submissions/CIK';
+const unitedStatesEdgar = {
+  market: 'us',
+  hosts: ['www.sec.gov', 'data.sec.gov'],
+  async lookup(name, { http, env }) {
+    const ua = str(env.SEC_USER_AGENT);
+    if (!/\S+\s+\S+@\S+\.\S+/.test(ua)) return { skipped: 'SEC_USER_AGENT not set (the SEC requires a declared identity)' };
+    const headers = { 'user-agent': ua, accept: 'application/json' };
+    const t = await http(SEC_TICKERS, { headers });
+    if (t.status !== 200) return { match: null, findings: [], pages: [] };
+    const rows = Object.values(await t.json() || {}).filter(x => x && typeof x.title === 'string' && x.cik_str != null);
+    const hit = pickBest(rows, name, x => x.title);
+    // Every listed company is in this file, so short names have many look-alikes: a one-word query scores 0.67 against a two-word name,
+    // which the shared 0.6 threshold would accept. Only a near-complete name match is taken.
+    if (!hit || hit.score < 0.8) return { match: null, findings: [], pages: [] };
+    const cik = String(hit.item.cik_str).padStart(10, '0');
+    if (!/^\d{10}$/.test(cik)) return { match: null, findings: [], pages: [] };
+    const r = await http(`${SEC_SUBMISSIONS}${cik}.json`, { headers });
+    if (r.status !== 200) return { match: null, findings: [], pages: [] };
+    const p = await r.json() || {};
+    const entity = str(p.name);
+    if (!entity || String(p.cik).padStart(10, '0') !== cik) return { match: null, findings: [], pages: [] };
+    const url = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${cik}&type=10-K&dateb=&owner=include&count=10`;
+    const F = (id, topic, claim) => ({ id, topic, claim, kind: 'fact', urls: [url], lane: 'registry' });
+    const inc = str(p.stateOfIncorporationDescription) || str(p.stateOfIncorporation), sic = str(p.sicDescription);
+    const findings = [F('r1', 'developer', `${entity} (SEC CIK ${cik}) is registered with the US Securities and Exchange Commission as a public reporting company${sic ? `, industry: ${sic}` : ''}${inc ? `, incorporated in ${inc}` : ''}.`)];
+    const rec = p.filings && p.filings.recent, forms = rec && Array.isArray(rec.form) ? rec.form : [], dates = rec && Array.isArray(rec.filingDate) ? rec.filingDate : [];
+    const latest = form => { const i = forms.findIndex(f => f === form); return i >= 0 && /^\d{4}-\d{2}-\d{2}$/.test(dates[i] || '') ? dates[i] : ''; };
+    const k = latest('10-K'), q = latest('10-Q');
+    if (k) findings.push(F('r2', 'financial', `The SEC's EDGAR records ${entity}'s latest annual report (Form 10-K) as filed on ${fmtDate(k)}${q ? `, and its latest quarterly report (Form 10-Q) on ${fmtDate(q)}` : ''}.`));
+    return { match: { name: entity, id: cik, url, score: hit.score }, findings, pages: [{ url, title: `SEC EDGAR: ${entity}` }] };
+  }
+};
+
 const CONNECTORS = { gb: companiesHouse, fr: franceSirene, no: norwayBrreg, sg: singaporeAcra, fi: finlandPrh, cz: czechAres, au: australiaAbr,
-                     ie: irelandCro, tw: taiwanGcis, in: indiaIbbi };
+                     ie: irelandCro, tw: taiwanGcis, in: indiaIbbi, pl: polandKrs, us: unitedStatesEdgar };
 
 module.exports = { CONNECTORS, nameScore, queryVariants, pickBest, clean };
