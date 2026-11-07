@@ -4,6 +4,8 @@
  * default behaviour is unchanged: the same endpoint, headers, model settings, web-search tool and pause_turn handling.
  */
 const API = 'https://api.anthropic.com/v1/messages';
+// A stand-in server for the sandbox tests (ops/sandbox). Ignored in production, so a changed setting can never send the key elsewhere.
+const apiUrl = env => (env.ANTHROPIC_API_URL && env.NODE_ENV !== 'production') ? env.ANTHROPIC_API_URL : API;
 const MEDIA = { 'application/pdf': 'document', 'image/jpeg': 'image', 'image/png': 'image', 'image/webp': 'image' };
 
 const RETRY_STATUS = new Set([429, 500, 502, 503, 529]);
@@ -19,7 +21,7 @@ async function post(body, env, fetchImpl, label, sleep = defaultSleep) {
   if (env.ANTHROPIC_WEB_FETCH_BETA) headers['anthropic-beta'] = env.ANTHROPIC_WEB_FETCH_BETA;
   for (let attempt = 0; ; attempt++) {
     let res;
-    try { res = await fetchImpl(API, { method: 'POST', headers, body: JSON.stringify(body) }); }
+    try { res = await fetchImpl(apiUrl(env), { method: 'POST', headers, body: JSON.stringify(body) }); }
     catch (e) { if (attempt === 0) { await sleep(waitMs(env)); continue; } throw e; }
     if (res.ok) return res.json();
     if (attempt === 0 && RETRY_STATUS.has(res.status)) { await sleep(waitMs(env, res)); continue; }

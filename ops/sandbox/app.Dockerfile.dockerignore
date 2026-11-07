@@ -1,0 +1,6 @@
+.git
+**/node_modules
+**/.env
+**/.env.*
+backend/data/live-jobs
+tools/samples/*.pdf
