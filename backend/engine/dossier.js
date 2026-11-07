@@ -27,6 +27,13 @@ const OFFICIAL = [/(^|\.)gov(\.[a-z]{2})?$/, /\.gov\.[a-z]{2,3}$/, /(^|\.)nic\.i
   /(^|\.)ura\.gov\.sg$/, /(^|\.)acra\.gov\.sg$/, /(^|\.)asic\.gov\.au$/, /(^|\.)abr\.business\.gov\.au$/, /(^|\.)indiacode\.nic\.in$/,
   /(^|\.)maharera\.maharashtra\.gov\.in$/, /(^|\.)rera\.[a-z]+\.gov\.in$/, /(^|\.)sci\.gov\.in$/];
 
+/** The URL if it is a real web address (http or https), else ''. The only thing that may ever become a link: an engine, or text on a hostile page behind it,
+ *  can name "javascript:..." or "data:..." as a source, and the browser parses away tabs and line breaks inside a scheme, so the URL is parsed, not pattern-matched. */
+function safeUrl(url) {
+  if (typeof url !== 'string') return '';
+  const t = url.trim();
+  try { const u = new URL(t); return u.protocol === 'http:' || u.protocol === 'https:' ? t : ''; } catch { return ''; }
+}
 function host(url) { try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } }
 const isOfficial = url => { const h = host(url); return Boolean(h) && OFFICIAL.some(re => re.test(h)); };
 const sameSite = (url, site) => { const h = host(url), s = String(site || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''); return Boolean(h && s) && (h === s || h.endsWith('.' + s)); };
@@ -269,6 +276,6 @@ function sourceList(facts, developerSite) {
 const VERDICT = /\b(we recommend (buying|purchasing|avoiding)|do not buy|don'?t buy|proceed with conditions|safe to buy|good investment|avoid this project)\b/i;
 const hasVerdict = text => VERDICT.test(String(text || ''));
 
-module.exports = { STATUS, statusOf, isOfficial, host, norm, jaccard, parseDate, parseNumber, sameValue, mergeFacts, extractLeads,
+module.exports = { STATUS, statusOf, isOfficial, host, safeUrl, norm, jaccard, parseDate, parseNumber, sameValue, mergeFacts, extractLeads,
   samePerson, commonControl, areaCheck, dateGaps, delayCost, priceTable, questionsFromReasoning, assembleQuestions, sourceList,
   WHEN, TO, hasVerdict, anchorIn };

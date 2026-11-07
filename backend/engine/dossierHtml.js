@@ -15,7 +15,8 @@
 const D = require('./dossier');
 
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-const link = (url, text) => `<a href="${esc(url)}" rel="noopener noreferrer">${esc(text || D.host(url))}</a>`;
+// Only an http(s) address becomes a link; anything else (javascript:, data:, ...) is shown as plain text, never as an href.
+const link = (url, text) => { const u = D.safeUrl(url); return u ? `<a href="${esc(u)}" rel="noopener noreferrer">${esc(text || D.host(u))}</a>` : `<span>${esc(text || '(link removed)')}</span>`; };
 const LABEL = { verified: 'Verified at an official source', reported: 'Reported, with link', claim: "Developer's own claim", inference: 'Our inference', conflict: 'Sources disagree' };
 const ID = s => `<span class="id">${esc(s)}</span>`;
 const BOXES = '<span class="trk"><span class="box"></span>Asked <span class="box"></span>Answered <span class="box"></span>Document in hand</span>';

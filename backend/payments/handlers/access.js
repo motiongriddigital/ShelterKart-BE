@@ -15,8 +15,10 @@ module.exports = function create(c) {
     if (ACCOUNTS.enabled && !(await ownsPurchase(req, purchaseId))) return { status: 403, body: { ok: false, code: 'not_entitled', error: 'This purchase belongs to another account.' } };
     const valid = rzp.verifyCheckoutSignature({ serverOrderId: q.rows[0].provider_order_id, paymentId, signature, keySecret: process.env.RAZORPAY_KEY_SECRET });
     if (!valid) return { status: 400, body: { ok: false, error: 'This payment could not be verified. If you were charged, write to us with your receipt.' } };
+    // A refunded (or otherwise ended) purchase gets nothing, even with the checkout signature the buyer still holds.
+    if (!['pending_payment', 'paid'].includes(q.rows[0].status)) return { status: 409, body: { ok: false, code: 'not_active', error: 'This purchase was refunded or cancelled, so it no longer opens the report.' } };
     if (q.rows[0].status !== 'paid') await markPurchasePaid(pool, { purchaseId, ref, provider: 'razorpay', paymentId }, { req });
-    return { status: 200, body: grantOf(ref) };
+    return { status: 200, body: grantOf(ref, purchaseId) };
   }
 
   async function access(req) {
@@ -33,7 +35,7 @@ module.exports = function create(c) {
     }
     if (!r.rows.length || r.rows[0].status !== 'paid') return { status: 402, body: { ok: false, error: 'Payment has not been confirmed yet.' } };
     if (ACCOUNTS.enabled && !(await ownsPurchase(req, purchaseId))) return { status: 403, body: { ok: false, code: 'not_entitled', error: 'This purchase belongs to another account.' } };
-    return { status: 200, body: grantOf(ref) };
+    return { status: 200, body: grantOf(ref, purchaseId) };
   }
 
   return { razorpayVerify, access };
