@@ -16,6 +16,13 @@ const { ACCOUNTS, BACKUPS, BULK_SPECS, ENGINE_HISTORY, ERRORLOG, pgStore, pool, 
 
 const PORT = process.env.PORT || 4000;
 if (require.main === module) {
+  // Refuse to start a misconfigured production server (engine/configCheck.js); elsewhere the same findings are printed as advice.
+  const config = require('./engine/configCheck').check(process.env);
+  for (const w of config.warnings) console.warn('[config] ' + w);
+  if (config.errors.length) {
+    console.error('[config] this server will not start in production until these are fixed:\n - ' + config.errors.join('\n - '));
+    process.exit(1);
+  }
   // Reload recent reports before accepting traffic. A storage failure is
   // logged and the server still starts: report links fall back to reading
   // storage on demand, so buyers are not locked out while it recovers.
