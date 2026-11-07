@@ -58,8 +58,9 @@ module.exports.install = function install(app, c) {
       if (allowedOrigins.includes(origin)) return cb(null, true);
       // Previously an EMPTY list allowed every origin -- failing open, the
       // exact risk the comment above warns about. Now an empty list is only
-      // tolerated outside production, for local development.
-      if (allowedOrigins.length === 0 && process.env.NODE_ENV !== 'production') return cb(null, true);
+      // tolerated when NODE_ENV is "development" or "test"; anywhere else, and
+      // in production, a browser from another website is refused.
+      if (allowedOrigins.length === 0 && ['development', 'test'].includes(process.env.NODE_ENV)) return cb(null, true);
       cb(new Error('Origin not allowed'));
     }
   }));

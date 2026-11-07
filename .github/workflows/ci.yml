@@ -30,8 +30,8 @@ jobs:
       ALLOWED_ORIGINS: https://ci.shelterkart.invalid
       ADMIN_USERNAME: ci-admin
       ADMIN_PASSWORD: ci-admin-password-not-secret
-      ACCESS_TOKEN_SECRET: ci-access-token-secret
-      QUOTE_SECRET: ci-quote-secret
+      ACCESS_TOKEN_SECRET: ci-access-token-secret-0123456789abcdef
+      QUOTE_SECRET: ci-quote-secret-ghijklmnopqrstuvwxyz0123
       PAYMENT_WEBHOOK_SECRET: ci-webhook-secret
       RAZORPAY_WEBHOOK_SECRET: ci-webhook-secret
       SMOKE_WEBHOOK_SECRET: ci-webhook-secret
