@@ -170,6 +170,23 @@ function makePgStore(pool) {
       const r = await pool.query(`SELECT count FROM research_daily WHERE day = $1`, [day]);
       return r.rows[0] ? Number(r.rows[0].count) : 0;
     },
+
+    /* Bulk registers (engine/bulk): what the last load of a country did, and look-ups into the loaded rows. */
+    async bulkStatus(country) {
+      const r = await pool.query(`SELECT country, status, detail, row_count, bytes, last_modified, started_at, finished_at FROM bulk_register_loads WHERE country = $1`, [country]);
+      return r.rows[0] || null;
+    },
+    async bulkFind(country, keyPrefix, limit = 300) {
+      const r = await pool.query(
+        `SELECT reg_id, name, name_key, legal_form, registered, terminated, address FROM bulk_register_entities
+          WHERE country = $1 AND name_key LIKE $2 ORDER BY name_key LIMIT $3`, [country, String(keyPrefix).replace(/[\\%_]/g, '') + '%', limit]);
+      return r.rows;
+    },
+    async bulkGet(country, regId) {
+      const r = await pool.query(
+        `SELECT reg_id, name, name_key, legal_form, registered, terminated, address FROM bulk_register_entities WHERE country = $1 AND reg_id = $2`, [country, regId]);
+      return r.rows[0] || null;
+    },
   };
 }
 

@@ -14,9 +14,10 @@
  *   tw  MOEA GCIS open data   (official Swagger read; usage notification required)
  *   in  IBBI claims register  (per-CIN pages; insolvency only)
  *   pl  KRS Open API          (live extract seen 7 Nov 2026; by KRS number only, no name search)
+ *   lv  Register of Enterprises bulk file (CC0; loaded daily by engine/bulk, looked up locally)
  *   us  SEC EDGAR             (documented endpoints; field names NOT yet seen live; off until SEC_USER_AGENT is set)
  * NOT built, because no real response structure could be confirmed from
- * an official source: Latvia (a daily bulk file, not a lookup API: needs a loader) and New Zealand (raw API fields undocumented publicly).
+ * an official source: New Zealand (raw API fields undocumented publicly).
  * A guessed parser is what this file exists to prevent.
  *
  * Parsers are defensive: a field that is missing or of an unexpected
@@ -543,7 +544,45 @@ const unitedStatesEdgar = {
   }
 };
 
+/* ------------------------------------------------------------ LATVIA */
+// The Register of Enterprises' open data (CC0), a daily bulk file loaded by engine/bulk: nothing is requested from the register while a
+// report is made. Companies and organisations only. Found by registration number (11 digits) or by name; with no loaded file the
+// connector says so ("not configured") instead of reporting "no match", which a buyer would read as "no such company".
+const LV_DATASET = 'https://data.gov.lv/dati/dataset/uz';
+const LV_FORMS = { 'Sabiedrība ar ierobežotu atbildību': 'limited liability company (SIA)', 'Akciju sabiedrība': 'joint-stock company (AS)', 'Pilnsabiedrība': 'general partnership (PS)',
+  'Komandītsabiedrība': 'limited partnership (KS)', 'Kooperatīvā sabiedrība': 'cooperative society (KB)' };
+const latviaUr = {
+  market: 'lv',
+  hosts: [],
+  async lookup(name, { bulk, ids = [] }) {
+    if (!bulk || !bulk.bulkStatus) return { skipped: 'the Latvian register file store is not available' };
+    const st = await bulk.bulkStatus('lv');
+    if (!st || !st.finished_at || (st.status !== 'ok' && !Number(st.row_count))) return { skipped: 'the Latvian register file has not been loaded on this server yet' };
+    const { keyOf } = require('./bulk/latvia');
+    const regid = ids.map(x => String(x).replace(/\D/g, '')).find(x => /^\d{11}$/.test(x));
+    let row = regid ? await bulk.bulkGet('lv', regid) : null, score = 1;
+    if (!row && str(name)) {
+      const key = keyOf(name);
+      if (key.length >= 3) {
+        const rows = await bulk.bulkFind('lv', key.split(' ')[0]);
+        const hit = pickBest(rows, key, r => r.name_key);
+        if (hit) { row = hit.item; score = hit.score; }
+      }
+    }
+    if (!row) return { match: null, findings: [], pages: [] };
+    // Dates are written in UTC, so the same file gets the same date on every server.
+    const day = v => { const x = v ? new Date(v) : null; return x && !isNaN(x) ? x.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : ''; };
+    const asOf = day(st.last_modified) || day(st.finished_at);
+    const F = (id, topic, claim) => ({ id, topic, claim, kind: 'fact', urls: [LV_DATASET], lane: 'registry' });
+    const reg = day(row.registered);
+    const findings = [F('r1', 'developer', `${row.name} (registration number ${row.reg_id}) is entered in the Register of Enterprises of the Republic of Latvia${row.legal_form ? ` as a ${LV_FORMS[row.legal_form] || row.legal_form.toLowerCase()}` : ''}${reg ? `, registered ${reg}` : ''}${row.address ? `, legal address ${row.address}` : ''}.`)];
+    if (row.terminated) findings.push(F('r2', 'legal', `The Register of Enterprises' open data shows ${row.name} as terminated on ${day(row.terminated)}.`));
+    else findings.push(F('r2', 'legal', `The Register of Enterprises' open data${asOf ? ` of ${asOf}` : ''} records no termination date for ${row.name}.`));
+    return { match: { name: row.name, id: row.reg_id, url: LV_DATASET, score }, findings, pages: [{ url: LV_DATASET, title: `Register of Enterprises of Latvia: ${row.name}` }] };
+  }
+};
+
 const CONNECTORS = { gb: companiesHouse, fr: franceSirene, no: norwayBrreg, sg: singaporeAcra, fi: finlandPrh, cz: czechAres, au: australiaAbr,
-                     ie: irelandCro, tw: taiwanGcis, in: indiaIbbi, pl: polandKrs, us: unitedStatesEdgar };
+                     ie: irelandCro, tw: taiwanGcis, in: indiaIbbi, pl: polandKrs, us: unitedStatesEdgar, lv: latviaUr };
 
 module.exports = { CONNECTORS, nameScore, queryVariants, pickBest, clean };

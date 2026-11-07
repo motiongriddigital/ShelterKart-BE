@@ -44,7 +44,7 @@ jobs:
       - name: Apply the migrations
         run: node tools/migrate.js
       - name: "Re-run the migrations: nothing may apply twice"
-        run: node tools/migrate.js | tee /tmp/second.txt && grep -q "0 applied, 18 already applied" /tmp/second.txt
+        run: node tools/migrate.js | tee /tmp/second.txt && grep -q "0 applied, 19 already applied" /tmp/second.txt
       - name: Every foreign key is indexed or allow-listed
         run: node tools/check_fk_indexes.js
       - name: Seed the pricing reference tables

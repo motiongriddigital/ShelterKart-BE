@@ -16,7 +16,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { rateLimit } = require('../middleware/rateLimit');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, ADMIN_AUDIT, BACKUPS, CONTRACT, DELIVERY, ENGINE_HISTORY, ERRORLOG, REVIEWS, TIMING, auditAdmin, dayOf, investigateCap, liveJobs, marketCap, num, overDailyMax, pgStore, pool, previewBudget, previewPanel, pricingData, pricingStore, retryFailedReport, runSourceHealth, spend } = c;
+  const { ACCOUNTS, ADMIN_AUDIT, BACKUPS, BULK_SPECS, CONTRACT, DELIVERY, ENGINE_HISTORY, ERRORLOG, REVIEWS, TIMING, auditAdmin, dayOf, investigateCap, liveJobs, marketCap, num, overDailyMax, pgStore, pool, previewBudget, previewPanel, pricingData, pricingStore, retryFailedReport, runBulk, runSourceHealth, spend } = c;
 
   // A named person or role who can act on a legal takedown notice. Wiring
   // purgeByUrl/purgeByHost to nothing, as they were, meant a real request
@@ -82,6 +82,20 @@ module.exports = function register(app, c) {
     const results = await runSourceHealth();
     if (!results) return res.status(409).json({ ok: false, error: 'A health check is already running.' });
     res.json({ ok: true, results });
+  }));
+
+  /* The bulk registers: what each country's last load did, and a way to run one now. A load is one polite download; it never replaces data with a partial file. */
+  app.get('/api/admin/bulk-registers', adminAuth, ah(async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    const out = [];
+    for (const country of Object.keys(BULK_SPECS)) out.push({ country, source: BULK_SPECS[country].url, load: pgStore ? await pgStore.bulkStatus(country).catch(() => null) : null });
+    res.json({ ok: true, registers: out });
+  }));
+  app.post('/api/admin/bulk-registers/run', adminAuth, ah(async (req, res) => {
+    const country = String((req.body && req.body.country) || '').toLowerCase();
+    if (!BULK_SPECS[country]) return res.status(400).json({ ok: false, error: 'Unknown country.' });
+    const r = await runBulk(country, { force: Boolean(req.body && req.body.force) });
+    res.status(r.status === 'failed' || r.status === 'busy' ? 409 : 200).json({ ok: r.status === 'ok' || r.status === 'unchanged', ...r });
   }));
 
   /* The admin Reports panel: recent reports, and any report in full --

@@ -219,7 +219,8 @@ async function guardedFetch(rawUrl, { allowSet, maxRedirects = 3, timeoutMs = 15
       clearTimeout(timer);
     }
 
-    if (res.status >= 300 && res.status < 400) {
+    // Only these statuses are redirects. A 304 (Not Modified, the answer to a conditional request) and 300 or 305 have no destination to follow.
+    if ([301, 302, 303, 307, 308].includes(res.status)) {
       const loc = res.headers.get('location');
       if (!loc) throw new EgressBlocked('redirect without location', target);
       target = new URL(loc, checked.url).toString();
