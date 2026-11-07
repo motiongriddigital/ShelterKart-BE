@@ -63,7 +63,9 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
   const d = await call(find('post', '/api/dispute'), { body: { note: 'The possession date is wrong.', reportRef: ref, contact: 'buyer@example.com' } });
   const open = await call(find('get', '/api/admin/disputes'), { headers: { authorization: AUTH } });
   ok('a buyer can report an inaccuracy with no database, and the admin sees it', d.code === 200 && open.body.length === 1 && open.body[0].report_ref === ref);
-  ok('no route returns raw error detail any more', !/detail: e\.message/.test(require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'server.js'), 'utf8')));
+  const sources = ['server.js', 'app.js', ...['modules', 'middleware', 'services'].flatMap(d => require('fs').readdirSync(require('path').join(__dirname, '..', '..', d)).map(f => d + '/' + f))].filter(f => f.endsWith('.js'));
+  ok('the route and middleware sources are all scanned (' + sources.length + ' files)', sources.length > 15);
+  ok('no route returns raw error detail any more', sources.every(f => !/detail: e\.message/.test(require('fs').readFileSync(require('path').join(__dirname, '..', '..', f), 'utf8'))));
 
   // Bot protection: a NEW research needs the browser's proof of work; an already-researched report does not
   process.env.BOT_GUARD = 'on'; process.env.BOT_POW_BITS = '10';
