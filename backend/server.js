@@ -47,6 +47,8 @@ else if (!TRUST.setting && process.env.NODE_ENV === 'production') console.warn('
    match what the page actually does. Everything else below is real:
    no other third-party script origin, no framing of this site by
    anyone, no plugin/object embeds. */
+const TIMING = require('./engine/timing').createTiming();
+app.use(TIMING.middleware);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -71,6 +73,7 @@ app.use(helmet({
 // directly from a browser — don't leave it at "*".
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
+  credentials: true,
   origin: (origin, cb) => {
     if (!origin) return cb(null, true); // server-to-server / curl / health checks
     if (allowedOrigins.includes(origin)) return cb(null, true);
@@ -90,6 +93,10 @@ app.use(cors({
 const OWN_BODY_PARSER = new Set(['/api/payments/webhook', '/api/payments/razorpay/webhook', '/api/payments/mor/webhook', '/api/research/document-check']);
 const jsonSmall = express.json({ limit: '10kb' });
 app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
+app.use((req, res, next) => ACCOUNTS.csrf(req, res, next));
+const CONTRACT = require('./engine/contract').createContract();
+app.use(CONTRACT.middleware);
+app.use(require('./engine/httpcache').createHttpCache().middleware);
 
 const pool = require('./engine/poolGuard').guardPool(new Pool({ connectionString: process.env.DATABASE_URL }));
 const { createErrorLog } = require('./engine/errorlog');
@@ -1707,6 +1714,8 @@ function requireUuid(req, res, next) {
   next();
 }
 
+app.get('/api/admin/timing', adminAuth, (req, res) => res.json({ ok: true, ...TIMING.stats() }));
+app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
 app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
   try {
     // "Purchases" means PAID: a pending checkout is not a sale. Leads were

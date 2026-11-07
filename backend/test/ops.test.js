@@ -18,17 +18,17 @@ function fakeClient({ failOn = null } = {}) {
 }
 
 (async () => {
-  await t('migrations: exactly the seventeen, in the documented order, each present on disk', async () => {
-    assert.deepStrictEqual(MIGRATIONS, ['schema.sql', 'schema_evidence.sql', 'razorpay_orders.sql', 'idempotent_checkout.sql', 'research_persistence.sql', 'source_health.sql', 'analytics.sql', 'translations.sql', 'pricing_v2.sql', 'responses.sql', 'social.sql', 'purchase_attribution.sql', 'accounts.sql', 'error_log.sql', 'health_history.sql', 'engine_usage.sql', 'backups.sql']);
-    assert.strictEqual(plan().length, 17);
+  await t('migrations: exactly the eighteen, in the documented order, each present on disk', async () => {
+    assert.deepStrictEqual(MIGRATIONS, ['schema.sql', 'schema_evidence.sql', 'razorpay_orders.sql', 'idempotent_checkout.sql', 'research_persistence.sql', 'source_health.sql', 'analytics.sql', 'translations.sql', 'pricing_v2.sql', 'responses.sql', 'social.sql', 'purchase_attribution.sql', 'accounts.sql', 'error_log.sql', 'health_history.sql', 'engine_usage.sql', 'backups.sql', 'fk_indexes.sql']);
+    assert.strictEqual(plan().length, 18);
   });
   await t('migrations: each runs once, in its own transaction, and a second run applies nothing', async () => {
     const c = fakeClient();
     const first = await migrate(c);
-    assert.deepStrictEqual([first.applied.length, first.skipped.length], [17, 0]);
-    assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 17); assert.strictEqual(c.log.filter(x => x === 'COMMIT').length, 17);
+    assert.deepStrictEqual([first.applied.length, first.skipped.length], [18, 0]);
+    assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 18); assert.strictEqual(c.log.filter(x => x === 'COMMIT').length, 18);
     const second = await migrate(c);
-    assert.deepStrictEqual([second.applied.length, second.skipped.length], [0, 17]);
+    assert.deepStrictEqual([second.applied.length, second.skipped.length], [0, 18]);
   });
   await t('migrations: a file edited after it was applied stops the run, and a failing file is rolled back and named', async () => {
     const c = fakeClient(); await migrate(c);
@@ -40,7 +40,32 @@ function fakeClient({ failOn = null } = {}) {
   });
   await t('migrations: a dry run touches nothing', async () => {
     const c = fakeClient(); const r = await migrate(c, { dryRun: true });
-    assert.strictEqual(r.pending.length, 17); assert(!c.log.includes('BEGIN'));
+    assert.strictEqual(r.pending.length, 18); assert(!c.log.includes('BEGIN'));
+  });
+  await t('migrations: a no-transaction file runs statement by statement without BEGIN, and an invalid index stops the run', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mig-'));
+    for (const n of MIGRATIONS) fs.writeFileSync(path.join(dir, n), n === 'fk_indexes.sql' ? '-- migrate: no-transaction\n-- big table\nCREATE INDEX CONCURRENTLY IF NOT EXISTS a ON t (x);\nCREATE INDEX CONCURRENTLY IF NOT EXISTS b ON t (y);\n' : 'SELECT 1;');
+    const c = fakeClient(); const r = await migrate(c, { dir });
+    assert.strictEqual(r.applied.length, 18); assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 17);
+    assert.strictEqual(c.log.filter(x => x === 'CREATE INDEX CONCURRENTLY').length, 2);
+    assert.strictEqual(c.applied.has('fk_indexes.sql'), true);
+    const bad = fakeClient(); const q = bad.query.bind(bad);
+    bad.query = async (sql, params) => /pg_index/.test(sql) ? { rows: [{ relname: 'a' }] } : q(sql, params);
+    for (const n of MIGRATIONS.slice(0, 17)) { bad.applied.set(n, plan(dir).find(m => m.name === n).checksum); }
+    await assert.rejects(() => migrate(bad, { dir }), /invalid index.*\(a\)/);
+    assert.strictEqual(bad.applied.has('fk_indexes.sql'), false);
+    assert.deepStrictEqual(require('../../tools/migrate').statements('-- c\nA;\n\nB;\n'), ['A', 'B']);
+  });
+  await t('foreign-key check: an unindexed key fails unless allow-listed with a reason, and a stale entry is reported', async () => {
+    const { evaluate } = require('../../tools/check_fk_indexes');
+    const missing = [{ tbl: 'evidence', col: 'document_id' }, { tbl: 'error_hits', col: 'error_id' }];
+    const allow = [{ table: 'evidence', column: 'document_id', reason: 'inert' }, { table: 'old', column: 'gone', reason: 'x' }];
+    const r = evaluate(missing, allow);
+    assert.deepStrictEqual([r.ok, r.unlisted, r.stale], [false, ['error_hits.error_id'], ['old.gone']]);
+    assert.strictEqual(evaluate(missing.slice(0, 1), allow.slice(0, 1)).ok, true);
+    assert.strictEqual(evaluate(missing.slice(0, 1), [{ table: 'evidence', column: 'document_id', reason: ' ' }]).ok, false);
+    const listed = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'tools', 'fk-index-allowlist.json'), 'utf8'));
+    assert(listed.every(e => e.reason && e.table && e.column));
   });
   await t('smoke test: passes a correct server, and catches a webhook that accepts a forged signature', async () => {
     const { run } = require('../../tools/smoke');
