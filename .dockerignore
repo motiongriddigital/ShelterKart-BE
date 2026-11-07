@@ -16,3 +16,4 @@ sample-reports
 *.md
 *.png
 docs
+!docs/api/openapi.yaml
