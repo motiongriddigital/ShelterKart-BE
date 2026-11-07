@@ -17,6 +17,7 @@
 
 const { ground, markFinding, siteOf, hostOf, norm } = require('./grounding');
 const { CONNECTORS } = require('./registry');
+const { cites } = require('./briefPages');
 const { research: searchLane } = require('./searchLane');
 const { advise } = require('./adviser');
 const { MARKETS, depthOf } = require('./markets');
@@ -109,11 +110,11 @@ const inFlight = new Map();
 function purgeByUrl(url) {
   let n = 0;
   for (const [k, e] of cache) {
-    if (e.brief.pages.some(p => p.url === url)) { cache.delete(k); entities.forgetKey(k); n++; }
+    if (cites(e.brief, { url })) { cache.delete(k); entities.forgetKey(k); n++; }
   }
   // A withdrawn record must not still be reachable through a shared
   // link just because that store has a longer memory than the cache.
-  for (const [ref, e] of refStore) if (e.brief.pages.some(p => p.url === url)) refStore.delete(ref);
+  for (const [ref, e] of refStore) if (cites(e.brief, { url })) refStore.delete(ref);
   bg('deleteCiting', () => store.deleteCiting({ url }));
   return n;
 }
@@ -123,11 +124,10 @@ function purgeByUrl(url) {
 function purgeByHost(host) {
   let n = 0;
   const h = String(host).toLowerCase().replace(/^www\./, '');   // same normalisation as storage
-  const fromHost = p => { try { return new URL(p.url).hostname.toLowerCase().replace(/^www\./, '') === h; } catch { return false; } };
   for (const [k, e] of cache) {
-    if (e.brief.pages.some(fromHost)) { cache.delete(k); entities.forgetKey(k); n++; }
+    if (cites(e.brief, { host: h })) { cache.delete(k); entities.forgetKey(k); n++; }
   }
-  for (const [ref, e] of refStore) if (e.brief.pages.some(fromHost)) refStore.delete(ref);
+  for (const [ref, e] of refStore) if (cites(e.brief, { host: h })) refStore.delete(ref);
   bg('deleteCiting', () => store.deleteCiting({ host: h }));
   return n;
 }
@@ -149,6 +149,7 @@ async function hydrate() {
   if (!store) return { reports: 0, aliases: 0 };
   const now = Date.now();
   await store.pruneOlderThan(new Date(now - REF_TTL_MS));
+  if (store.backfillPageIndex) { try { await store.backfillPageIndex(); } catch (e) { console.error('[persistence] could not index cited pages of older reports:', e && e.message); } }
   const rows = await store.loadRecent(new Date(now - REF_TTL_MS), REF_MAX);
   for (const r of rows) {
     const at = r.createdAt.getTime();
