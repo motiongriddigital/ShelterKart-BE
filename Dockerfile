@@ -14,6 +14,7 @@ RUN cd backend && npx playwright install --with-deps chromium \
     && chmod -R a+rX /ms-playwright
 COPY --chown=node:node backend backend
 COPY --chown=node:node tools tools
+COPY --chown=node:node docs/api/openapi.yaml docs/api/openapi.yaml
 RUN mkdir -p backend/data/live-jobs && chown node:node backend/data/live-jobs
 USER node
 WORKDIR /app/backend
