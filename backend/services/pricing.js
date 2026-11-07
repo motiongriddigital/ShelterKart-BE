@@ -1,7 +1,7 @@
 'use strict';
 const { pickLanguage } = require('../engine/languages');
 const TRANSLATE = require('../engine/translate');
-const { paywallActive, previewOf, verifyToken } = require('../engine/access');
+const { paywallActive, previewOf, tokenInfo } = require('../engine/access');
 const PRICING = require('../pricing');
 const PAYMENTS = require('../payments');
 const morEngine = require('../engine/mor');
@@ -45,7 +45,7 @@ module.exports = function setup(c) {
       await recordSale(r.rows[0]);
       let payer = null;
       if (ACCOUNTS.enabled) { try { const u = await db.query(`SELECT u.email FROM report_purchases p JOIN users u ON u.id = p.user_id WHERE p.id=$1`, [purchaseId]); payer = (u.rows[0] && u.rows[0].email) || null; } catch { payer = null; } }
-      try { c.onReportPaid(ref, payer); } catch (e) { console.error('[investigate] could not continue a paid report:', e && e.message); }
+      try { c.onReportPaid(ref, payer, purchaseId); } catch (e) { console.error('[investigate] could not continue a paid report:', e && e.message); }
     }
     return r.rows.length === 1;
   }
@@ -82,6 +82,16 @@ module.exports = function setup(c) {
     if (lang === 'en') return gated;
     return { ...gated, brief: await TRANSLATE.translateBrief(gated.brief, lang) };
   }
+  /* Does this access token open this report RIGHT NOW? It must be genuine, unexpired, and carry the purchase it was bought with, and that purchase must
+     still be paid: a refund ends the access at once, not after the token's 30 days. A token without a purchase (older code) is not honoured.
+     Any doubt, including a database error, is a no.
+     Only used when accounts are off; with accounts the purchase itself is the entitlement (ACCOUNTS.entitled). */
+  async function tokenGrants(token, ref) {
+    const t = tokenInfo(token, ref, process.env.ACCESS_TOKEN_SECRET);
+    if (!t || !t.pid || !/^[0-9a-f-]{36}$/i.test(t.pid)) return false;
+    try { const r = await pool.query(`SELECT status FROM report_purchases WHERE id=$1 AND report_ref=$2`, [t.pid, ref]); return Boolean(r.rows[0]) && r.rows[0].status === 'paid'; }
+    catch { return false; }
+  }
   async function gateBrief(brief, req) {
     const active = paywallActive(process.env);
     // The fee for THIS buyer: set by the property and the evidence depth, read in the buyer's currency (pricing/quote.js).
@@ -89,7 +99,7 @@ module.exports = function setup(c) {
     const fee = PRICING.previewFee(pricingData, brief, await buyerOf(req));
     const paywall = active ? { active: true, price: fee.price, currency: fee.currency, depth: fee.depth, depthLabel: fee.depthLabel, basis: fee.basis,
       fee: { net: fee.net, tax: fee.tax, taxName: fee.taxName, taxRateBps: fee.taxRateBps, taxInclusive: fee.taxInclusive }, buyer: fee.buyer, priceBookVersion: fee.priceBookVersion } : { active: false };
-    const open = !active || (ACCOUNTS.enabled ? await ACCOUNTS.entitled(req, brief.ref) : verifyToken(req.get('x-report-access'), brief.ref, process.env.ACCESS_TOKEN_SECRET));
+    const open = !active || (ACCOUNTS.enabled ? await ACCOUNTS.entitled(req, brief.ref) : await tokenGrants(req.get('x-report-access'), brief.ref));
     if (open) {
       // The contact on a report is whoever unlocked it, kept for delivery and corrections: another buyer of the same report must never read it.
       const full = { ...brief, locked: false };
@@ -139,5 +149,5 @@ module.exports = function setup(c) {
     if (m.needsCapture) await rzp.capturePayment({ paymentId: m.payment.id, amountSubunits: expected, currency: row.currency }, { env: process.env });
     return markPurchasePaid(pool, { purchaseId, ref, provider: 'razorpay', paymentId: m.payment.id });
   }
-  Object.assign(c, { buyerOf, gateBrief, localize, markPurchasePaid, pricingData, pricingStore, reconcileMor, reconcileRazorpay, sessionOf, startMor });
+  Object.assign(c, { buyerOf, gateBrief, tokenGrants, localize, markPurchasePaid, pricingData, pricingStore, reconcileMor, reconcileRazorpay, sessionOf, startMor });
 };

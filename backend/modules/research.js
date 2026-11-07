@@ -70,11 +70,11 @@ module.exports = function register(app, c) {
     const paymentId = String((req.body || {}).paymentId || '').trim();
     if (!/^pay_[A-Za-z0-9]{8,30}$/.test(paymentId))
       return res.status(400).json({ ok: false, error: 'Enter the payment ID from your Razorpay receipt. It starts with pay_.' });
-    const q = await pool.query(`SELECT report_ref FROM report_purchases WHERE provider_payment_id=$1 AND status='paid'`, [paymentId]);
+    const q = await pool.query(`SELECT report_ref, id FROM report_purchases WHERE provider_payment_id=$1 AND status='paid'`, [paymentId]);
     if (!q.rows.length) return res.status(404).json({ ok: false, error: 'No paid ShelterKart report matches that payment ID. If you were charged, write to us with your receipt.' });
     const ref = q.rows[0].report_ref;
     track('access_recovered', req, { ref });
-    res.json({ ok: true, ref, token: issueToken(ref, process.env.ACCESS_TOKEN_SECRET) });
+    res.json({ ok: true, ref, token: issueToken(ref, process.env.ACCESS_TOKEN_SECRET, 30, Date.now(), q.rows[0].id) });
   }));
 
   // Does this visitor have to agree before the page keeps the visit's source (the campaign link or website that brought them) in the
