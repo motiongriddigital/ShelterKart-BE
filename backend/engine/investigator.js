@@ -126,7 +126,7 @@ function parseLoose(text) {
 }
 
 const arr = x => (Array.isArray(x) ? x : []);
-const urlOf = s => (typeof s === 'string' ? s : s && s.url) || '';
+const urlOf = s => D.safeUrl(typeof s === 'string' ? s : s && s.url);
 
 /** Fold one bot's reply into the running state. Every item remembers which bot found it and in which round. */
 function ingest(state, o, engine, round) {
@@ -137,7 +137,7 @@ function ingest(state, o, engine, round) {
   for (const e of arr(o.entities)) {
     if (!e || !e.name) continue;
     const twin = state.entities.find(x => D.norm(x.name) === D.norm(e.name) || D.jaccard(x.name, e.name) >= 0.8);
-    const people = arr(e.people).filter(x => x && x.name).map(x => ({ name: String(x.name), role: x.role || '', sources: arr(e.sources).map(u => ({ url: urlOf(u) })) }));
+    const people = arr(e.people).filter(x => x && x.name).map(x => ({ name: String(x.name), role: x.role || '', sources: arr(e.sources).map(u => ({ url: urlOf(u) })).filter(x => x.url) }));
     if (twin) {
       for (const pp of people) if (!twin.people.some(q => D.samePerson(q.name, pp.name) || D.norm(q.name) === D.norm(pp.name))) twin.people.push(pp);
       for (const d of arr(e.email_domains)) if (!twin.domains.includes(d)) twin.domains.push(d);
@@ -148,10 +148,10 @@ function ingest(state, o, engine, round) {
   for (const u of arr(o.units)) if (u && u.count && u.carpet) state.units.push({ ...u, engine });
   if (o.sanctioned_area && o.sanctioned_area.value) state.sanctioned.push({ ...o.sanctioned_area, engine });
   if (o.filed_completion && o.filed_completion.value) state.filed.push({ ...o.filed_completion, engine });
-  for (const m of arr(o.marketed_dates)) if (m && m.value) state.marketed.push({ value: String(m.value), sources: m.source ? [{ url: urlOf(m.source) }] : [], engine });
+  for (const m of arr(o.marketed_dates)) if (m && m.value) state.marketed.push({ value: String(m.value), sources: urlOf(m.source) ? [{ url: urlOf(m.source) }] : [], engine });
   for (const l of arr(o.listings)) if (l && l.price) state.listings.push({ ...l, engine });
   for (const l of arr(o.leads)) if (l && l.value) state.botLeads.push(l);
-  for (const q of arr(o.questions)) if (q && q.question) state.questions.push({ ...q, notAccepted: q.not_accepted || q.notAccepted || '', sources: arr(q.sources).map(u => ({ url: urlOf(u) })), basis: 'panel', engine });
+  for (const q of arr(o.questions)) if (q && q.question) state.questions.push({ ...q, notAccepted: q.not_accepted || q.notAccepted || '', sources: arr(q.sources).map(u => ({ url: urlOf(u) })).filter(x => x.url), basis: 'panel', engine });
   for (const u of arr(o.unreachable)) if (u && u.what) state.unreachable.push(u);
 }
 
