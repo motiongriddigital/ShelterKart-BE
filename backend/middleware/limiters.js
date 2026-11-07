@@ -58,5 +58,8 @@ module.exports = function setup(c) {
   // place of it. A developer cannot use this to alter a finding.
   // ============================================================
   const replyLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: 3, message: { ok:false, error:'Too many submissions. Please try again later.' } });
-  Object.assign(c, { adminLimiter, checkoutResearchLimiter, disputeLimiter, documentLimiter, replyLimiter, researchLimiter, respondLimiter, respondReadLimiter, trackLimiter });
+  /* The legacy payment webhook refuses an unsigned request with a 401. Only refusals count against an address (skipSuccessfulRequests), so a flood of
+     forged requests is cut off while the provider's own signed deliveries are never limited. */
+  const webhookForgeryLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, skipSuccessfulRequests: true, standardHeaders: true, legacyHeaders: false, message: { ok: false, error: 'Too many invalid requests.' } });
+  Object.assign(c, { adminLimiter, checkoutResearchLimiter, disputeLimiter, documentLimiter, replyLimiter, webhookForgeryLimiter, researchLimiter, respondLimiter, respondReadLimiter, trackLimiter });
 };

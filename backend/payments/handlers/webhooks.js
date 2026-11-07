@@ -117,6 +117,11 @@ module.exports = function create(c) {
         signatureOk = a.length === b.length && crypto.timingSafeEqual(a, b);
       } catch { signatureOk = false; }
 
+      // A request that is not signed with our secret is refused HERE, before anything is parsed or written. It used to be recorded first, "for an
+      // audit trail of forgery attempts", which let anyone who could reach the route fill payment_events with unlimited rows (SHEL-37). Refusals are
+      // visible in the server log and are rate-limited per address (middleware/limiters.js).
+      if (!signatureOk) { console.warn('[webhook] refused a request with a missing or wrong signature (' + provider.slice(0, 40) + ')'); return { status: 401, body: { ok: false, error: 'Invalid signature' } }; }
+
       let event;
       try { event = JSON.parse(req.body.toString('utf8')); }
       catch { return { status: 400, body: { ok: false, error: 'Malformed payload' } }; }
@@ -128,16 +133,15 @@ module.exports = function create(c) {
       // 2. Record the event before acting on it. The UNIQUE constraint on
       //    (provider, event_id) is what makes replay impossible: a
       //    duplicate delivery collides here and is acknowledged without
-      //    granting anything a second time. Recording rejected signatures
-      //    too gives an audit trail of forgery attempts.
+      //    granting anything a second time. Only signed events get here.
       let inserted;
       try {
         inserted = await pool.query(
           `INSERT INTO payment_events (provider, event_id, payload_hash, signature_ok, process_status)
-         VALUES ($1,$2,$3,$4,'received')
+         VALUES ($1,$2,$3,TRUE,'received')
          ON CONFLICT (provider, event_id) DO NOTHING
          RETURNING id`,
-          [provider, eventId, payloadHash, signatureOk]
+          [provider, eventId, payloadHash]
         );
       } catch (e) {
         return { status: 500, body: { ok: false, error: 'Event log failed' } };
@@ -148,12 +152,6 @@ module.exports = function create(c) {
         return { status: 200, body: { ok: true, duplicate: true } };
       }
       const eventRowId = inserted.rows[0].id;
-
-      // 3. Only now reject bad signatures — after logging the attempt.
-      if (!signatureOk) {
-        await pool.query(`UPDATE payment_events SET process_status='ignored', processed_at=NOW() WHERE id=$1`, [eventRowId]);
-        return { status: 401, body: { ok: false, error: 'Invalid signature' } };
-      }
 
       if (event.type !== 'payment.succeeded') {
         await pool.query(`UPDATE payment_events SET process_status='ignored', processed_at=NOW() WHERE id=$1`, [eventRowId]);
