@@ -1,5 +1,6 @@
 'use strict';
 const { verifyToken, issueToken } = require('../engine/access');
+const { cites } = require('../engine/briefPages');
 const PRICING = require('../pricing');
 const INVESTIGATOR = require('../engine/investigator');
 const DOSSIER_BRIEF = require('../engine/dossierBrief');
@@ -73,6 +74,21 @@ module.exports = function setup(c) {
       if (Number.isFinite(usd) && usd > 0) return usd * share;
     } catch { /* fall back */ }
     return num('AI_CAP_FALLBACK_USD', 6);
+  }
+  /* A legal takedown also clears the saved investigations that cite the page: their files would otherwise bring a withdrawn page back after a
+     restart. A job still working is left alone (its work is not stopped halfway) and counted, so the operator can repeat the call. */
+  function purgeLiveJobs({ url, host }) {
+    let removed = 0, running = 0;
+    for (const [ref, job] of liveJobs) {
+      const d = (job.inv && job.inv.dossier) || (job.saved && job.saved.dossier);
+      if (!d || !cites({ dossier: d }, { url, host })) continue;
+      if (job.status === 'sweeping' || job.status === 'completing' || job.completing) { running++; continue; }
+      liveJobs.delete(ref); JOBS.remove(ref);
+      for (const [k, v] of liveIndex) if (v.ref === ref) liveIndex.delete(k);
+      for (const [k, v] of regIndex) if (v.ref === ref) regIndex.delete(k);
+      removed++;
+    }
+    return { removed, running };
   }
   function persistJob(job) {
     JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), contact: job.contact || null,
@@ -183,5 +199,5 @@ module.exports = function setup(c) {
     if (!process.env.DATABASE_URL && rec.saved && rec.saved.dossier) { try { saveLiveDossier(job, JSON.parse(JSON.stringify(rec.saved.dossier))); } catch (e) { console.error('[investigate] could not restore report ' + rec.ref + ':', e && e.message); } }
   }
   setImmediate(() => { for (const job of liveJobs.values()) if (job.paid && job.status !== 'done' && job.status !== 'failed' && !job.completing) { try { completeLive(job); } catch (e) { console.error('[investigate] could not resume ' + job.ref + ':', e && e.message); } } });
-  Object.assign(c, { DELIVERY, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
+  Object.assign(c, { DELIVERY, purgeLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
 };

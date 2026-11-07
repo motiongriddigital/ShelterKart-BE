@@ -16,7 +16,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { rateLimit } = require('../middleware/rateLimit');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, ADMIN_AUDIT, BACKUPS, BULK_SPECS, CONTRACT, DELIVERY, ENGINE_HISTORY, ERRORLOG, REVIEWS, TIMING, auditAdmin, dayOf, investigateCap, liveJobs, marketCap, num, overDailyMax, pgStore, pool, previewBudget, previewPanel, pricingData, pricingStore, retryFailedReport, runBulk, runSourceHealth, spend } = c;
+  const { ACCOUNTS, ADMIN_AUDIT, BACKUPS, BULK_SPECS, CONTRACT, DELIVERY, ENGINE_HISTORY, ERRORLOG, REVIEWS, TIMING, auditAdmin, dayOf, investigateCap, liveJobs, marketCap, num, overDailyMax, pgStore, pool, previewBudget, previewPanel, pricingData, pricingStore, purgeLiveJobs, retryFailedReport, runBulk, runSourceHealth, spend } = c;
 
   // A named person or role who can act on a legal takedown notice. Wiring
   // purgeByUrl/purgeByHost to nothing, as they were, meant a real request
@@ -27,8 +27,9 @@ module.exports = function register(app, c) {
     if (!url && !host) return res.status(400).json({ ok: false, error: 'Provide a url or a host.' });
     // Reported as purged only once storage has confirmed the deletion too.
     const { memory, stored } = await purgeDurably(url ? { url } : { host });
-    const audited = await auditAdmin(req, { action: 'SOURCE_PURGED', objectType: 'source', after: { purged: memory, purgedFromStorage: stored }, reason: (url ? 'url ' : 'host ') + String(url || host).slice(0, 300) });
-    res.json({ ok: true, purged: memory, purgedFromStorage: stored, audited });
+    const jobs = purgeLiveJobs(url ? { url } : { host });
+    const audited = await auditAdmin(req, { action: 'SOURCE_PURGED', objectType: 'source', after: { purged: memory, purgedFromStorage: stored, savedInvestigations: jobs.removed, stillRunning: jobs.running }, reason: (url ? 'url ' : 'host ') + String(url || host).slice(0, 300) });
+    res.json({ ok: true, purged: memory, purgedFromStorage: stored, purgedInvestigations: jobs.removed, investigationsStillRunning: jobs.running, audited });
   }));
 
   /* A refund, in the original currency and amount (payments/refunds.js). Admin only. */
