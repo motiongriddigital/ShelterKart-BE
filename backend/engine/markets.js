@@ -36,7 +36,8 @@ const MARKETS = {
         note: 'Developer checked live in ARES, the official register of economic subjects.' },
   ee: { label: 'Estonia', status: 'evidence', registry: null, note: 'Research brief.' },
   lv: { label: 'Latvia', status: 'evidence', registry: null, note: 'Research brief.' },
-  pl: { label: 'Poland', status: 'evidence', registry: null, note: 'Research brief.' },
+  pl: { label: 'Poland', status: 'evidence', registry: 'pl',
+        note: 'Research brief. When the developer\u2019s KRS number is found, its National Court Register extract is read live (by number only: the register has no name search).' },
   es: { label: 'Spain', status: 'evidence', registry: null, note: 'Research brief.' },
   lt: { label: 'Lithuania', status: 'evidence', registry: null, note: 'Research brief.' },
   dk: { label: 'Denmark', status: 'signup', registry: null, note: 'Research brief.' },
@@ -56,7 +57,7 @@ const MARKETS = {
         note: 'Research brief, Ontario first: the investigator reads the HCRA Ontario Builder Directory (licence, convictions, warranty record) and, in British Columbia, BC Housing\u2019s builder registry.' },
   my: { label: 'Malaysia', status: 'evidence', registry: null,
         note: 'Research brief: the investigator reads the housing ministry\u2019s TEDUH portal for the developer\u2019s licence and the project\u2019s advertising and sales permit.' },
-  us: { label: 'United States', status: 'evidence', registry: null,
+  us: { label: 'United States', status: 'evidence', registry: 'us',
         note: 'Pilot in Florida and New York: research brief from SEC filings, federal court dockets, Florida\u2019s company register and New York\u2019s condominium offering plans. A person reviews adverse findings before release.' },
   // Added October 2026 to cover the major markets: research briefs, depth stated plainly in each note.
   de: { label: 'Germany', status: 'evidence', registry: null,

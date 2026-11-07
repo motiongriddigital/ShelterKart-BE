@@ -167,7 +167,7 @@ function fakeClient({ failOn = null } = {}) {
     const { REGISTERS } = require('../engine/credits');
     const known = new Set(REGISTERS.flatMap(r => r.hosts));
     assert.deepStrictEqual(hosts.filter(h => !known.has(h)), [], 'a connector host with no credit entry');
-    assert.deepStrictEqual(REGISTERS.map(r => r.id).sort(), ['au', 'cz', 'fi', 'fr', 'gb', 'ie', 'in', 'no', 'sg', 'tw']);
+    assert.deepStrictEqual(REGISTERS.map(r => r.id).sort(), ['au', 'cz', 'fi', 'fr', 'gb', 'ie', 'in', 'no', 'pl', 'sg', 'tw', 'us']);
     assert.strictEqual(REGISTERS.find(r => r.id === 'tw').notificationSent, false);
   });
   await t('licence credits survive the paywall: the locked preview keeps them', async () => {

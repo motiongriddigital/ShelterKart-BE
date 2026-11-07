@@ -147,6 +147,8 @@ const CANARIES = {
   cz: { name: 'Skanska a.s.' },
   ie: { name: 'Glenveagh Homes Limited' },
   au: { name: 'BHP Group Limited', needs: ['ABR_GUID'] },
+  pl: { name: 'PKP S.A.', ids: ['0000019193'], expectId: '0000019193' },                                      // KRS number read live from the register, 7 Nov 2026
+  us: { name: 'Toll Brothers', needs: ['SEC_USER_AGENT'] },
   tw: { name: 'TSMC', localName: '\u53f0\u7063\u7a4d\u9ad4\u96fb\u8def\u88fd\u9020', needs: ['GCIS_NOTIFIED'] },
 };
 

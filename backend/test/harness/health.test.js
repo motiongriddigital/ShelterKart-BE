@@ -73,11 +73,12 @@ const quiet = async fn => { const o = console.error; console.error = () => {}; t
   ok('Singapore, answering correctly, is healthy', by('sg').state === 'healthy');
   ok('registers that need a key this server lacks are skipped, not failed', by('uk').state === 'skipped' && by('au').state === 'skipped' && by('tw').state === 'skipped');
   ok('registers that fail their first-ever check are "unconfirmed", still in use', by('cz').state === 'unconfirmed' && by('fr').state === 'unconfirmed');
+  ok('Poland, whose canary the mock network cannot answer, is unconfirmed; the United States is skipped without SEC_USER_AGENT', by('pl').state === 'unconfirmed' && by('us').state === 'skipped');
   ok('the requests really went through the guarded client, including robots.txt for the path used',
      net.asked.includes('GET data.gov.sg/api/action/datastore_search') && net.asked.includes('GET data.gov.sg/robots.txt'));
   ok('the Czech canary reached ARES as a POST (the dropped-body bug)', net.asked.some(a => a.startsWith('POST ares.gov.cz')));
   ok('a first run sends ONE digest about the registers that have never passed, and says nothing about Singapore',
-     net.hooks.length === 1 && /never passed for 5 market/.test(net.hooks[0].text) && /France \(fr\)/.test(net.hooks[0].text) && !/Singapore/.test(net.hooks[0].text));
+     net.hooks.length === 1 && /never passed for 6 market/.test(net.hooks[0].text) && /France \(fr\)/.test(net.hooks[0].text) && !/Singapore/.test(net.hooks[0].text));
   ok('every result was saved to Postgres', _db.health.get('sg') && _db.health.get('sg').state === 'healthy' && _db.health.has('cz'));
 
   // 4. a restart keeps what was learned
