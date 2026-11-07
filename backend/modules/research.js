@@ -18,8 +18,18 @@ module.exports = function register(app, c) {
 
   /* The buyer's own document, checked against the research. Never stored,
      never logged, never cached: it exists only for this request. */
+  /* New research costs money; a report already researched does not. Only the first needs the browser's proof of work. Every route that can start
+     new research asks here (the document check once did not, and could use up the day's allowance with no check at all: SHEL-39). */
+  const challengeFor = body => {
+    const { query, location, market } = body || {};
+    if (!BOT.enabled(process.env) || isAnswerable({ query: stripPII(query), location: stripPII(location), market })) return null;
+    const v = BOT.verify(body && body.pow, process.env);
+    return v.ok ? null : { status: 428, body: { ok: false, code: 'challenge', reason: v.reason, error: 'This search needs a short automatic check from your browser. Please try again.' } };
+  };
   app.post('/api/research/document-check', ACCOUNTS.guard, documentLimiter, express.json({ limit: '12mb' }), ah(async (req, res) => {
     const { query, location, market, file, mediaType } = req.body || {};
+    const challenge = challengeFor(req.body);
+    if (challenge) return res.status(challenge.status).json(challenge.body);
     try {
       const brief = await runResearch({ query: stripPII(query), location: stripPII(location), market }, { env: process.env, http: registryHttp });
       const gated = await gateBrief(brief, req);
@@ -99,11 +109,8 @@ module.exports = function register(app, c) {
   });
   app.post('/api/research', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
     const { query, location, market } = req.body || {};
-    // New research costs money; a report already researched does not. Only the first needs the browser's proof of work.
-    if (BOT.enabled(process.env) && !isAnswerable({ query: stripPII(query), location: stripPII(location), market })) {
-      const v = BOT.verify(req.body && req.body.pow, process.env);
-      if (!v.ok) return res.status(428).json({ ok: false, code: 'challenge', reason: v.reason, error: 'This search needs a short automatic check from your browser. Please try again.' });
-    }
+    const challenge = challengeFor(req.body);
+    if (challenge) return res.status(challenge.status).json(challenge.body);
     try {
       const brief = await runResearch({ query: stripPII(query), location: stripPII(location), market }, { env: process.env, http: registryHttp });
       try { SEARCH.afterResearch({ query: stripPII(query), location: stripPII(location), market, brief }); } catch {}   // shadow comparison; the project becomes findable
