@@ -26,25 +26,29 @@ function briefRef(canonicalKey) {
 }
 const REF_RE = /^SK-[0-9A-F]{12}$/;
 
-function issueToken(ref, secret, ttlDays = 30, now = Date.now()) {
+/** `pid` is the purchase the access was bought with. A token that carries it can be revoked by refunding that purchase (the server checks the
+ *  purchase when the token is used); a token without it cannot, and the server no longer honours one (engine's tokenGrants). */
+function issueToken(ref, secret, ttlDays = 30, now = Date.now(), pid = null) {
   if (!secret || !REF_RE.test(ref)) throw new Error('cannot issue token');
-  const payload = b64u(JSON.stringify({ ref, exp: now + ttlDays * 86400000 }));
+  const payload = b64u(JSON.stringify({ ref, exp: now + ttlDays * 86400000, ...(pid ? { pid: String(pid) } : {}) }));
   const sig = b64u(crypto.createHmac('sha256', secret).update(payload).digest());
   return payload + '.' + sig;
 }
 
-function verifyToken(token, ref, secret, now = Date.now()) {
-  if (!token || !secret || !REF_RE.test(ref)) return false;
+/** The token's body when it is genuine for this report and not expired, else null. */
+function tokenInfo(token, ref, secret, now = Date.now()) {
+  if (!token || !secret || !REF_RE.test(ref)) return null;
   const [payload, sig] = String(token).split('.');
-  if (!payload || !sig) return false;
+  if (!payload || !sig) return null;
   const expected = crypto.createHmac('sha256', secret).update(payload).digest();
   let given;
-  try { given = fromB64u(sig); } catch { return false; }
-  if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) return false;
+  try { given = fromB64u(sig); } catch { return null; }
+  if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) return null;
   let body;
-  try { body = JSON.parse(fromB64u(payload).toString('utf8')); } catch { return false; }
-  return body.ref === ref && Number.isFinite(body.exp) && body.exp > now;
+  try { body = JSON.parse(fromB64u(payload).toString('utf8')); } catch { return null; }
+  return body && body.ref === ref && Number.isFinite(body.exp) && body.exp > now ? body : null;
 }
+function verifyToken(token, ref, secret, now = Date.now()) { return Boolean(tokenInfo(token, ref, secret, now)); }
 
 /** The paywall exists only when a purchase can actually complete.
  *  Locking content nobody can buy is a dead end, which the product's
@@ -88,4 +92,4 @@ function previewOf(b) {
   return out;
 }
 
-module.exports = { briefRef, issueToken, verifyToken, paywallActive, previewOf, REF_RE, PREVIEW };
+module.exports = { briefRef, issueToken, verifyToken, tokenInfo, paywallActive, previewOf, REF_RE, PREVIEW };

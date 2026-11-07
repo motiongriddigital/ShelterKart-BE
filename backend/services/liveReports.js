@@ -1,5 +1,5 @@
 'use strict';
-const { verifyToken, issueToken } = require('../engine/access');
+const { issueToken } = require('../engine/access');
 const { cites } = require('../engine/briefPages');
 const PRICING = require('../pricing');
 const INVESTIGATOR = require('../engine/investigator');
@@ -11,7 +11,7 @@ const { costedEngines, addStageCost } = require('../engine/jobCosts');
 const ROOT = require('path').resolve(__dirname, '..');
 
 module.exports = function setup(c) {
-  const { ACCOUNTS, RESPONSES, pool, pricingData } = c;
+  const { ACCOUNTS, RESPONSES, pool, pricingData, tokenGrants } = c;
 
   /* ------------------------------------------------------------------
    * The investigator for buyers. /start names a property; /r/:ref shows the free preview (the panel's first sweep) with
@@ -91,14 +91,13 @@ module.exports = function setup(c) {
     return { removed, running };
   }
   function persistJob(job) {
-    JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), contact: job.contact || null,
+    JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), purchaseId: job.purchaseId || null, contact: job.contact || null,
       costUsd: job.costUsd || 0, stageCosts: job.stageCosts || null, capUsd: job.capUsd == null ? null : job.capUsd, delivered: Boolean(job.delivered), createdAt: job.createdAt || Date.now(),
       failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: Date.now(), saved: job.inv ? job.inv.exportState() : (job.saved || null) });
   }
-  const tokenOk = (t, ref) => Boolean(t) && verifyToken(String(t), ref, process.env.ACCESS_TOKEN_SECRET);
-  const fullAccess = (req, ref, token) => (ACCOUNTS.enabled ? ACCOUNTS.entitled(req, ref) : Promise.resolve(tokenOk(token, ref)));
+  const fullAccess = (req, ref, token) => (ACCOUNTS.enabled ? ACCOUNTS.entitled(req, ref) : tokenGrants(token ? String(token) : '', ref));
   const ownsPurchase = async (req, purchaseId) => { const u = await ACCOUNTS.user(req); return Boolean(u) && (await pool.query(`SELECT 1 FROM report_purchases WHERE id=$1 AND user_id=$2`, [purchaseId, u.id])).rows.length > 0; };
-  const grantOf = ref => (ACCOUNTS.enabled ? { ok: true, entitled: true } : { ok: true, token: issueToken(ref, process.env.ACCESS_TOKEN_SECRET) });
+  const grantOf = (ref, purchaseId) => (ACCOUNTS.enabled ? { ok: true, entitled: true } : { ok: true, token: issueToken(ref, process.env.ACCESS_TOKEN_SECRET, 30, Date.now(), purchaseId) });
   const investigateCap = () => { const v = process.env.INVESTIGATE_DAILY_CAP; return v === undefined || v === '' ? 100 : Number(v); };
   const publicEvent = e => ({ type: e.type, stage: e.stage, phase: e.phase, counts: e.counts, ...(e.stage === 'sweep' || e.type === 'error' ? { message: e.message } : {}) });
   function saveLiveDossier(job, d) {
@@ -131,7 +130,7 @@ module.exports = function setup(c) {
     const brief = getByRef(job.ref); const contact = (brief && brief.contact) || job.contact;
     if (!contact || job.delivered || !process.env.ACCESS_TOKEN_SECRET) return null;
     job.delivered = true;
-    const token = issueToken(job.ref, process.env.ACCESS_TOKEN_SECRET), link = ACCOUNTS.enabled ? reportLink(process.env, job.ref, '').replace(/\?t=$/, '') : reportLink(process.env, job.ref, token);
+    const token = issueToken(job.ref, process.env.ACCESS_TOKEN_SECRET, 30, Date.now(), job.purchaseId), link = ACCOUNTS.enabled ? reportLink(process.env, job.ref, '').replace(/\?t=$/, '') : reportLink(process.env, job.ref, token);
     if (contact.email) RESPONSES.watch(job.ref, contact.email).catch(() => {});   // told if a finding in this report is corrected: that one purpose only
     return DELIVERY.send({ ref: job.ref, project: (brief && brief.project && brief.project.name) || job.input.query, email: contact.email, phone: contact.phone, link, pdfLink: ACCOUNTS.enabled ? link + '/pdf' : link.replace(/\?t=/, '/pdf?t=') });
   }
@@ -175,13 +174,13 @@ module.exports = function setup(c) {
     return { ok: true };
   }
   /** Called whenever a purchase is settled (the browser's verification or Razorpay's webhook). A no-op for other reports. */
-  function onReportPaid(ref, payerEmail) {
+  function onReportPaid(ref, payerEmail, purchaseId) {
     const brief = getByRef(ref);
     if (!brief || brief.kind !== 'dossier') return;
     let job = liveJobs.get(ref);
     if (!job) { job = newLiveJob(ref, { query: brief.project.name, location: brief.location, country: brief.market.toUpperCase(), market: brief.marketLabel }); job.swept = false; job.status = 'preview'; }
     if (ACCOUNTS.enabled && payerEmail) { job.contact = { email: payerEmail }; if (job.status === 'done') job.delivered = false; }
-    job.paid = true; job.capUsd = aiCapFor(brief); persistJob(job);
+    job.paid = true; job.capUsd = aiCapFor(brief); if (purchaseId && !job.purchaseId) job.purchaseId = purchaseId; persistJob(job);
     if (job.status === 'done' && ACCOUNTS.enabled && payerEmail) { try { const p = deliverReport(job); if (p && typeof p.catch === 'function') p.catch(e => console.error('[investigate] delivery failed for ' + job.ref + ':', e && e.message)); } catch (e) { console.error('[investigate] delivery failed for ' + job.ref + ':', e && e.message); } }
     if (job.status === 'preview' || job.status === 'interrupted') completeLive(job);   // a sweep still running continues into completion when it ends
   }
