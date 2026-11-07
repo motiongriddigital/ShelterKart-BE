@@ -19,7 +19,9 @@ const release = () => { active--; const next = waiting.shift(); if (next) next()
 
 let browserP = null;
 async function browser() {
-  if (!browserP) browserP = chromium.launch().catch(e => { browserP = null; throw e; });
+  // A package without its browser (or a browser that cannot start here) is "PDF not available", which the route answers with a 503 and guidance,
+  // not an unexplained 500. Found by running the code in a container that had the package but not Chromium.
+  if (!browserP) browserP = chromium.launch().catch(e => { browserP = null; throw Object.assign(new Error('the PDF browser could not be started: ' + String(e && e.message).split('\n')[0]), { code: 'pdf_unavailable' }); });
   const b = await browserP;
   if (typeof b.isConnected === 'function' && !b.isConnected()) { browserP = null; return browser(); }
   return b;

@@ -148,12 +148,13 @@ const CANARIES = {
   ie: { name: 'Glenveagh Homes Limited' },
   au: { name: 'BHP Group Limited', needs: ['ABR_GUID'] },
   pl: { name: 'PKP S.A.', ids: ['0000019193'], expectId: '0000019193' },                                      // KRS number read live from the register, 7 Nov 2026
+  lv: { name: 'Merks', ids: ['40003304295'], expectId: '40003304295' },                                       // SIA "MERKS", read from the register's own file, 7 Nov 2026
   us: { name: 'Toll Brothers', needs: ['SEC_USER_AGENT'] },
   tw: { name: 'TSMC', localName: '\u53f0\u7063\u7a4d\u9ad4\u96fb\u8def\u88fd\u9020', needs: ['GCIS_NOTIFIED'] },
 };
 
 /** Run one market's canary. Never throws. */
-async function runCanary(market, connector, { http, env, canary = CANARIES[market], robotsOverride = new Set() }) {
+async function runCanary(market, connector, { http, env, canary = CANARIES[market], robotsOverride = new Set(), bulk = null }) {
   if (!canary) return { kind: 'skipped', detail: 'no canary defined for this market' };
   const missing = (canary.needs || []).filter(k => !env[k]);
   if (missing.length) return { kind: 'skipped', detail: `not configured on this server (${missing.join(', ')})` };
@@ -167,7 +168,7 @@ async function runCanary(market, connector, { http, env, canary = CANARIES[marke
 
   let r;
   try {
-    r = await connector.lookup(canary.name, { http: recording, env, ids: canary.ids || [], localName: canary.localName });
+    r = await connector.lookup(canary.name, { http: recording, env, ids: canary.ids || [], localName: canary.localName, bulk });
   } catch (e) {
     return { kind: 'fail', detail: `the lookup threw: ${e && e.message}`, requested };
   }
@@ -288,7 +289,7 @@ async function runHealthChecks({ connectors, markets, http, env = process.env, s
     const connector = connectors[m.registry];
     if (!connector) continue;
     let result;
-    try { result = await withTimeout(runCanary(market, connector, { http, env, robotsOverride }), 30000); }
+    try { result = await withTimeout(runCanary(market, connector, { http, env, robotsOverride, bulk: store }), 30000); }
     catch (e) { result = { kind: 'fail', detail: e && e.message }; }
 
     const prev = health.get(market) || null;

@@ -12,7 +12,7 @@ const ANALYTICS = require('./engine/analytics');
 const HEALTH = require('./engine/health');
 const { adminAuth } = require('./middleware/adminAuth');
 const { ah } = require('./middleware/asyncHandler');
-const { ACCOUNTS, BACKUPS, ENGINE_HISTORY, ERRORLOG, pgStore, pool, runSourceHealth } = c;
+const { ACCOUNTS, BACKUPS, BULK_SPECS, ENGINE_HISTORY, ERRORLOG, pgStore, pool, runBulk, runSourceHealth } = c;
 
 const PORT = process.env.PORT || 4000;
 if (require.main === module) {
@@ -52,6 +52,12 @@ if (require.main === module) {
     if (process.env.SOURCE_HEALTH_SCHEDULE === 'true') {
       HEALTH.startSchedule(runSourceHealth, { hours: Number(process.env.SOURCE_HEALTH_HOURS) || 24 });
       console.log('[source-health] scheduled: first run in a minute, then every ' + (Number(process.env.SOURCE_HEALTH_HOURS) || 24) + 'h');
+    }
+    // The bulk registers (Latvia): ONE instance downloads each country's open-data file once a day (BULK_REGISTERS_SCHEDULE=true).
+    if (process.env.BULK_REGISTERS_SCHEDULE === 'true') {
+      const bulkRun = async () => { for (const country of Object.keys(BULK_SPECS)) { try { const r = await runBulk(country); console.log(`[bulk ${country}] ${r.status}${r.detail ? ': ' + r.detail : ''}${r.rows ? ' (' + r.rows + ' rows)' : ''}`); } catch (e) { console.error(`[bulk ${country}] run failed:`, e && e.message); } } };
+      setTimeout(() => { bulkRun(); setInterval(bulkRun, 24 * 3600 * 1000).unref(); }, 120000).unref();
+      console.log('[bulk] scheduled: first run in two minutes, then every 24h');
     }
     if (ACCOUNTS.problems.length) {
       console.error('[accounts] configuration problems:\n - ' + ACCOUNTS.problems.join('\n - '));

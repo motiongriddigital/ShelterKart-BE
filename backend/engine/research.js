@@ -375,7 +375,7 @@ async function _runResearch(input, { env = process.env, fetchImpl = globalThis.f
   } else if (connector && http) {
     const devName = g.project.developer;
     try {
-      const r = await withDeadline(connector.lookup(devName, { http, env, ids: allIds, localName: g.project.developer_local }),
+      const r = await withDeadline(connector.lookup(devName, { http, env, ids: allIds, localName: g.project.developer_local, bulk: store }),
                                    Math.min(15000, timeLeft() - 6000));
       if (r.skipped) notes.push('The official register check is not configured on this server.');
       else if (r.gone) notes.push('The official register has withdrawn this record.');

@@ -1,0 +1,60 @@
+# The sandbox: the application runs read-only, as a normal user, with every capability dropped, limited memory, CPU and processes, and a
+# network it cannot widen: only the hosts in ALLOW_HOSTS, a byte quota, a connection rate limit, and the sandbox's own database and stand-in
+# AI server. No real keys: the AI server is a local stand-in with its own ledger. See README.md.
+name: sk-sandbox
+networks:
+  sbnet:
+    ipam: { config: [{ subnet: 172.31.77.0/24 }] }
+  egress: {}
+services:
+  fw:
+    build: ./fw
+    cap_add: [NET_ADMIN]
+    networks: [sbnet, egress]
+    environment:
+      ALLOW_HOSTS: ${ALLOW_HOSTS:-api-krs.ms.gov.pl,data.gov.lv}
+      SANDBOX_SUBNET: 172.31.77.0/24
+      QUOTA_BYTES: ${QUOTA_BYTES:-314572800}
+      NEW_CONN_PER_MIN: ${NEW_CONN_PER_MIN:-120}
+    healthcheck: { test: ["CMD", "test", "-f", "/tmp/ready"], interval: 2s, retries: 30 }
+    mem_limit: 64m
+    pids_limit: 64
+  pg:
+    image: postgres:16
+    networks: [sbnet]
+    environment: { POSTGRES_PASSWORD: t, POSTGRES_DB: sk }
+    tmpfs: [/var/lib/postgresql/data]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+    pids_limit: 200
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U postgres -d sk"], interval: 2s, retries: 30 }
+  stub:
+    image: node:22-slim
+    networks: [sbnet]
+    command: ["node", "/stub.js"]
+    volumes: ["./fake-anthropic.js:/stub.js:ro"]
+    user: node
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    pids_limit: 64
+  app:
+    build: { context: ../.., dockerfile: ops/sandbox/app.Dockerfile }
+    network_mode: "service:fw"
+    depends_on: { fw: { condition: service_healthy }, pg: { condition: service_healthy }, stub: { condition: service_started } }
+    user: node
+    read_only: true
+    tmpfs: ["/tmp:size=256m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    cpus: 1.5
+    pids_limit: 256
+    environment:
+      NODE_ENV: test
+      HOME: /tmp
+      DATABASE_URL: postgres://postgres:t@pg:5432/sk
+      ANTHROPIC_API_URL: http://stub:8080/v1/messages
+      ANTHROPIC_API_KEY: sandbox-not-a-real-key
+      ANTHROPIC_RETRY_WAIT_MS: "0"
