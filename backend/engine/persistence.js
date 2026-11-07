@@ -18,12 +18,12 @@
  * means (for a background write: log it, never break the request).
  */
 
-const hostOf = u => { try { return new URL(u).hostname.toLowerCase().replace(/^www\./, ''); } catch { return null; } };
+const { pagesOf, hostOf } = require('./briefPages');
 
 function makePgStore(pool) {
   return {
     async saveBrief(cacheKey, brief) {
-      const urls = [...new Set((brief.pages || []).map(p => p.url).filter(Boolean))];
+      const urls = pagesOf(brief).map(p => p.url);
       const hosts = [...new Set(urls.map(hostOf).filter(Boolean))];
       await pool.query(
         `INSERT INTO research_briefs (ref, cache_key, brief, page_urls, page_hosts, created_at)
@@ -31,6 +31,17 @@ function makePgStore(pool) {
          ON CONFLICT (ref) DO UPDATE SET cache_key = EXCLUDED.cache_key, brief = EXCLUDED.brief,
            page_urls = EXCLUDED.page_urls, page_hosts = EXCLUDED.page_hosts, created_at = EXCLUDED.created_at`,
         [brief.ref, cacheKey, JSON.stringify(brief), urls, hosts]);
+    },
+
+    /** Reports saved before dossiers were indexed have no cited pages on record, so a takedown could not find them: index them now. */
+    async backfillPageIndex() {
+      const r = await pool.query(`SELECT ref, brief FROM research_briefs WHERE cardinality(page_urls) = 0 AND brief->>'kind' = 'dossier'`);
+      let n = 0;
+      for (const x of r.rows) {
+        const urls = pagesOf(x.brief).map(p => p.url); if (!urls.length) continue;
+        await pool.query(`UPDATE research_briefs SET page_urls = $2, page_hosts = $3 WHERE ref = $1`, [x.ref, urls, [...new Set(urls.map(hostOf).filter(Boolean))]]); n++;
+      }
+      return n;
     },
 
     async getBrief(ref) {
