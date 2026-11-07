@@ -3,7 +3,7 @@ const express = require('express');
 const { respond } = require('../middleware/respond');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, checkoutResearchLimiter, researchLimiter } = c;
+  const { ACCOUNTS, checkoutResearchLimiter, researchLimiter, webhookForgeryLimiter } = c;
   const checkout = require('../payments/handlers/checkout')(c);
   const quote = require('../payments/handlers/quote')(c);
   const access = require('../payments/handlers/access')(c);
@@ -80,5 +80,5 @@ module.exports = function register(app, c) {
   /* Raw body is required for signature verification: any re-serialisation
      changes the bytes and invalidates the HMAC. This must be registered
      BEFORE the global express.json() parser for this path. */
-  app.post('/api/payments/webhook', express.raw({ type: 'application/json', limit: '1mb' }), respond(webhooks.providerWebhook));
+  app.post('/api/payments/webhook', webhookForgeryLimiter, express.raw({ type: 'application/json', limit: '1mb' }), respond(webhooks.providerWebhook));
 };

@@ -16,7 +16,7 @@
 {"method":"post","path":"/api/payments/razorpay/webhook","handlers":2},
 {"method":"post","path":"/api/payments/mor/webhook","handlers":2},
 {"method":"post","path":"/api/research/access","handlers":3},
-{"method":"post","path":"/api/payments/webhook","handlers":2},
+{"method":"post","path":"/api/payments/webhook","handlers":3},
 {"method":"post","path":"/api/admin/purge","handlers":2},
 {"method":"post","path":"/api/admin/refunds","handlers":2},
 {"method":"get","path":"/api/admin/costs","handlers":2},
