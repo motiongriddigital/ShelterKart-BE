@@ -143,6 +143,8 @@ async function query(sql, p=[]) {
   if (/INSERT INTO report_purchases/.test(q)) { const id = uuid(); db.purchases.push({ id, report_ref:p[0], amount:p[1], currency:p[2], status:'pending_payment', provider: /'razorpay'/.test(q)?'razorpay':null }); return { rows:[{id}] }; }
 
   if (/SELECT amount FROM report_purchases WHERE id=\$1 AND report_ref=\$2/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0] && x.report_ref === p[1]).map(x => ({ amount: String(x.amount) })) };
+  if (/SELECT status FROM report_purchases WHERE id=\$1 AND report_ref=\$2/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0] && x.report_ref === p[1]).map(x => ({ status: x.status })) };
+  if (/SELECT report_ref, id FROM report_purchases WHERE provider_payment_id=\$1 AND status='paid'/.test(q)) return { rows: db.purchases.filter(x => x.provider_payment_id === p[0] && x.status === 'paid').map(x => ({ report_ref: x.report_ref, id: x.id })) };
   if (/SELECT report_ref FROM report_purchases WHERE provider_payment_id=\$1 AND status='paid'/.test(q)) return { rows: db.purchases.filter(x => x.provider_payment_id === p[0] && x.status === 'paid').map(x => ({ report_ref: x.report_ref })) };
   if (/UPDATE report_purchases SET attribution=\$2 WHERE id=\$1/.test(q)) { db.purchases.filter(x => x.id === p[0]).forEach(x => { x.attribution = JSON.parse(p[1]); }); return { rows: [] }; }
   if (/SELECT attribution FROM report_purchases WHERE id=\$1/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0]).map(x => ({ attribution: x.attribution || {} })) };
