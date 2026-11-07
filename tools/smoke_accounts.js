@@ -3,8 +3,9 @@ const base = process.argv[2] || 'http://localhost:3001';
 let failed = 0;
 const ok = (label, c) => { if (!c) failed++; console.log((c ? '  ok   ' : '  FAIL ') + label); };
 const jar = { cookie: '' };
+const FE = process.env.SMOKE_FRONTEND_ORIGIN || 'http://localhost:5173';
 async function call(method, path, body) {
-  const r = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json', ...(jar.cookie ? { Cookie: jar.cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'manual' });
+  const r = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json', Origin: FE, ...(jar.cookie ? { Cookie: jar.cookie } : {}) }, body: body === undefined ? undefined : JSON.stringify(body), redirect: 'manual' });
   const set = r.headers.getSetCookie ? r.headers.getSetCookie() : [];
   if (set.length) jar.cookie = set[0].split(';')[0];
   let json = null; try { json = await r.json(); } catch { json = null; }
@@ -32,10 +33,20 @@ async function call(method, path, body) {
   ok('a guarded route now lets the signed-in user through (not 401)', guarded.status !== 401);
   const page = await fetch(base + '/r/SK-AAAAAAAAAAAA', { redirect: 'manual', headers: { Cookie: '' } });
   ok('the report page sends a visitor without a cookie to /signin', page.status === 302 && /^\/signin\?next=/.test(page.headers.get('location') || ''));
+  const sess = await call('GET', '/api/auth/session');
+  ok('the session endpoint says authenticated, with the verified flag', sess.status === 200 && sess.json.authenticated === true && sess.json.emailVerified === true && /no-store/.test(sess.headers.get('cache-control') || ''));
+  const pre = await fetch(base + '/api/me', { method: 'OPTIONS', headers: { Origin: FE, 'Access-Control-Request-Method': 'GET' } });
+  ok('the allowed front end gets CORS with credentials', pre.headers.get('access-control-allow-origin') === FE && pre.headers.get('access-control-allow-credentials') === 'true');
+  const evil = await fetch(base + '/api/auth/logout', { method: 'POST', headers: { Cookie: jar.cookie, Origin: 'https://evil.example', 'Content-Type': 'application/json' }, body: '{}' });
+  ok('a state-changing call from a foreign origin with the cookie is refused (403)', evil.status === 403);
+  ok('and the session survived it', (await call('GET', '/api/me')).status === 200);
+  const mine = await fetch(base + '/api/auth/session', { headers: { Cookie: jar.cookie, Origin: FE } });
+  ok('a read from the allowed front end works with the cookie', mine.status === 200 && (await mine.json()).authenticated === true);
   const saved = jar.cookie;
   ok('sign out ends the session', (await call('POST', '/api/auth/logout', {})).status === 200);
   jar.cookie = saved;
   ok('the old cookie is refused after sign-out', (await call('GET', '/api/me')).status === 401);
+  ok('the session endpoint then answers anonymous, still 200', (await call('GET', '/api/auth/session')).json.authenticated === false);
   const rc2 = await (async () => { const g = await fetch(base + '/api/health'); return g.status; })();
   ok('the server is still healthy', rc2 === 200);
   console.log(failed ? '\n' + failed + ' FAILED' : '\nall passing against ' + base);

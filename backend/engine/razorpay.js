@@ -69,6 +69,18 @@ function parseWebhook(event) {
   if (event.event === 'order.paid' && ord && ord.id) {
     return { kind: event.event, orderId: ord.id, paymentId: pay && pay.id, amountSubunits: Number(ord.amount_paid), currency: ord.currency };
   }
+  // Authorized but not yet captured (the account's auto-capture is off, which is common for international payments): the server captures it.
+  if (event.event === 'payment.authorized' && pay && pay.order_id) {
+    return { kind: event.event, orderId: pay.order_id, paymentId: pay.id, amountSubunits: Number(pay.amount), currency: pay.currency };
+  }
+  if (event.event === 'payment.failed' && pay && pay.id) {
+    return { kind: event.event, orderId: pay.order_id || null, paymentId: pay.id, amountSubunits: Number(pay.amount), currency: pay.currency,
+             errorCode: pay.error_code || null, errorReason: pay.error_reason || null };
+  }
+  const rf = event.payload && event.payload.refund && event.payload.refund.entity;
+  if (/^refund\.(created|processed|failed)$/.test(String(event.event)) && rf && rf.id && rf.payment_id) {
+    return { kind: event.event, refundId: rf.id, paymentId: rf.payment_id, amountSubunits: Number(rf.amount), currency: rf.currency, status: rf.status || null };
+  }
   return null;
 }
 
@@ -108,8 +120,53 @@ async function refundPayment({ paymentId, amountSubunits, notes = {} }, { env, f
   return { refundId: r.id, status: r.status || 'processed', amountSubunits: Number(r.amount) };
 }
 
+/** One call to Razorpay's API with a timeout. The error never carries the key; it carries Razorpay's own code and description when it sent one. */
+async function api(method, pathname, body, { env, fetchImpl = globalThis.fetch }) {
+  if (!configured(env)) throw Object.assign(new Error('Razorpay is not configured.'), { code: 'not_configured' });
+  const auth = Buffer.from(`${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`).toString('base64');
+  const ctrl = new AbortController(), timer = setTimeout(() => ctrl.abort(), 15000);
+  let res;
+  try {
+    res = await fetchImpl(`${API}${pathname}`, { method, signal: ctrl.signal, headers: { 'content-type': 'application/json', authorization: 'Basic ' + auth }, body: body ? JSON.stringify(body) : undefined });
+    let data = null; try { data = await res.json(); } catch { /* an empty body is fine */ }
+    if (!res.ok) throw Object.assign(new Error(`razorpay ${method} ${pathname.split('?')[0]} answered ${res.status}`), { status: res.status, detail: data && data.error ? { code: data.error.code, description: data.error.description } : null });
+    return data;
+  } finally { clearTimeout(timer); }
+}
+const PAY_ID = /^pay_\w+$/, ORDER_ID = /^order_\w+$/;
+
+/** The payment's own record: the authoritative status, amount and currency. */
+async function fetchPayment(paymentId, ctx) {
+  if (!PAY_ID.test(String(paymentId || ''))) throw new Error('invalid payment id');
+  return api('GET', `/payments/${paymentId}`, null, ctx);
+}
+/** Every payment attempt made against one of OUR orders (the order id is the one stored on our server). */
+async function fetchOrderPayments(orderId, ctx) {
+  if (!ORDER_ID.test(String(orderId || ''))) throw new Error('invalid order id');
+  const r = await api('GET', `/orders/${orderId}/payments`, null, ctx);
+  return Array.isArray(r && r.items) ? r.items : [];
+}
+/**
+ * Pick the payment that settles an order: captured (or authorized, to be captured) for EXACTLY the order's amount in its currency.
+ * Anything else, even one unit off, matches nothing.
+ */
+function matchPayment(items, { amountSubunits, currency }) {
+  const fits = p => p && Number(p.amount) === Number(amountSubunits) && p.currency === currency && /^pay_\w+$/.test(String(p.id || ''));
+  const captured = (items || []).find(p => fits(p) && p.status === 'captured');
+  if (captured) return { payment: captured, needsCapture: false };
+  const authorized = (items || []).find(p => fits(p) && p.status === 'authorized');
+  return authorized ? { payment: authorized, needsCapture: true } : null;
+}
+/** Capture an authorized payment for its full amount, in its own currency (international payments are often authorized first). */
+async function capturePayment({ paymentId, amountSubunits, currency }, ctx) {
+  if (!PAY_ID.test(String(paymentId || ''))) throw new Error('invalid payment id');
+  const r = await api('POST', `/payments/${paymentId}/capture`, { amount: Number(amountSubunits), currency }, ctx);
+  if (!r || r.id !== paymentId || r.status !== 'captured' || Number(r.amount) !== Number(amountSubunits)) throw new Error('razorpay capture response did not match the request');
+  return { paymentId: r.id, status: r.status, amountSubunits: Number(r.amount) };
+}
+
 function configured(env) {
   return Boolean(env.RAZORPAY_KEY_ID && env.RAZORPAY_KEY_SECRET);
 }
 
-module.exports = { toSubunits, verifyCheckoutSignature, verifyWebhookSignature, parseWebhook, createOrder, refundPayment, configured, hmacHex };
+module.exports = { toSubunits, verifyCheckoutSignature, verifyWebhookSignature, parseWebhook, createOrder, refundPayment, fetchPayment, fetchOrderPayments, matchPayment, capturePayment, configured, hmacHex };

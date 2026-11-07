@@ -12,11 +12,25 @@ Decisions already taken by the owner, subject to your discussion with them: the 
 - Server components that call the API directly (`API_ORIGIN`) have no cookie. When a server component needs the signed-in user, forward the header: `headers: { cookie: (await cookies()).toString() }` on that call. Prefer to load user data in the browser.
 - Never store a session, token or e-mail code in `localStorage`, a cookie you set yourself, or the URL.
 
+### Development on different URLs, production on one
+
+Agreed with the frontend developer on 5 November: while developing, the frontend and the API run on different URLs (for example `http://localhost:5173` and `http://localhost:3000`); in production both are served from the same URL, or the frontend proxies `/api`.
+
+- Production, same URL: nothing special. Same-origin calls, no CORS, the `__Host-sk_session` cookie.
+- Development, different origins: every call must use `credentials: "include"` (`fetch`) or `withCredentials: true` (axios), or the browser neither stores nor sends the cookie. The API answers with `Access-Control-Allow-Credentials: true` for the origins in `ALLOWED_ORIGINS`; put the frontend's origin there (with an empty list, any origin is accepted outside production). Two ports on `localhost` count as the same site, so `SameSite=Lax` cookies work; two different domains (for example a frontend on a hosting preview address calling an API on another domain) do not, and are not supported.
+- In development the cookie is named `sk_session` and has no `Secure` flag, so it works over plain `http://localhost`.
+- State-changing calls (POST, PUT, PATCH, DELETE) that carry the session cookie must come from an origin in `ALLOWED_ORIGINS` or from the API's own origin. Browsers add the `Origin` header on their own. With `ACCOUNTS_CSRF=on` the API answers 403 `{ ok: false, code: "csrf", error: "This request came from an origin that is not allowed." }` to anything else; with `report` (the default) it only logs the line `[csrf] would refuse ...`. Server-side callers that forward the visitor's cookie must also send an `Origin` header.
+- Session lifetime: 30 days, extended while the visitor is active, at most 90 days in all. Logging out, logging out everywhere, an admin disabling or banning the account, and deleting the account end the session at once (the next call gets 401).
+
+### Who is signed in, and is the e-mail verified
+
+`GET /api/auth/session` never answers 401. Signed out: `{ ok: true, authenticated: false }`. Signed in: `{ ok: true, authenticated: true, emailVerified: true, expiresAt: "2026-12-05T10:00:00.000Z" }`. It is not cached. Use it on page load to decide whether to show the sign-in dialog, and `GET /api/me` (401 when signed out) when you need the profile. `GET /api/me` and the sign-in reply carry `emailVerified` too.
+
 ## 2. Calls
 
 | Screen or moment | Call | Notes |
 | --- | --- | --- |
-| Open the app, header | `GET /api/me` | 200 with the user, or 401: signed out. Do it once and keep the answer in a small store. |
+| Open the app, header | `GET /api/auth/session`, then `GET /api/me` when it says `authenticated` | The first never answers 401. Do it once and keep the answer in a small store. |
 | Sign-in, step 1 | `POST /api/auth/request-code` `{ email, language, pow? }` | 202 always for a valid address. Show "if that address can receive mail, a code is on its way". 429 `cooldown` and `rate_limited` carry `retryAfter`. 428 `challenge`: solve the proof of work the same way the search does, then repeat with `pow`. |
 | Sign-in, step 2 | `POST /api/auth/verify-code` `{ email, code, termsAccepted? }` | 200 sets the cookie. 400 `invalid_code` has `attemptsLeft`. 400 `consent_required`: show the terms checkbox and send the same code again with `termsAccepted: true` (the code is still valid). 429 `too_many_attempts`: ask for a new code. 403 `account_disabled`. |
 | Account menu | `POST /api/auth/logout`, `POST /api/auth/logout-all` | Clear the local user store, then go to the home page. |

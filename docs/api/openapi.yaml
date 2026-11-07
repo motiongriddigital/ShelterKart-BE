@@ -1658,6 +1658,79 @@ paths:
           content:
             text/plain:
               schema: {type: string}
+  /api/admin/contract:
+    get:
+      operationId: adminGetContractMismatches
+      tags: [Admin]
+      summary: Requests that did not match this contract (API_VALIDATION report or enforce)
+      description: Counters since the last restart, most frequent first, at most 100. With `API_VALIDATION=off` the list is empty.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js
+      responses:
+        '200':
+          description: The mode, the enforced prefixes and the mismatches.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, mode, enforce, mismatches]
+                properties:
+                  ok: {type: boolean, const: true}
+                  mode: {type: string, enum: [off, report, enforce]}
+                  enforce: {type: array, items: {type: string}}
+                  mismatches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        method: {type: string}
+                        path: {type: string}
+                        count: {type: integer}
+                        path0: {type: string, description: The first field that failed.}
+                        message: {type: string}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/timing:
+    get:
+      operationId: adminGetTiming
+      tags: [Admin]
+      summary: Per-route request timing since the last restart
+      description: Count, approximate p50 and p95 and the slowest of the last 200 requests per route pattern, slowest p95 first. Event streams are not measured. A request over `SLOW_MS` (default 1000) also logs one line.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js
+      responses:
+        '200':
+          description: The table.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, slowMs, routes]
+                properties:
+                  ok: {type: boolean, const: true}
+                  slowMs: {type: integer}
+                  routes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        method: {type: string}
+                        route: {type: string, description: The route pattern, never a real path.}
+                        count: {type: integer}
+                        slow: {type: integer}
+                        p50: {type: integer, description: Milliseconds.}
+                        p95: {type: integer, description: Milliseconds.}
+                        max: {type: integer, description: Milliseconds.}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/stats:
     get:
       operationId: adminGetStats
@@ -2323,7 +2396,7 @@ paths:
         - adminBasic: []
       x-source: backend/accounts/admin.js
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[0-9a-f]{16}$'}, description: The first 16 characters of the session, as the sessions list shows them.}
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[0-9a-f]{16}$'}, description: 'The first 16 characters of the session, as the sessions list shows them.'}
       responses:
         '200':
           description: Done.
@@ -2350,7 +2423,7 @@ paths:
         - adminBasic: []
       x-source: backend/accounts/admin.js
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[0-9a-f]{16}$'}, description: The first 16 characters of the session, as the sessions list shows them.}
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[0-9a-f]{16}$'}, description: 'The first 16 characters of the session, as the sessions list shows them.'}
       requestBody:
         required: true
         content:
@@ -2404,7 +2477,6 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
-  /api/admin/bans:
     post:
       operationId: adminAddBan
       tags: [Admin]
@@ -2562,7 +2634,7 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '404': {description: No such report.}
-        '409': {description: Not failed now, or already being retried.}
+        '409': {description: 'Not failed now, or already being retried.'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/health/registers/history:
     get:
@@ -2892,7 +2964,7 @@ paths:
       x-source: backend/engine/errorlog.js
       parameters:
         - {name: level, in: query, schema: {type: string, enum: [error, warn, info]}}
-        - {name: q, in: query, schema: {type: string, maxLength: 80}, description: Part of the source, message or detail.}
+        - {name: q, in: query, schema: {type: string, maxLength: 80}, description: 'Part of the source, message or detail.'}
         - {name: hours, in: query, schema: {type: integer, minimum: 1, maximum: 720}, description: Only problems seen within this many hours.}
         - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
         - {name: offset, in: query, schema: {type: integer, minimum: 0}}
@@ -3769,8 +3841,9 @@ paths:
             schema:
               type: object
               required: [email]
+              additionalProperties: false
               properties:
-                email: {type: string, maxLength: 254}
+                email: {type: string, description: 'Checked by the route: an invalid or over-long address answers 400 `invalid_email`.'}
                 language: {type: string, description: 'Optional, for later use.'}
                 pow: {type: object, description: 'The solved proof of work, as for POST /api/investigate.'}
       responses:
@@ -3804,9 +3877,10 @@ paths:
             schema:
               type: object
               required: [email, code]
+              additionalProperties: false
               properties:
                 email: {type: string}
-                code: {type: string, pattern: '^[0-9]{6}$'}
+                code: {type: string, description: 'Six digits. A wrong or malformed code is counted as a try and answers 400 `invalid_code`, so the format is not checked here.'}
                 termsAccepted: {type: boolean}
                 language: {type: string}
       responses:
@@ -3833,6 +3907,7 @@ paths:
       security: [{sessionCookie: []}]
       responses:
         '200': {description: Signed out; the cookie is cleared., content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
+        '403': {$ref: '#/components/responses/CsrfRefused'}
         '401': {$ref: '#/components/responses/AuthRequired'}
   /api/auth/logout-all:
     post:
@@ -3842,7 +3917,28 @@ paths:
       security: [{sessionCookie: []}]
       responses:
         '200': {description: All sessions ended; the cookie is cleared., content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
+        '403': {$ref: '#/components/responses/CsrfRefused'}
         '401': {$ref: '#/components/responses/AuthRequired'}
+  /api/auth/session:
+    get:
+      operationId: getAuthSession
+      tags: [Accounts]
+      summary: Is this browser signed in
+      description: 'Never answers 401: a missing, expired, revoked or banned session is the anonymous shape. Not cached. Does not extend the session more often than a guarded call does.'
+      security: []
+      responses:
+        '200':
+          description: Signed in or not.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, authenticated]
+                properties:
+                  ok: {type: boolean, const: true}
+                  authenticated: {type: boolean}
+                  emailVerified: {type: boolean, description: 'Present when authenticated.'}
+                  expiresAt: {type: string, format: date-time, description: 'Present when authenticated.'}
   /api/me:
     get:
       operationId: getMe
@@ -3864,7 +3960,7 @@ paths:
       operationId: updateMe
       tags: [Accounts]
       summary: Change the profile
-      description: 'Accepts `displayName` (80 characters), `country` (two letters), `language`, and `phone` together with `whatsappConsent` set to true. Anything else is ignored; the e-mail cannot be changed.'
+      description: 'Accepts `displayName` (80 characters), `country` (two letters), `language`, and `phone` together with `whatsappConsent` set to true. The e-mail cannot be changed. A field that is not listed is ignored, or refused with 400 `invalid_request` when `API_VALIDATION=enforce` covers `/api/me`.'
       security: [{sessionCookie: []}]
       requestBody:
         required: true
@@ -3872,11 +3968,12 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
-                displayName: {type: string, maxLength: 80}
-                country: {type: string, minLength: 2, maxLength: 2}
-                language: {type: string}
-                phone: {type: string, description: 'Seven to fifteen digits, an optional leading +. An empty string removes it.'}
+                displayName: {type: [string, 'null'], description: 'Clipped to 80 characters. Empty or null clears it.'}
+                country: {type: [string, 'null'], description: 'Two letters; anything else answers 400 `invalid_country`. Empty or null clears it.'}
+                language: {type: [string, 'null'], description: 'A language the site offers; anything else answers 400 `invalid_language`. Empty or null clears it.'}
+                phone: {type: [string, 'null'], description: 'Seven to fifteen digits, an optional leading +. Empty or null removes it.'}
                 whatsappConsent: {type: boolean}
       responses:
         '200':
@@ -3903,8 +4000,9 @@ paths:
             schema:
               type: object
               required: [confirm]
+              additionalProperties: false
               properties:
-                confirm: {type: string, enum: [DELETE]}
+                confirm: {type: string, description: 'Must be `DELETE`; any other text answers 400 `confirm_required`.'}
       responses:
         '200': {description: Deleted; the cookie is cleared., content: {application/json: {schema: {$ref: '#/components/schemas/Ok'}}}}
         '400': {description: 'code `confirm_required`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
@@ -4054,6 +4152,11 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
+    CsrfRefused:
+      description: 'A state-changing request carried the session cookie from an origin that is not allowed, and ACCOUNTS_CSRF is on. Body `{ "ok": false, "code": "csrf", "error": "This request came from an origin that is not allowed." }`.'
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
     OriginNotAllowed:
       description: 'The request carried an `Origin` header that is not in `ALLOWED_ORIGINS`. The body is `{ "ok": false, "error": "Origin not allowed" }`. Applies to every route.'
       content:
@@ -4106,6 +4209,7 @@ components:
         displayName: {type: [string, 'null']}
         country: {type: [string, 'null']}
         language: {type: [string, 'null']}
+        emailVerified: {type: boolean}
         phone: {type: [string, 'null']}
         createdAt: {type: [string, 'null'], format: date-time}
     Error:

@@ -28,7 +28,7 @@ const razorpay = {
   verifyWebhook: (rawBody, headers, env) => rzp.verifyWebhookSignature(rawBody, headers['x-razorpay-signature'], env.RAZORPAY_WEBHOOK_SECRET),
   parseEvent(event) {
     const p = rzp.parseWebhook(event); if (!p) return null;
-    return { kind: p.kind, orderId: p.orderId, paymentId: p.paymentId, amountMinor: p.amountSubunits, currency: p.currency, feeMinor: p.feeSubunits, international: p.international, method: p.method, notes: p.notes };
+    return { kind: p.kind, orderId: p.orderId, paymentId: p.paymentId, refundId: p.refundId, amountMinor: p.amountSubunits, currency: p.currency, feeMinor: p.feeSubunits, international: p.international, method: p.method, notes: p.notes, errorCode: p.errorCode };
   },
   async refund({ paymentId, amountMinor, notes }, ctx) { const r = await rzp.refundPayment({ paymentId, amountSubunits: amountMinor, notes }, { env: ctx.env, fetchImpl: ctx.fetchImpl }); return { providerRef: r.refundId, status: r.status, amountMinor: r.amountSubunits }; },
 };

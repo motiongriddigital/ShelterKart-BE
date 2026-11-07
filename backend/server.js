@@ -47,6 +47,8 @@ else if (!TRUST.setting && process.env.NODE_ENV === 'production') console.warn('
    match what the page actually does. Everything else below is real:
    no other third-party script origin, no framing of this site by
    anyone, no plugin/object embeds. */
+const TIMING = require('./engine/timing').createTiming();
+app.use(TIMING.middleware);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -71,6 +73,7 @@ app.use(helmet({
 // directly from a browser — don't leave it at "*".
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
 app.use(cors({
+  credentials: true,
   origin: (origin, cb) => {
     if (!origin) return cb(null, true); // server-to-server / curl / health checks
     if (allowedOrigins.includes(origin)) return cb(null, true);
@@ -90,6 +93,10 @@ app.use(cors({
 const OWN_BODY_PARSER = new Set(['/api/payments/webhook', '/api/payments/razorpay/webhook', '/api/payments/mor/webhook', '/api/research/document-check']);
 const jsonSmall = express.json({ limit: '10kb' });
 app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
+app.use((req, res, next) => ACCOUNTS.csrf(req, res, next));
+const CONTRACT = require('./engine/contract').createContract();
+app.use(CONTRACT.middleware);
+app.use(require('./engine/httpcache').createHttpCache().middleware);
 
 const pool = require('./engine/poolGuard').guardPool(new Pool({ connectionString: process.env.DATABASE_URL }));
 const { createErrorLog } = require('./engine/errorlog');
@@ -214,6 +221,7 @@ async function buyerOf(req, { billing } = {}) {
 const sessionOf = req => String((req.body && req.body.session) || (req.query && req.query.session) || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) || 'anon';
 const { extractFields, crossCheck } = require('./engine/documents');
 const rzp = require('./engine/razorpay');
+const { claimEvent, finishEvent } = require('./payments/events');
 
 /* The one place a purchase becomes paid. Both the checkout handler and
    the webhook come through here, so whichever arrives first settles it
@@ -382,6 +390,21 @@ async function reconcileMor(purchaseId, ref, row) {
     return false;
   }
   return markPurchasePaid(pool, { purchaseId, ref, provider: 'mor', paymentId: s.payment_id });
+}
+
+/* The buyer came back and the webhook has not settled the purchase yet (or never will): ask Razorpay about OUR order. Only a payment on that
+   order, for exactly the quote's total in its currency, settles it; an authorized one is captured first. Mirrors reconcileMor. */
+async function reconcileRazorpay(purchaseId, ref, row) {
+  const expected = rzp.toSubunits(row.amount, row.currency);
+  const items = await rzp.fetchOrderPayments(row.provider_order_id, { env: process.env });
+  const m = rzp.matchPayment(items, { amountSubunits: expected, currency: row.currency });
+  if (!m) {
+    const odd = items.find(x => x && (x.status === 'captured' || x.status === 'authorized'));
+    if (odd) await pricingStore.addEvent('webhook_amount_mismatch', { ref, details: { purchaseId, expected, got: Number(odd.amount), currency: odd.currency, expectedCurrency: row.currency, via: 'reconcile' } });
+    return false;
+  }
+  if (m.needsCapture) await rzp.capturePayment({ paymentId: m.payment.id, amountSubunits: expected, currency: row.currency }, { env: process.env });
+  return markPurchasePaid(pool, { purchaseId, ref, provider: 'razorpay', paymentId: m.payment.id });
 }
 
 app.post('/api/research/checkout', ACCOUNTS.guard, checkoutResearchLimiter, ah(async (req, res) => {
@@ -1005,14 +1028,19 @@ app.post('/api/payments/razorpay/webhook', express.raw({ type: 'application/json
   const p = rzp.parseWebhook(event);
   if (!p || !p.paymentId) return res.json({ ok: true, ignored: event && event.event });
 
-  // One record per payment and event type: a redelivery collides here.
-  const seen = await pool.query(
-    `INSERT INTO payment_events (provider, event_id, payload_hash, signature_ok, process_status)
-     VALUES ('razorpay', $1, $2, true, 'received') ON CONFLICT (provider, event_id) DO NOTHING RETURNING id`,
-    [`${p.paymentId}:${p.kind}`, crypto.createHash('sha256').update(req.body).digest('hex')]);
-  if (!seen.rows.length) return res.json({ ok: true, duplicate: true });
-  const eventRowId = seen.rows[0].id;
-  const done = status => pool.query(`UPDATE payment_events SET process_status=$2, processed_at=NOW() WHERE id=$1`, [eventRowId, status]);
+  // One claim per payment (or refund) and event type. A redelivery of an event that already ended does nothing; one that was received
+  // and never finished (an error below answers 500, so Razorpay sends it again) is processed again.
+  const claim = await claimEvent(pool, 'razorpay', `${p.refundId || p.paymentId}:${p.kind}`, crypto.createHash('sha256').update(req.body).digest('hex'));
+  if (!claim.claimed) return res.json({ ok: true, duplicate: true });
+  const done = status => finishEvent(pool, claim.id, status);
+  if (p.kind === 'payment.failed') {
+    await pricingStore.addEvent('razorpay_payment_failed', { details: { orderId: p.orderId, paymentId: p.paymentId, code: p.errorCode } });
+    await done('processed'); return res.json({ ok: true, noted: p.kind });
+  }
+  if (/^refund\./.test(p.kind)) {
+    await pricingStore.addEvent('razorpay_refund_event', { details: { type: p.kind, refundId: p.refundId, paymentId: p.paymentId, amountSubunits: p.amountSubunits, currency: p.currency, status: p.status } });
+    await done('processed'); return res.json({ ok: true, noted: p.kind });
+  }
 
   const q = await pool.query(`SELECT id, report_ref, amount, currency, status FROM report_purchases WHERE provider='razorpay' AND provider_order_id=$1`, [p.orderId]);
   if (!q.rows.length) { await done('ignored'); return res.json({ ok: true, unknown_order: true }); }
@@ -1023,6 +1051,11 @@ app.post('/api/payments/razorpay/webhook', express.raw({ type: 'application/json
   if (p.currency !== row.currency || p.amountSubunits !== expected) {
     await pricingStore.addEvent('webhook_amount_mismatch', { ref: row.report_ref, details: { purchaseId: row.id, expected, got: p.amountSubunits, currency: p.currency, expectedCurrency: row.currency } });
     await done('failed'); return res.json({ ok: true, mismatch: true });
+  }
+  // An authorized payment (auto-capture off) is captured here, for exactly the quote's total in its currency; the payment.captured event that follows settles it.
+  if (p.kind === 'payment.authorized') {
+    await rzp.capturePayment({ paymentId: p.paymentId, amountSubunits: expected, currency: row.currency }, { env: process.env });
+    await done('processed'); return res.json({ ok: true, captured: true });
   }
   // A card issued in India can only be charged in rupees: a foreign-currency payment on an Indian card is flagged for review.
   if (p.international === false && row.currency !== 'INR') await pricingStore.addEvent('card_origin_mismatch', { ref: row.report_ref, details: { purchaseId: row.id, currency: row.currency } });
@@ -1049,13 +1082,11 @@ app.post('/api/payments/mor/webhook', express.raw({ type: 'application/json', li
   try { event = JSON.parse(req.body.toString('utf8')); } catch { return res.status(400).json({ ok: false }); }
   const p = morEngine.parseWebhook(event);
   if (!p) return res.json({ ok: true, ignored: event && event.type });
-  const seen = await pool.query(
-    `INSERT INTO payment_events (provider, event_id, payload_hash, signature_ok, process_status)
-     VALUES ('mor', $1, $2, true, 'received') ON CONFLICT (provider, event_id) DO NOTHING RETURNING id`,
-    [headers['webhook-id'], crypto.createHash('sha256').update(req.body).digest('hex')]);
-  if (!seen.rows.length) return res.json({ ok: true, duplicate: true });
-  const eventRowId = seen.rows[0].id;
-  const done = status => pool.query(`UPDATE payment_events SET process_status=$2, processed_at=NOW() WHERE id=$1`, [eventRowId, status]);
+  const claim = await claimEvent(pool, 'mor', headers['webhook-id'], crypto.createHash('sha256').update(req.body).digest('hex'));
+  if (!claim.claimed) return res.json({ ok: true, duplicate: true });
+  const done = status => finishEvent(pool, claim.id, status);
+  if (p.kind === 'failed') await pricingStore.addEvent('mor_payment_failed', { details: { purchaseId: p.purchaseId, paymentId: p.paymentId, type: p.type } });
+  if (p.kind === 'refund') await pricingStore.addEvent('mor_refund_event', { details: { type: p.type, paymentId: p.paymentId, amountMinor: p.amountMinor, currency: p.currency, status: p.status } });
   if (p.kind !== 'paid') { await done('processed'); return res.json({ ok: true, noted: p.type }); }       // failed and refund events are recorded, not acted on here
   if (!p.paymentId || !/^[0-9a-f-]{36}$/i.test(String(p.purchaseId || ''))) {
     await pricingStore.addEvent('mor_unmatched_payment', { details: { paymentId: p.paymentId, type: p.type } });
@@ -1087,6 +1118,9 @@ app.post('/api/research/access', ACCOUNTS.guard, checkoutResearchLimiter, ah(asy
   const r = await pool.query(`SELECT status, provider, provider_order_id, amount, currency FROM report_purchases WHERE id=$1 AND report_ref=$2`, [purchaseId, ref]);
   if (r.rows.length && r.rows[0].status === 'pending_payment' && r.rows[0].provider === 'mor' && r.rows[0].provider_order_id) {
     try { if (await reconcileMor(purchaseId, ref, r.rows[0])) r.rows[0].status = 'paid'; } catch (e) { console.error('[mor] could not confirm the payment yet:', e && e.message); }
+  }
+  if (r.rows.length && r.rows[0].status === 'pending_payment' && r.rows[0].provider === 'razorpay' && r.rows[0].provider_order_id && rzp.configured(process.env)) {
+    try { if (await reconcileRazorpay(purchaseId, ref, r.rows[0])) r.rows[0].status = 'paid'; } catch (e) { console.error('[razorpay] could not confirm the payment yet:', e && e.message); }
   }
   if (!r.rows.length || r.rows[0].status !== 'paid') return res.status(402).json({ ok: false, error: 'Payment has not been confirmed yet.' });
   if (ACCOUNTS.enabled && !(await ownsPurchase(req, purchaseId))) return res.status(403).json({ ok: false, code: 'not_entitled', error: 'This purchase belongs to another account.' });
@@ -1681,6 +1715,8 @@ function requireUuid(req, res, next) {
   next();
 }
 
+app.get('/api/admin/timing', adminAuth, (req, res) => res.json({ ok: true, ...TIMING.stats() }));
+app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
 app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
   try {
     // "Purchases" means PAID: a pending checkout is not a sale. Leads were
