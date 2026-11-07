@@ -1658,6 +1658,79 @@ paths:
           content:
             text/plain:
               schema: {type: string}
+  /api/admin/contract:
+    get:
+      operationId: adminGetContractMismatches
+      tags: [Admin]
+      summary: Requests that did not match this contract (API_VALIDATION report or enforce)
+      description: Counters since the last restart, most frequent first, at most 100. With `API_VALIDATION=off` the list is empty.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js
+      responses:
+        '200':
+          description: The mode, the enforced prefixes and the mismatches.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, mode, enforce, mismatches]
+                properties:
+                  ok: {type: boolean, const: true}
+                  mode: {type: string, enum: [off, report, enforce]}
+                  enforce: {type: array, items: {type: string}}
+                  mismatches:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        method: {type: string}
+                        path: {type: string}
+                        count: {type: integer}
+                        path0: {type: string, description: The first field that failed.}
+                        message: {type: string}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/timing:
+    get:
+      operationId: adminGetTiming
+      tags: [Admin]
+      summary: Per-route request timing since the last restart
+      description: Count, approximate p50 and p95 and the slowest of the last 200 requests per route pattern, slowest p95 first. Event streams are not measured. A request over `SLOW_MS` (default 1000) also logs one line.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/server.js
+      responses:
+        '200':
+          description: The table.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, slowMs, routes]
+                properties:
+                  ok: {type: boolean, const: true}
+                  slowMs: {type: integer}
+                  routes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        method: {type: string}
+                        route: {type: string, description: The route pattern, never a real path.}
+                        count: {type: integer}
+                        slow: {type: integer}
+                        p50: {type: integer, description: Milliseconds.}
+                        p95: {type: integer, description: Milliseconds.}
+                        max: {type: integer, description: Milliseconds.}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/stats:
     get:
       operationId: adminGetStats

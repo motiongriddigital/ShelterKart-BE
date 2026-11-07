@@ -47,6 +47,8 @@ else if (!TRUST.setting && process.env.NODE_ENV === 'production') console.warn('
    match what the page actually does. Everything else below is real:
    no other third-party script origin, no framing of this site by
    anyone, no plugin/object embeds. */
+const TIMING = require('./engine/timing').createTiming();
+app.use(TIMING.middleware);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -94,6 +96,7 @@ app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/
 app.use((req, res, next) => ACCOUNTS.csrf(req, res, next));
 const CONTRACT = require('./engine/contract').createContract();
 app.use(CONTRACT.middleware);
+app.use(require('./engine/httpcache').createHttpCache().middleware);
 
 const pool = require('./engine/poolGuard').guardPool(new Pool({ connectionString: process.env.DATABASE_URL }));
 const { createErrorLog } = require('./engine/errorlog');
@@ -1684,6 +1687,7 @@ function requireUuid(req, res, next) {
   next();
 }
 
+app.get('/api/admin/timing', adminAuth, (req, res) => res.json({ ok: true, ...TIMING.stats() }));
 app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
 app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
   try {
