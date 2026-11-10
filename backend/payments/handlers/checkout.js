@@ -104,7 +104,12 @@ module.exports = function create(c) {
       }
       throw e;
     }
-    await pricingStore.setQuoteStatus(quote.id, 'used');
+    // The quote is verified above and taken here, in one atomic step: two checkouts at once with the same quote and different keys cannot both have it.
+    // The loser's purchase row has no order yet and is removed.
+    if (!(await pricingStore.claimQuote(quote.id))) {
+      await pool.query(`DELETE FROM report_purchases WHERE id=$1 AND status='pending_payment' AND provider_order_id IS NULL`, [purchaseId]).catch(e => console.error('[checkout] could not remove the unused purchase:', e && e.message));
+      return { status: 409, body: { ok: false, code: 'quote_used', requote: true, error: 'This price was already used. Please review the current price.' } };
+    }
 
     let order;
     try {
