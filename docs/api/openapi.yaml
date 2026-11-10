@@ -2879,6 +2879,33 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/insights:
+    get:
+      operationId: adminInsights
+      tags: [Admin]
+      summary: What needs attention, in plain sentences
+      description: 'A short list of sentences worked out by fixed rules from numbers the other admin routes show, most urgent first (bad, warn, info, good), at most twelve. Rules: backups failed, overdue or not set up; official registers down or failing; 20 or more errors in 24 hours (100 or more is bad); open disputes and pending developer replies; failed paid reports and deliveries; visitors down or up 30% on the week before; paid reports down or up 25% on the period before; a refund rate of 10% or more; fewer than 30% of started checkouts paid; fewer than half of the people who see the sign-in wall asking for a code; the step where new users stop most; the share of accounts that have paid; a fifth of AI calls failing; recent paid reports costing half or all of their price in AI. Each insight has an id, a tone, the admin screen to open (page), the text and sometimes the number behind it. When nothing applies one calm line is returned. A source that cannot be read (no database, an error) is named in missing and its rules are skipped; the other rules still run. Nothing personal.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/insights.js
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  at: {type: string}
+                  insights:
+                    type: array
+                    items:
+                      type: object
+                      properties: {id: {type: string}, tone: {type: string, enum: [bad, warn, info, good]}, page: {type: string}, text: {type: string}, value: {type: number}}
+                  missing: {type: array, items: {type: string}}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/audit:
     get:
       operationId: adminAuditLedger
