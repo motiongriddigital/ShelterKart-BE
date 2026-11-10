@@ -128,7 +128,7 @@ async function query(sql, p=[]) {
   if (/SELECT number, kind, country, currency, amount_gross FROM invoices/.test(q)) return { rows: db.invoices.map(i => ({ ...i })) };
   if (/\bquotes\b|pricing_events|tax_ledger|refunds|invoice_counters|invoices/.test(q) && !/audit_log/.test(q)) throw new Error('stub does not recognise this pricing statement: ' + q.slice(0, 100));
 
-  if (/SELECT id, amount, currency, (provider, )?provider_order_id, status(, quote_id, billing_country)? FROM report_purchases WHERE idempotency_key=\$1/.test(q))
+  if (/SELECT id, (report_ref, user_id, )?amount, currency, (provider, )?provider_order_id(, status(, quote_id, billing_country)?)? FROM report_purchases WHERE idempotency_key=\$1/.test(q))
     return { rows: db.purchases.filter(x => x.idempotency_key === p[0]) };
 
   if (/INSERT INTO report_purchases \(report_ref, amount, currency, status, provider, idempotency_key\)/.test(q)) {

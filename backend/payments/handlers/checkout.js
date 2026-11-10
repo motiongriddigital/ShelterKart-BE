@@ -22,11 +22,20 @@ module.exports = function create(c) {
     // A retried checkout -- the same key seen before -- returns the SAME
     // purchase and order rather than starting a second one. This is the
     // whole fix: nothing below this block runs for a genuine retry.
+    const USED = { status: 409, body: { ok: false, error: 'This checkout attempt has already been used. Please start again.' } };
+    // A key is only a retry of the same attempt: for the same report and, with accounts on, the same signed-in buyer. Anything else is somebody
+    // else's key (or a client bug) and must not hand back that purchase's order.
+    const notMine = async row => {
+      if (row.report_ref !== ref) return true;
+      if (ACCOUNTS.enabled && row.user_id) { const owner = await ACCOUNTS.user(req).catch(() => null); if (!owner || owner.id !== row.user_id) return true; }
+      return false;
+    };
     const existing = await pool.query(
-      `SELECT id, amount, currency, provider, provider_order_id, status, quote_id, billing_country FROM report_purchases WHERE idempotency_key=$1`,
+      `SELECT id, report_ref, user_id, amount, currency, provider, provider_order_id, status, quote_id, billing_country FROM report_purchases WHERE idempotency_key=$1`,
       [idempotencyKey]);
     if (existing.rows.length) {
       const row = existing.rows[0];
+      if (await notMine(row)) return USED;
       if (row.status !== 'pending_payment' || !row.provider_order_id) {
         // Already paid, refunded, or the order step never completed last
         // time -- not a safe thing to silently hand back as if it were new.
@@ -94,8 +103,9 @@ module.exports = function create(c) {
       // path above: fetch and return what the winner created.
       if (e && e.code === '23505') {
         const again = await pool.query(
-          `SELECT id, amount, currency, provider_order_id FROM report_purchases WHERE idempotency_key=$1`, [idempotencyKey]);
+          `SELECT id, report_ref, user_id, amount, currency, provider_order_id FROM report_purchases WHERE idempotency_key=$1`, [idempotencyKey]);
         const row = again.rows[0];
+        if (row && await notMine(row)) return USED;
         if (row && row.provider_order_id) {
           return { status: 200, body: { ok: true, purchaseId: row.id, amount: Number(row.amount), currency: row.currency,
             razorpay: { keyId: process.env.RAZORPAY_KEY_ID, orderId: row.provider_order_id,
