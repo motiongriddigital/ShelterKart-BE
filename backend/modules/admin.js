@@ -139,6 +139,11 @@ module.exports = function register(app, c) {
       for (const x of r.rows) { const per = pricingData.book.fx.perUsd[x.currency]; if (per) m.set(x.report_ref, (m.get(x.report_ref) || 0) + Number(x.amount) / per); }
       return m;
     } });
+  require('../engine/funnelAdmin').mountFunnelAdmin(app, { adminAuth, wrap: ah, rateLimit, source: process.env.DATABASE_URL ? require('../engine/funnelAdmin').pgSource(pool) : null,
+    analytics: async days => {
+      const since = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10) + 'T00:00:00.000Z';
+      return ANALYTICS.aggregate(await ANALYTICS.loadRows(since, 250000), { days, now: new Date() });
+    } });
   app.get('/api/admin/timing', adminAuth, (req, res) => res.json({ ok: true, ...TIMING.stats() }));
   app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
   app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {

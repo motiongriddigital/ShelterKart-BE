@@ -2726,6 +2726,39 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/funnel/users:
+    get:
+      operationId: adminFunnelUsers
+      tags: [Admin]
+      summary: Free versus premium, step by step
+      description: 'Where people stop on the way to a paid report, for the last N days (1 to 400, default 30). visitors follows anonymous traffic: visited and searched (visitor-days, one per visitor and day), then the sign-in wall shown, code requested and signed in (events). newUsers follows the people who signed up in the window: signed up, opened a report, started checkout, paid, paid again (each step includes everyone who got further), with the checkouts abandoned and the median hours from sign-up to the first payment. classes counts every live account as free (never paid) or premium (at least one paid report, not refunded) and how many of each signed in during the last 30 days. Each chain has ofPrevious and ofFirst in percent, the number lost at each step, and largestDrop, the step that lost the biggest share. definition states what free and premium mean here; there is no membership. Counts only, nothing personal. Without a database stored is false and only visitors is returned.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/funnelAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 400, default: 30}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  stored: {type: boolean}
+                  days: {type: integer}
+                  definition: {type: string}
+                  visitors: {$ref: '#/components/schemas/FunnelChain'}
+                  newUsers:
+                    allOf:
+                      - {$ref: '#/components/schemas/FunnelChain'}
+                      - type: object
+                        properties: {abandonedCheckout: {type: integer}, medianHoursToFirstPayment: {type: [number, 'null']}}
+                  classes: {type: object, properties: {users: {type: integer}, free: {type: integer}, premium: {type: integer}, premiumShare: {type: [number, 'null']}, active30d: {type: object, properties: {free: {type: integer}, premium: {type: integer}}}}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/audit:
     get:
       operationId: adminAuditLedger
@@ -4201,6 +4234,11 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
   schemas:
+    FunnelChain:
+      type: object
+      properties:
+        stages: {type: array, items: {type: object, properties: {label: {type: string}, count: {type: integer}, unit: {type: string}, ofPrevious: {type: [number, 'null']}, ofFirst: {type: [number, 'null']}, lost: {type: [integer, 'null']}}}}
+        largestDrop: {type: [object, 'null'], properties: {from: {type: string}, to: {type: string}, lost: {type: integer}, percent: {type: number}}}
     User:
       type: object
       properties:
