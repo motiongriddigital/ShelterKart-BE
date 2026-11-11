@@ -49,6 +49,7 @@
 {"method":"get","path":"/api/admin/sales/refunds","handlers":3},
 {"method":"get","path":"/api/admin/funnel/users","handlers":3},
 {"method":"get","path":"/api/admin/insights","handlers":3},
+{"method":"get","path":"/api/admin/readiness","handlers":3},
 {"method":"get","path":"/api/admin/timing","handlers":2},
 {"method":"get","path":"/api/admin/contract","handlers":2},
 {"method":"get","path":"/api/admin/stats","handlers":2},
