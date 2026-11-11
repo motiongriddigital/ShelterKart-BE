@@ -2,7 +2,7 @@
   "version": 1,
   "note": "Which sites count as official, and which as social or forum. The grounding code reads this file. A change here changes how findings are marked, so it is a method change: reviewed, dated and published with its reason.",
   "official": {
-    "suffixPattern": "(\\.gov|\\.gov\\.[a-z]{2}|\\.gouv\\.fr|\\.govt\\.nz|\\.gc\\.ca|\\.go\\.jp|\\.go\\.kr|\\.gob\\.[a-z]{2}|\\.nic\\.in|\\.europa\\.eu)$",
+    "suffixPattern": "(\\.gov|\\.gov\\.(in|uk|au|sg|ae|ie|ph|my|za|br|tw|hk|lv|cz|ee|lt|pl|sa|qa|bh|om|th|cn|lk|bd|np|pk|eg|ng|ke)|\\.gouv\\.fr|\\.govt\\.nz|\\.gc\\.ca|\\.go\\.jp|\\.go\\.kr|\\.gob\\.(ar|bo|cl|ec|es|gt|hn|mx|ni|pa|pe|py|sv|uy|ve)|\\.nic\\.in|\\.europa\\.eu)$",
     "hosts": [
       "nseindia.com",
       "bseindia.com",

@@ -21,7 +21,7 @@ const STATUS = {
 };
 
 // Official sources: regulators, registries, courts, exchanges, governments. Anything else is reported.
-const OFFICIAL = [/(^|\.)gov(\.[a-z]{2})?$/, /\.gov\.[a-z]{2,3}$/, /(^|\.)nic\.in$/, /(^|\.)bseindia\.com$/, /(^|\.)nseindia\.com$/,
+const OFFICIAL = [/(^|\.)gov$/, /(^|\.)gov\.(in|uk|au|sg|ae|ie|ph|my|za|br|tw|hk|lv|cz|ee|lt|pl|sa|qa|bh|om|th|cn|lk|bd|np|pk|eg|ng|ke)$/, /(^|\.)nic\.in$/, /(^|\.)bseindia\.com$/, /(^|\.)nseindia\.com$/,
   /(^|\.)sec\.gov$/, /(^|\.)ibbi\.gov\.in$/, /(^|\.)mca\.gov\.in$/, /(^|\.)ecourts\.gov\.in$/, /(^|\.)companieshouse\.gov\.uk$/,
   /(^|\.)thegazette\.co\.uk$/, /(^|\.)legislation\.gov\.uk$/, /(^|\.)bodacc\.fr$/, /(^|\.)boe\.es$/, /(^|\.)dubailand\.gov\.ae$/,
   /(^|\.)ura\.gov\.sg$/, /(^|\.)acra\.gov\.sg$/, /(^|\.)asic\.gov\.au$/, /(^|\.)abr\.business\.gov\.au$/, /(^|\.)indiacode\.nic\.in$/,
