@@ -12,7 +12,6 @@ HEALTH_WAIT="${HEALTH_WAIT:-5}"
 previous="$(cat "$STATE" 2>/dev/null || true)"
 
 healthy() {
-  local i
   for _ in $(seq 1 "$HEALTH_TRIES"); do
     if $COMPOSE exec -T api node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1; then return 0; fi
     sleep "$HEALTH_WAIT"
