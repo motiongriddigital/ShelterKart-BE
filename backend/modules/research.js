@@ -1,5 +1,5 @@
 'use strict';
-const express = require('express');
+const bodyGuard = require('../middleware/body');
 const { runResearch, isAnswerable, getByRefAsync, capOf, _daily: researchDaily } = require('../engine/research');
 const REVIEW = require('../engine/review');
 const CREDITS = require('../engine/credits');
@@ -26,7 +26,7 @@ module.exports = function register(app, c) {
     const v = BOT.verify(body && body.pow, process.env);
     return v.ok ? null : { status: 428, body: { ok: false, code: 'challenge', reason: v.reason, error: 'This search needs a short automatic check from your browser. Please try again.' } };
   };
-  app.post('/api/research/document-check', ACCOUNTS.guard, documentLimiter, express.json({ limit: '12mb' }), ah(async (req, res) => {
+  app.post('/api/research/document-check', ACCOUNTS.guard, documentLimiter, bodyGuard.json({ limit: '12mb' }), ah(async (req, res) => {
     const { query, location, market, file, mediaType } = req.body || {};
     const challenge = challengeFor(req.body);
     if (challenge) return res.status(challenge.status).json(challenge.body);
