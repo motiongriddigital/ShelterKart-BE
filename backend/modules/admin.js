@@ -139,6 +139,8 @@ module.exports = function register(app, c) {
       for (const x of r.rows) { const per = pricingData.book.fx.perUsd[x.currency]; if (per) m.set(x.report_ref, (m.get(x.report_ref) || 0) + Number(x.amount) / per); }
       return m;
     } });
+  const SALES = require('../engine/salesAdmin');
+  SALES.mountSalesAdmin(app, { adminAuth, wrap: ah, rateLimit, source: process.env.DATABASE_URL ? SALES.pgSource(pool) : null, fx: () => pricingData.book.fx.perUsd });
   app.get('/api/admin/timing', adminAuth, (req, res) => res.json({ ok: true, ...TIMING.stats() }));
   app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
   app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
