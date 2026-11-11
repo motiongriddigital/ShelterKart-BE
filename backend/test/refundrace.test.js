@@ -16,7 +16,7 @@ function rig(amount = '1000') {
   const row = { id: 'pur-1', report_ref: 'SK-ABC123', amount, currency: 'INR', status: 'paid', provider: 'mor', provider_payment_id: 'pay_1', buyer_country: 'IN', amount_net: amount, tax_amount: '0', net_revenue: null, quote_id: null };
   const refunds = [], updates = [];
   const db = { query: async (sql, p) => { if (/^\s*SELECT/i.test(sql)) return { rows: [row] }; updates.push(p); return { rows: [] }; } };
-  const store = { refundedTotal: async () => refunds.reduce((a, r) => a + r.amount, 0), saveRefund: async r => { refunds.push(r); }, addEvent: async () => {} };
+  const store = { refundedTotal: async () => refunds.reduce((a, r) => a + r.amount, 0), reserveRefund: async r => { refunds.push({ ...r, id: refunds.length + 1 }); return refunds.length; }, settleRefund: async () => {}, releaseRefund: async () => {}, addEvent: async () => {} };
   providerCalls.length = 0;
   return { db, store, refunds, updates, go: (extra = {}) => refundPurchase({ db, data, store, purchaseId: 'pur-1', reason: 'x', env: {}, ...extra }) };
 }
@@ -44,8 +44,8 @@ function rig(amount = '1000') {
     assert.strictEqual(providerCalls.length, 2); assert.strictEqual(out[0].full, false); assert.strictEqual(out[1].full, true);
   });
   await t('a failure in the first does not block the second', async () => {
-    const r = rig(); const save = r.store.saveRefund; let first = true;
-    r.store.saveRefund = async x => { if (first) { first = false; throw new Error('db down'); } return save(x); };
+    const r = rig(); const save = r.store.reserveRefund; let first = true;
+    r.store.reserveRefund = async x => { if (first) { first = false; throw new Error('db down'); } return save(x); };
     const out = await Promise.allSettled([r.go({ amount: 100 }), r.go({ amount: 100 })]);
     assert.strictEqual(out[0].status, 'rejected'); assert.strictEqual(out[1].status, 'fulfilled');
   });

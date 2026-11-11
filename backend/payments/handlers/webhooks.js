@@ -1,4 +1,5 @@
 'use strict';
+const { UUID_RE } = require('../../lib/ids');
 const rzp = require('../../engine/razorpay');
 const { claimEvent, finishEvent } = require('../events');
 const crypto = require('crypto');
@@ -82,7 +83,7 @@ module.exports = function create(c) {
     if (p.kind === 'failed') await pricingStore.addEvent('mor_payment_failed', { details: { purchaseId: p.purchaseId, paymentId: p.paymentId, type: p.type } });
     if (p.kind === 'refund') await pricingStore.addEvent('mor_refund_event', { details: { type: p.type, paymentId: p.paymentId, amountMinor: p.amountMinor, currency: p.currency, status: p.status } });
     if (p.kind !== 'paid') { await done('processed'); return { status: 200, body: { ok: true, noted: p.type } }; }       // failed and refund events are recorded, not acted on here
-    if (!p.paymentId || !/^[0-9a-f-]{36}$/i.test(String(p.purchaseId || ''))) {
+    if (!p.paymentId || !UUID_RE.test(String(p.purchaseId || ''))) {
       await pricingStore.addEvent('mor_unmatched_payment', { details: { paymentId: p.paymentId, type: p.type } });
       await done('ignored'); return { status: 200, body: { ok: true, unmatched: true } };
     }
@@ -178,7 +179,7 @@ module.exports = function create(c) {
         // pending purchase of that project paid on one buyer's payment.
         if (REF_RE.test(String(purchaseRef || ''))) {
           const purchaseId = String(event?.data?.purchaseId || '');
-          if (!/^[0-9a-f-]{36}$/i.test(purchaseId)) throw new PaymentEventError('Missing purchase id');
+          if (!UUID_RE.test(purchaseId)) throw new PaymentEventError('Missing purchase id');
           // Compare with the price THIS purchase was sold at (stored at
           // checkout), not today's price list.
           const row = await client.query(`SELECT amount FROM report_purchases WHERE id=$1 AND report_ref=$2`, [purchaseId, purchaseRef]);

@@ -34,7 +34,7 @@ function validEntry(e) {
 }
 
 class ProjectIndex {
-  constructor() { this.byId = new Map(); this.byReg = new Map(); this.onChange = null; }
+  constructor() { this.byId = new Map(); this.byReg = new Map(); this.onChange = null; this._places = new Map(); }
   get size() { return this.byId.size; }
 
   /** Add or replace a project. Prepared word lists are cached on the entry. */
@@ -49,7 +49,7 @@ class ProjectIndex {
       dev: [e.developer.name, ...e.developer.legal, ...e.developer.aliases].filter(Boolean).map(n => tokens(n).filter(w => !CORP.has(w) && !STOP.has(w))).filter(t => t.length),
       loc: [e.locality, ...e.localityAliases].filter(Boolean).map(tokens), near: e.neighbours.map(tokens), city: tokens(e.city || ''),
     } });
-    this.byId.set(e.id, e);
+    this.byId.set(e.id, e); this._places.clear();
     for (const r of this._regs(e)) this.byReg.set(r.key, { id: e.id, phase: r.phase });
     if (this.onChange) { try { this.onChange(e); } catch {} }
     return e;
@@ -66,8 +66,12 @@ class ProjectIndex {
 
   /** Is this word a place we know in this market (a locality, its alias, a neighbour or a city)? */
   _isPlace(market, w) {
-    for (const e of this.byId.values()) { if (e.market !== market) continue; const _ = e._; if ([..._.loc, ..._.near, _.city].some(t => t.some(x => sim(x, w) >= 0.9))) return true; }
-    return false;
+    const k = market + '|' + w;
+    if (this._places.has(k)) return this._places.get(k);
+    let found = false;
+    for (const e of this.byId.values()) { if (e.market !== market) continue; const _ = e._; if ([..._.loc, ..._.near, _.city].some(t => t.some(x => sim(x, w) >= 0.9))) { found = true; break; } }
+    this._places.set(k, found);
+    return found;
   }
 
   /** Candidates for a query. */

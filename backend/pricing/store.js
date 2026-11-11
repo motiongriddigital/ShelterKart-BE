@@ -30,6 +30,9 @@ const memory = () => {
     },
     async salesSince(month) { return [...ledger.values()].filter(r => r.month >= month).map(r => ({ ...r })); },
     async saveRefund(r) { refunds.push({ ...r }); },
+    async reserveRefund(r) { const id = refunds.length + 1; refunds.push({ ...r, id, providerRef: null, status: 'pending' }); return id; },
+    async settleRefund(id, { providerRef, status }) { const x = refunds.find(r => r.id === id); if (x) { x.providerRef = providerRef; x.status = status; } },
+    async releaseRefund(id) { const i = refunds.findIndex(r => r.id === id && r.status === 'pending'); if (i >= 0) refunds.splice(i, 1); },
     async refundedTotal(purchaseId) { return refunds.filter(r => r.purchaseId === purchaseId).reduce((a, r) => a + r.amount, 0); },
     async nextInvoiceNumber(series) { const n = (counters.get(series) || 0) + 1; counters.set(series, n); return n; },
     async saveInvoice(inv) { invoices.push({ ...inv }); },
@@ -79,6 +82,17 @@ const postgres = (pool) => ({
   async saveRefund(r) {
     await pool.query(`INSERT INTO refunds (purchase_id, amount, currency, tax_reversed, reason, provider_ref, status) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
       [r.purchaseId, r.amount, r.currency, r.taxReversed, r.reason, r.providerRef, r.status]);
+  },
+  async reserveRefund(r) {
+    const q = await pool.query(`INSERT INTO refunds (purchase_id, amount, currency, tax_reversed, reason, provider_ref, status) VALUES ($1,$2,$3,$4,$5,NULL,'pending') RETURNING id`,
+      [r.purchaseId, r.amount, r.currency, r.taxReversed, r.reason]);
+    return q.rows[0].id;
+  },
+  async settleRefund(id, { providerRef, status }) {
+    await pool.query(`UPDATE refunds SET provider_ref = $2, status = $3 WHERE id = $1`, [id, providerRef, status]);
+  },
+  async releaseRefund(id) {
+    await pool.query(`DELETE FROM refunds WHERE id = $1 AND status = 'pending'`, [id]);
   },
   async refundedTotal(purchaseId) {
     const r = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS refunded FROM refunds WHERE purchase_id = $1`, [purchaseId]);
