@@ -177,6 +177,7 @@ module.exports = function register(app, c) {
       return require('../engine/enginesAdmin').costRows(list, await enginePrices(list.map(j => j.ref)), since).reports;
     },
   } });
+  require('../engine/readiness').mountReadiness(app, { adminAuth, wrap: ah, rateLimit, data: () => pricingData, env: () => process.env });
   app.get('/api/admin/timing', adminAuth, (req, res) => res.json({ ok: true, ...TIMING.stats() }));
   app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
   app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
