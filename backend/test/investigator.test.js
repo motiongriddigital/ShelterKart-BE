@@ -47,7 +47,7 @@ function makeEngines({ failOne = true } = {}) {
       if (role === 'research') {
         const lead = (args.prompt.match(/Lead: [a-z-]+: (.+)/) || [])[1];
         if (lead) return { results: [{ engine: 'claude', text: JSON.stringify(LEADS[lead.trim()] || {}), retrieved: [] }], failed: [] };
-        const results = Object.entries(SWEEP).map(([engine, o]) => ({ engine, text: (engine === 'openai' ? '```json\n' : '') + JSON.stringify(o) + (engine === 'openai' ? '\n```' : ''), retrieved: [{ url: AURUM }, { url: HOUSIEY }] }));
+        const results = Object.entries(SWEEP).map(([engine, o]) => ({ engine, text: (engine === 'openai' ? '```json\n' : '') + JSON.stringify(o) + (engine === 'openai' ? '\n```' : ''), retrieved: [{ url: AURUM }, { url: HOUSIEY }, { url: MAHARERA }] }));
         return { results, failed: failOne ? [{ engine: 'xai', error: 'timeout' }] : [] };
       }
       if (/most demanding partner/.test(args.prompt)) return { results: [{ engine: 'claude', text: JSON.stringify({ leads: [{ kind: 'filing', value: 'Hubtown Limited exchange filings 2026', why: 'group finances' }], questions: [{ question: 'Has any lender to the group taken security over Celeste land or receivables?', why: 'Group debt can reach the project.', to: 'accounts team', when: 'before signing', good: 'Charge register and lender consents.', not_accepted: 'A verbal assurance.' }] }) }], failed: [] };

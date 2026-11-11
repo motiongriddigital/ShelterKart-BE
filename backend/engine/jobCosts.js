@@ -8,7 +8,7 @@ const CAT = require('../engines/catalog');
 
 function costedEngines(engines, onCost) {
   const info = (r, args) => ({ stage: (args && args.stage) || 'other', engine: r.engine, input: Number(r.usage && r.usage.input) || 0, output: Number(r.usage && r.usage.output) || 0, searches: Number(r.searches) || 0 });
-  const price = r => { try { const c = CAT.costOf(r.engine, r.model, r.usage, r.searches || 0); return Number.isFinite(c) ? c : 0; } catch { return 0; } };
+  const price = r => { try { let c = CAT.costOf(r.engine, r.model, r.usage, r.searches || 0); if (!Number.isFinite(c)) c = CAT.costOf(r.engine, CAT.engine(r.engine).defaultModel, r.usage, r.searches || 0); return Number.isFinite(c) ? c : 0; } catch { return 0; } };
   const wrapped = Object.create(engines);
   // A call that failed after some of its rounds were billed still cost money: it is priced into the job like any other call.
   const failedSpend = (list, args) => { for (const f of list || []) if (f && f.usage) onCost(price(f), info(f, args)); };

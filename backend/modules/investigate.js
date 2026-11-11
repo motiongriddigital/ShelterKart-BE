@@ -83,7 +83,7 @@ module.exports = function register(app, c) {
     const paused = pausedReason(process.env, country.toLowerCase());
     if (paused) return res.status(503).json({ ok: false, code: 'paused', error: paused });
     const key = DOSSIER_BRIEF.keyOf(query, location, country), seen = liveIndex.get(key);
-    if (seen && Date.now() - seen.at < 30 * 24 * 3600 * 1000 && (liveJobs.has(seen.ref) || await getByRefAsync(seen.ref))) {
+    if (seen && Date.now() - seen.at < 30 * 24 * 3600 * 1000 && !['failed', 'interrupted'].includes((liveJobs.get(seen.ref) || {}).status) && (liveJobs.has(seen.ref) || await getByRefAsync(seen.ref))) {
       try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: true }); } catch {}
       ACCOUNTS.touch(req, seen.ref);
       return res.json({ ok: true, ref: seen.ref, reused: true });
@@ -106,7 +106,7 @@ module.exports = function register(app, c) {
     try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: false }); } catch {}   // the new search, in the shadow
     job.inv.sweep({ panel: previewPanel() })
       .then(() => { job.status = 'preview'; persistJob(job); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
-      .catch(e => { job.status = 'failed'; persistJob(job); console.error('[investigate] sweep failed for ' + ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation could not run just now. Please try again later.' }); });
+      .catch(e => { job.status = 'failed'; if ((liveIndex.get(key) || {}).ref === ref) liveIndex.delete(key); persistJob(job); console.error('[investigate] sweep failed for ' + ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation could not run just now. Please try again later.' }); });
     res.status(202).json({ ok: true, ref });
   }));
   app.get('/api/investigate/:ref/events', ACCOUNTS.guard, ah(async (req, res) => {
