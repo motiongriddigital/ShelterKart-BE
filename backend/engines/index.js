@@ -10,6 +10,8 @@
  *   - able to do the job (DeepSeek cannot search; Grok and OpenAI read images but not PDFs),
  *   - allowed by the company (AI_ENGINES / AI_ENGINES_<AGENT>, optional allow-lists),
  *   - approved for personal data when the job involves it (the document check: AI_PERSONAL_DATA_ENGINES, empty = none),
+ *   - right for the stage: the preview sweep may be limited to AI_PREVIEW_ENGINES; every other stage may be limited to
+ *     AI_PAID_ENGINES, and never uses an engine named in AI_FREE_ENGINES (a free-tier key, which may train on what it reads),
  *   - and, once quality-gate results exist for that agent, passed it (tools/engine_benchmark.js),
  * and ranks them by expected cost per call: measured on this server (after 5 calls), else from the quality gate, else
  * from catalogue prices. The cheapest goes first; the others are the fail-over order. AI_ROUTING=order uses the
@@ -53,12 +55,17 @@ function plan(role, env = process.env, op = OP[role], opts = { mediaType: 'image
   const bench = benchmarks(env), results = bench && bench.results && bench.results[role];
   const gated = Boolean(results && Object.keys(results).length) && env.AI_REQUIRE_BENCHMARK !== 'false';
   const personalOk = list(env.AI_PERSONAL_DATA_ENGINES);
+  const preview = Boolean(opts && opts.stage === 'sweep');
+  const freeKey = list(env.AI_FREE_ENGINES), previewOnly = list(env.AI_PREVIEW_ENGINES), paidOnly = list(env.AI_PAID_ENGINES);
   const candidates = [], excluded = [];
   for (const id of ids) {
     const a = ADAPTERS[id], model = modelFor(role, id, env);
     if (!a.configured(env)) { excluded.push({ engine: id, reason: 'not set up (no API key)' }); continue; }
     if (!a.supports(op, opts)) { excluded.push({ engine: id, reason: op === 'search' ? 'cannot search the web' : op === 'read' ? 'cannot read this file type' : 'cannot do this job' }); continue; }
     if (PERSONAL.has(role) && !personalOk.includes(id)) { excluded.push({ engine: id, reason: 'not approved for personal data' }); continue; }
+    if (preview && previewOnly.length && !previewOnly.includes(id)) { excluded.push({ engine: id, reason: 'not on the preview list (AI_PREVIEW_ENGINES)' }); continue; }
+    if (!preview && freeKey.includes(id)) { excluded.push({ engine: id, reason: 'runs on a free-tier key: preview only (AI_FREE_ENGINES)' }); continue; }
+    if (!preview && paidOnly.length && !paidOnly.includes(id)) { excluded.push({ engine: id, reason: 'not on the paid list (AI_PAID_ENGINES)' }); continue; }
     if (gated) {
       const r = results[id];
       if (!r) { excluded.push({ engine: id, reason: 'not yet through the quality gate' }); continue; }
