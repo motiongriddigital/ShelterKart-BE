@@ -18,6 +18,7 @@ const memory = () => {
     async saveQuote(q) { quotes.set(q.id, JSON.parse(JSON.stringify(q))); },
     async getQuote(id) { const q = quotes.get(id); return q ? JSON.parse(JSON.stringify(q)) : null; },
     async setQuoteStatus(id, status) { const q = quotes.get(id); if (q) q.status = status; },
+    async claimQuote(id) { const q = quotes.get(id); if (!q || q.status !== 'open') return false; q.status = 'used'; return true; },
     async supersedeOpen({ ref, session, exceptId }) {
       for (const q of quotes.values()) if (q.ref === ref && q.session === session && q.status === 'open' && q.id !== exceptId) q.status = 'superseded';
     },
@@ -53,6 +54,8 @@ const postgres = (pool) => ({
     const q = typeof r.rows[0].body === 'string' ? JSON.parse(r.rows[0].body) : r.rows[0].body; q.status = r.rows[0].status; return q;
   },
   async setQuoteStatus(id, status) { await pool.query(`UPDATE quotes SET status = $2 WHERE id = $1`, [id, status]); },
+  /** Take an open quote for one checkout. Atomic: of two requests at once, exactly one gets true. */
+  async claimQuote(id) { const r = await pool.query(`UPDATE quotes SET status = 'used' WHERE id = $1 AND status = 'open' RETURNING id`, [id]); return r.rows.length > 0; },
   async supersedeOpen({ ref, session, exceptId }) {
     await pool.query(`UPDATE quotes SET status = 'superseded' WHERE report_ref = $1 AND buyer_session = $2 AND status = 'open' AND id <> $3`, [ref, session, exceptId]);
   },
