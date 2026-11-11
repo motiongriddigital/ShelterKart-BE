@@ -9,7 +9,7 @@ const has = (env, k) => Boolean(String(env[k] || '').trim());
 const lacking = (env, names) => names.filter(k => !has(env, k));
 const RAZORPAY = ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET'];
 const MERCHANT = ['DODO_API_KEY', 'DODO_WEBHOOK_KEY'];
-const MAIL_KEYS = ['RESEND_API_KEY', 'POSTMARK_SERVER_TOKEN'];
+const MAIL_KEYS = ['RESEND_API_KEY', 'POSTMARK_SERVER_TOKEN', 'BREVO_API_KEY'];
 
 function report(env, data) {
   const merchantMissing = [...lacking(env, MERCHANT), ...(Object.keys(data.morProducts || {}).length ? [] : ['MOR_PRODUCTS'])];
