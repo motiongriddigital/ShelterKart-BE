@@ -21,8 +21,8 @@ async function query(sql, p=[]) {
   if (/SELECT brief, created_at FROM research_briefs WHERE ref = \$1/.test(q)) {
     const r = db.briefs.get(p[0]); return { rows: r ? [{ brief: JSON.parse(JSON.stringify(r.brief)), created_at: r.created_at }] : [] };
   }
-  if (/SELECT cache_key, brief, created_at FROM research_briefs WHERE created_at > \$1 ORDER BY created_at ASC LIMIT \$2/.test(q))
-    return { rows: [...db.briefs.values()].filter(r => r.created_at > p[0]).sort((a,b)=>a.created_at-b.created_at).slice(0, p[1])
+  if (/SELECT cache_key, brief, created_at FROM \( SELECT cache_key, brief, created_at FROM research_briefs WHERE created_at > \$1 ORDER BY created_at DESC LIMIT \$2 \) newest ORDER BY created_at ASC/.test(q))
+    return { rows: [...db.briefs.values()].filter(r => r.created_at > p[0]).sort((a,b)=>b.created_at-a.created_at).slice(0, p[1]).sort((a,b)=>a.created_at-b.created_at)
       .map(r => ({ cache_key:r.cache_key, brief: JSON.parse(JSON.stringify(r.brief)), created_at:r.created_at })) };
   if (/SELECT ref, brief FROM research_briefs WHERE cardinality\(page_urls\) = 0 AND brief->>'kind' = 'dossier'/.test(q))
     return { rows: [...db.briefs.entries()].filter(([, r]) => r.page_urls.length === 0 && r.brief && r.brief.kind === 'dossier').map(([ref, r]) => ({ ref, brief: JSON.parse(JSON.stringify(r.brief)) })) };
@@ -120,6 +120,9 @@ async function query(sql, p=[]) {
   }
   if (/SELECT country, month, gross_sales, tax_collected, currency FROM tax_ledger WHERE month >= \$1/.test(q))
     return { rows: [...db.ledger.values()].filter(r => r.month >= p[0]).map(r => ({ ...r, gross_sales: String(r.gross_sales), tax_collected: String(r.tax_collected) })) };
+  if (/INSERT INTO refunds \(purchase_id, amount, currency, tax_reversed, reason, provider_ref, status\) VALUES \(\$1,\$2,\$3,\$4,\$5,NULL,'pending'\) RETURNING id/.test(q)) { const id = db.refunds.length + 1; db.refunds.push({ id, purchase_id: p[0], amount: p[1], currency: p[2], tax_reversed: p[3], reason: p[4], provider_ref: null, status: 'pending' }); return { rows: [{ id }] }; }
+  if (/UPDATE refunds SET provider_ref = \$2, status = \$3 WHERE id = \$1/.test(q)) { const x = db.refunds.find(r => r.id === p[0]); if (x) { x.provider_ref = p[1]; x.status = p[2]; } return { rows: [] }; }
+  if (/DELETE FROM refunds WHERE id = \$1 AND status = 'pending'/.test(q)) { const i = db.refunds.findIndex(r => r.id === p[0] && r.status === 'pending'); if (i >= 0) db.refunds.splice(i, 1); return { rows: [] }; }
   if (/INSERT INTO refunds \(purchase_id, amount, currency, tax_reversed, reason, provider_ref, status\)/.test(q)) { db.refunds.push({ purchase_id: p[0], amount: p[1], currency: p[2], tax_reversed: p[3], reason: p[4], provider_ref: p[5], status: p[6] }); return { rows: [] }; }
   if (/SELECT COALESCE\(SUM\(amount\), 0\) AS refunded FROM refunds WHERE purchase_id = \$1/.test(q)) return { rows: [{ refunded: String(db.refunds.filter(r => r.purchase_id === p[0]).reduce((a, r) => a + r.amount, 0)) }] };
   if (/INSERT INTO invoice_counters \(series, last\) VALUES \(\$1, 1\) ON CONFLICT \(series\) DO UPDATE SET last = invoice_counters.last \+ 1 RETURNING last/.test(q)) { const n = (db.counters.get(p[0]) || 0) + 1; db.counters.set(p[0], n); return { rows: [{ last: n }] }; }

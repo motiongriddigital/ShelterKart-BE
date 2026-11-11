@@ -1,4 +1,5 @@
 'use strict';
+const { UUID_RE } = require('../../lib/ids');
 const { paywallActive, REF_RE } = require('../../engine/access');
 const rzp = require('../../engine/razorpay');
 
@@ -8,7 +9,7 @@ module.exports = function create(c) {
   async function razorpayVerify(req) {
     if (!paywallActive(process.env)) return { status: 503, body: { ok: false, error: 'Payments are not enabled yet.' } };
     const { ref, purchaseId, razorpay_payment_id: paymentId, razorpay_signature: signature } = req.body || {};
-    if (!REF_RE.test(String(ref || '')) || !/^[0-9a-f-]{36}$/i.test(String(purchaseId || '')) || !/^pay_\w+$/.test(String(paymentId || '')))
+    if (!REF_RE.test(String(ref || '')) || !UUID_RE.test(String(purchaseId || '')) || !/^pay_\w+$/.test(String(paymentId || '')))
       return { status: 400, body: { ok: false, error: 'Invalid request.' } };
     const q = await pool.query(`SELECT status, provider_order_id FROM report_purchases WHERE id=$1 AND report_ref=$2`, [purchaseId, ref]);
     if (!q.rows.length || !q.rows[0].provider_order_id) return { status: 404, body: { ok: false, error: 'Purchase not found.' } };
@@ -24,7 +25,7 @@ module.exports = function create(c) {
   async function access(req) {
     if (!paywallActive(process.env)) return { status: 503, body: { ok: false, error: 'Payments are not enabled yet.' } };
     const { ref, purchaseId } = req.body || {};
-    if (!REF_RE.test(String(ref || '')) || !/^[0-9a-f-]{36}$/i.test(String(purchaseId || '')))
+    if (!REF_RE.test(String(ref || '')) || !UUID_RE.test(String(purchaseId || '')))
       return { status: 400, body: { ok: false, error: 'Invalid request.' } };
     const r = await pool.query(`SELECT status, provider, provider_order_id, amount, currency FROM report_purchases WHERE id=$1 AND report_ref=$2`, [purchaseId, ref]);
     if (r.rows.length && r.rows[0].status === 'pending_payment' && r.rows[0].provider === 'mor' && r.rows[0].provider_order_id) {
