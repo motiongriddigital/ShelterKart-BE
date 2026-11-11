@@ -1,0 +1,8 @@
+{$API_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy api:4000 {
+		health_uri /api/health
+		health_interval 30s
+		flush_interval -1
+	}
+}

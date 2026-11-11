@@ -1,4 +1,5 @@
 'use strict';
+const { UUID_RE } = require('../lib/ids');
 const { purgeDurably, getByRefAsync, listRecentReports, setReview } = require('../engine/research');
 const REVIEW = require('../engine/review');
 const { senderCheck, findingMatch } = require('../engine/reviews');
@@ -35,7 +36,7 @@ module.exports = function register(app, c) {
   /* A refund, in the original currency and amount (payments/refunds.js). Admin only. */
   app.post('/api/admin/refunds', adminAuth, ah(async (req, res) => {
     const { purchaseId, amount, reason } = req.body || {};
-    if (!/^[0-9a-f-]{36}$/i.test(String(purchaseId || ''))) return res.status(400).json({ ok: false, error: 'Invalid purchase id.' });
+    if (!UUID_RE.test(String(purchaseId || ''))) return res.status(400).json({ ok: false, error: 'Invalid purchase id.' });
     try {
       const out = await refundPurchase({ db: pool, data: pricingData, store: pricingStore, purchaseId, amount, reason: String(reason || '').slice(0, 200), env: process.env });
       await pool.query(`INSERT INTO audit_log (actor, action, object_type, object_id, reason) VALUES ('admin','RESEARCH_PURCHASE_REFUNDED','report_purchase',$1,$2)`, [purchaseId, `${out.amount} ${out.currency}${out.full ? ' (full)' : ''}`]);
@@ -177,6 +178,7 @@ module.exports = function register(app, c) {
       return require('../engine/enginesAdmin').costRows(list, await enginePrices(list.map(j => j.ref)), since).reports;
     },
   } });
+  require('../engine/readiness').mountReadiness(app, { adminAuth, wrap: ah, rateLimit, data: () => pricingData, env: () => process.env });
   app.get('/api/admin/timing', adminAuth, (req, res) => res.json({ ok: true, ...TIMING.stats() }));
   app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
   app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {

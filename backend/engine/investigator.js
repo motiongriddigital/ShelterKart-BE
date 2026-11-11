@@ -133,7 +133,7 @@ function ingest(state, o, engine, round) {
   const p = o.project || {};
   for (const k of ['name', 'location', 'country', 'brand', 'promoter_legal_name', 'developer_site']) if (p[k] && !state.project[k]) state.project[k] = String(p[k]);
   for (const id of arr(p.registration_ids)) if (id && !state.project.ids.includes(id)) state.project.ids.push(String(id));
-  for (const f of arr(o.facts)) state.raw.push({ ...f, foundBy: [engine], round, sources: arr(f.sources).map(urlOf) });
+  for (const f of arr(o.facts)) if (f && typeof f === 'object') state.raw.push({ ...f, foundBy: [engine], round, sources: arr(f.sources).map(urlOf) });
   for (const e of arr(o.entities)) {
     if (!e || !e.name) continue;
     const twin = state.entities.find(x => D.norm(x.name) === D.norm(e.name) || D.jaccard(x.name, e.name) >= 0.8);

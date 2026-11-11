@@ -100,9 +100,20 @@ function makeKeeper({ kb, store = null, engines, fetchImpl = globalThis.fetch, e
     if (!/^https:\/\//i.test(url)) return { ok: false, reason: 'not_https' };
     if (!hostOk(url, code)) return { ok: false, reason: 'not_official' };
     const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, timer = ctl ? setTimeout(() => ctl.abort(), 15000) : null;
-    let res; try { res = await fetchImpl(url, { headers: { 'User-Agent': 'ShelterKartKeeper/1 (+https://shelterkart.com)', Accept: 'text/html,text/plain' }, redirect: 'follow', ...(ctl ? { signal: ctl.signal } : {}) }); } catch { return { ok: false, reason: 'fetch_failed' }; } finally { if (timer) clearTimeout(timer); }
+    let res, target = url, hops = 0;
+    try {
+      for (;;) {
+        res = await fetchImpl(target, { headers: { 'User-Agent': 'ShelterKartKeeper/1 (+https://shelterkart.com)', Accept: 'text/html,text/plain' }, redirect: 'manual', ...(ctl ? { signal: ctl.signal } : {}) });
+        if (![301, 302, 303, 307, 308].includes(res.status)) break;
+        const loc = res.headers && res.headers.get && res.headers.get('location'); let next = '';
+        try { next = loc ? new URL(loc, target).toString() : ''; } catch { next = ''; }
+        if (!next || !/^https:\/\//i.test(next) || !hostOk(next, code)) return { ok: false, reason: 'redirected_off_official' };
+        if (++hops > 3) return { ok: false, reason: 'too_many_redirects' };
+        target = next;
+      }
+    } catch { return { ok: false, reason: 'fetch_failed' }; } finally { if (timer) clearTimeout(timer); }
     if (!res.ok) return { ok: false, reason: 'http_' + res.status };
-    const finalUrl = res.url || url; if (!hostOk(finalUrl, code)) return { ok: false, reason: 'redirected_off_official' };
+    const finalUrl = res.url || target; if (!hostOk(finalUrl, code)) return { ok: false, reason: 'redirected_off_official' };
     const ct = String((res.headers && res.headers.get && res.headers.get('content-type')) || 'text/html'), isPdf = /application\/pdf/i.test(ct);
     if (!isPdf && !/text\/(html|plain)|xhtml/i.test(ct)) return { ok: false, reason: 'not_text' };
     const len = Number(res.headers && res.headers.get && res.headers.get('content-length')) || 0; if (len > (isPdf ? MAX_PDF_BYTES : MAX_BYTES)) return { ok: false, reason: 'too_large' };
