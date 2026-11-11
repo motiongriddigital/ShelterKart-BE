@@ -2,6 +2,8 @@
 # PostgreSQL, the nine migrations, the price-book seed, the server, and the smoke test against it.
 name: ci
 on: [push, pull_request]
+permissions:
+  contents: read
 jobs:
   logic:
     runs-on: ubuntu-latest

@@ -15,7 +15,19 @@ class RefundError extends Error { constructor(code, message) { super(message); t
  * @param db        the database (query)
  * @param amount    major units in the purchase's currency; omitted = everything still refundable
  */
-async function refundPurchase({ db, data, store, purchaseId, amount, reason = '', env = process.env, fetchImpl, now = new Date() }) {
+/* Refunds of one purchase run one after another. Each reads what is already refunded, calls the provider, then records the refund: two at once would both
+   read the same remainder and both reach the provider. This is a lock inside this server, which is right while there is one instance (as the saved
+   investigations already assume); several instances would need a database lock on the purchase row. */
+const queues = new Map();
+function refundPurchase(args) {
+  const key = String(args.purchaseId), run = (queues.get(key) || Promise.resolve()).then(() => refundOnce(args));
+  const tail = run.catch(() => {});
+  queues.set(key, tail);
+  tail.then(() => { if (queues.get(key) === tail) queues.delete(key); });
+  return run;
+}
+
+async function refundOnce({ db, data, store, purchaseId, amount, reason = '', env = process.env, fetchImpl, now = new Date() }) {
   const r = await db.query(
     `SELECT id, report_ref, amount, currency, status, provider, provider_payment_id, buyer_country, amount_net, tax_amount, net_revenue, quote_id FROM report_purchases WHERE id=$1`, [purchaseId]);
   if (!r.rows.length) throw new RefundError('not_found', 'Purchase not found.');
