@@ -147,7 +147,7 @@ const LISTED = ['GB', 'FR', 'DE', 'ES', 'IT', 'NL', 'AE', 'SA', 'SG', 'CA', 'US'
     const data = withMor({ USD: 'pdt_usd', GBP: 'pdt_gbp' }), sales = [], saved = [], posts = [];
     const row = { id: 'pur-r1', report_ref: 'SK-ABC123', amount: '25', currency: 'GBP', status: 'paid', provider: 'mor', provider_payment_id: 'pay_9', buyer_country: 'GB', amount_net: '25', tax_amount: '0', net_revenue: null, quote_id: 'q_x' };
     const db = { query: async sql => (/^\s*SELECT/i.test(sql) ? { rows: [row] } : { rows: [] }) };
-    const store = { refundedTotal: async () => 0, saveRefund: async r => { saved.push(r); }, addEvent: async () => {}, addSale: async s => { sales.push(s); } };
+    const store = { refundedTotal: async () => 0, reserveRefund: async r => { saved.push(r); return saved.length; }, settleRefund: async () => {}, releaseRefund: async () => {}, addEvent: async () => {}, addSale: async s => { sales.push(s); } };
     const f = async (url, o) => { if (o.method === 'GET') return { ok: true, status: 200, json: async () => ({ status: 'succeeded', total_amount: 2500, product_cart: [{ product_id: 'pdt_gbp' }] }) }; posts.push(JSON.parse(o.body)); return { ok: true, status: 200, json: async () => ({ refund_id: 'ref_1', status: 'succeeded' }) }; };
     const out = await refundPurchase({ db, data, store, purchaseId: 'pur-r1', reason: 'Not delivered', env: { ...KEYS }, fetchImpl: f });
     assert.strictEqual(out.full, true); assert.strictEqual(posts[0].payment_id, 'pay_9'); assert.strictEqual(posts[0].items, undefined);

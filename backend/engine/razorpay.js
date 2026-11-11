@@ -113,7 +113,7 @@ async function refundPayment({ paymentId, amountSubunits, notes = {} }, { env, f
   const auth = Buffer.from(`${env.RAZORPAY_KEY_ID}:${env.RAZORPAY_KEY_SECRET}`).toString('base64');
   const body = { notes }; if (amountSubunits != null) body.amount = Number(amountSubunits);
   const res = await fetchImpl(`${API}/payments/${paymentId}/refund`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Basic ' + auth }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error('razorpay refund failed: ' + res.status);
+  if (!res.ok) throw Object.assign(new Error('razorpay refund failed: ' + res.status), { status: res.status });
   const r = await res.json();
   if (!r || typeof r.id !== 'string' || !r.id.startsWith('rfnd_')) throw new Error('razorpay refund response did not match the request');
   if (amountSubunits != null && Number(r.amount) !== Number(amountSubunits)) throw new Error('razorpay refunded a different amount than requested');
