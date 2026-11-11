@@ -45,6 +45,7 @@ module.exports = function setup(c) {
       await recordSale(r.rows[0]);
       let payer = null;
       if (ACCOUNTS.enabled) { try { const u = await db.query(`SELECT u.email FROM report_purchases p JOIN users u ON u.id = p.user_id WHERE p.id=$1`, [purchaseId]); payer = (u.rows[0] && u.rows[0].email) || null; } catch { payer = null; } }
+      if (payer && provider !== 'mor') require('../engine/receipt').sendReceipt(process.env, { to: payer, ref, amount: r.rows[0].amount, currency: r.rows[0].currency, purchaseId, site: SITE_BASE });
       try { c.onReportPaid(ref, payer, purchaseId); } catch (e) { console.error('[investigate] could not continue a paid report:', e && e.message); }
     }
     return r.rows.length === 1;
