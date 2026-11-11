@@ -106,6 +106,8 @@ async function query(sql, p=[]) {
   if (/UPDATE quotes SET status = 'superseded' WHERE report_ref = \$1 AND buyer_session = \$2 AND status = 'open' AND id <> \$3/.test(q)) {
     for (const [id, r] of db.quotes) if (r.ref === p[0] && r.session === p[1] && r.status === 'open' && id !== p[2]) r.status = 'superseded'; return { rows: [] };
   }
+  if (/UPDATE quotes SET status = 'used' WHERE id = \$1 AND status = 'open' RETURNING id/.test(q)) { const r = db.quotes.get(p[0]); if (r && r.status === 'open') { r.status = 'used'; return { rows: [{ id: p[0] }] }; } return { rows: [] }; }
+  if (/DELETE FROM report_purchases WHERE id=\$1 AND status='pending_payment' AND provider_order_id IS NULL/.test(q)) { const i = db.purchases.findIndex(x => x.id === p[0] && x.status === 'pending_payment' && !x.provider_order_id); if (i >= 0) db.purchases.splice(i, 1); return { rows: [] }; }
   if (/UPDATE quotes SET status = \$2 WHERE id = \$1/.test(q)) { const r = db.quotes.get(p[0]); if (r) r.status = p[1]; return { rows: [] }; }
   if (/INSERT INTO pricing_events \(at, type, quote_id, report_ref, details\)/.test(q)) {
     if (typeof p[3] !== 'string') throw new Error('details must be JSON text'); db.pricingEvents.push({ at: new Date().toISOString(), type: p[0], quote_id: p[1], report_ref: p[2], details: JSON.parse(p[3]) }); return { rows: [] };
@@ -128,7 +130,7 @@ async function query(sql, p=[]) {
   if (/SELECT number, kind, country, currency, amount_gross FROM invoices/.test(q)) return { rows: db.invoices.map(i => ({ ...i })) };
   if (/\bquotes\b|pricing_events|tax_ledger|refunds|invoice_counters|invoices/.test(q) && !/audit_log/.test(q)) throw new Error('stub does not recognise this pricing statement: ' + q.slice(0, 100));
 
-  if (/SELECT id, amount, currency, (provider, )?provider_order_id, status(, quote_id, billing_country)? FROM report_purchases WHERE idempotency_key=\$1/.test(q))
+  if (/SELECT id, (report_ref, user_id, )?amount, currency, (provider, )?provider_order_id(, status(, quote_id, billing_country)?)? FROM report_purchases WHERE idempotency_key=\$1/.test(q))
     return { rows: db.purchases.filter(x => x.idempotency_key === p[0]) };
 
   if (/INSERT INTO report_purchases \(report_ref, amount, currency, status, provider, idempotency_key\)/.test(q)) {

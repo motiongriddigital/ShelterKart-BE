@@ -758,7 +758,7 @@ paths:
         Without a valid token each event carries only `type`, `stage`, `phase`, `counts` and, for the `sweep` stage and for errors, `message`.
         With a valid token the event also carries `round`. The public stream never carries paid content. The event name (`event:` line) equals the event's `type`.
         Event types seen in the code: progress, error, done. Other types come from the investigator engine and are not enumerated.
-        Not rate limited.
+        Not rate limited, but the number of open streams is capped: an address may hold `EVENT_STREAMS_PER_IP` (default 6) and a running report `EVENT_STREAMS_PER_JOB` (default 25); one more is refused with 429.
       security:
         - {}
         - accessTokenQuery: []
@@ -783,6 +783,7 @@ paths:
                 properties:
                   ok: {type: boolean, const: false}
         '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
   /api/investigate/{ref}/contact:
     post:
       operationId: setInvestigationContact
