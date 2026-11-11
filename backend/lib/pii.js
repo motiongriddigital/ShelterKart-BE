@@ -5,7 +5,7 @@
 // memory, and echoed back in brief.query. Stripped before the query
 // leaves this process, not after.
 const PII_PATTERNS = [
-  /[\w.+-]+@[\w-]+\.[\w.-]+/g,
+  /[\w.+-]{1,64}@[\w-]{1,63}\.[\w.-]{1,255}/g,
   /\+?\d[\d\s().-]{7,}\d/g,
 ];
 function stripPII(s) {

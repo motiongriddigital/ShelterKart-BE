@@ -54,7 +54,7 @@ async function checkThresholds({ data, store, now = new Date(), notify = async (
   const fresh = [];
   for (const p of prog) {
     if (!['watch', 'alert', 'reached'].includes(p.level)) continue;
-    if (seen.some(e => e.details.country === p.country && e.details.level === p.level && e.at >= windowStart(now))) continue;
+    if (seen.some(e => e.details.country === p.country && e.details.level === p.level && String(e.at instanceof Date ? e.at.toISOString() : e.at) >= windowStart(now))) continue;
     const a = { country: p.country, name: p.name, level: p.level, pct: Math.round(p.pct * 100) };
     await store.addEvent('tax_threshold', { details: a }); fresh.push(a);
     await notify(a);

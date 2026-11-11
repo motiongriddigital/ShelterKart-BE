@@ -70,7 +70,7 @@ class EntityIndex {
   /** Record every way this project can be searched for. */
   register({ key, market, query, location, project }) {
     const loc = nameFingerprint(location || (project && project.location) || '');
-    for (const id of new Set([...(project && project.ids || []).map(cleanId), ...idsIn(query)]))
+    for (const id of new Set((project && project.ids || []).map(cleanId)))
       if (id) this._put(`id:${market}:${id}`, { key, location: loc });
     for (const n of new Set([query, project && project.name].filter(Boolean).map(nameFingerprint)))
       if (n) this._put(`name:${market}:${n}`, { key, location: loc });

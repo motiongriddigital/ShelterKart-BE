@@ -1,4 +1,5 @@
 'use strict';
+const { UUID_RE } = require('../lib/ids');
 const { pickLanguage } = require('../engine/languages');
 const TRANSLATE = require('../engine/translate');
 const { paywallActive, previewOf, tokenInfo } = require('../engine/access');
@@ -45,6 +46,7 @@ module.exports = function setup(c) {
       await recordSale(r.rows[0]);
       let payer = null;
       if (ACCOUNTS.enabled) { try { const u = await db.query(`SELECT u.email FROM report_purchases p JOIN users u ON u.id = p.user_id WHERE p.id=$1`, [purchaseId]); payer = (u.rows[0] && u.rows[0].email) || null; } catch { payer = null; } }
+      if (payer && provider !== 'mor') require('../engine/receipt').sendReceipt(process.env, { to: payer, ref, amount: r.rows[0].amount, currency: r.rows[0].currency, purchaseId, site: SITE_BASE });
       try { c.onReportPaid(ref, payer, purchaseId); } catch (e) { console.error('[investigate] could not continue a paid report:', e && e.message); }
     }
     return r.rows.length === 1;
@@ -88,7 +90,7 @@ module.exports = function setup(c) {
      Only used when accounts are off; with accounts the purchase itself is the entitlement (ACCOUNTS.entitled). */
   async function tokenGrants(token, ref) {
     const t = tokenInfo(token, ref, process.env.ACCESS_TOKEN_SECRET);
-    if (!t || !t.pid || !/^[0-9a-f-]{36}$/i.test(t.pid)) return false;
+    if (!t || !t.pid || !UUID_RE.test(t.pid)) return false;
     try { const r = await pool.query(`SELECT status FROM report_purchases WHERE id=$1 AND report_ref=$2`, [t.pid, ref]); return Boolean(r.rows[0]) && r.rows[0].status === 'paid'; }
     catch { return false; }
   }

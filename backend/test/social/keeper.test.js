@@ -38,6 +38,23 @@ function setup({ eng, fetchImpl, env = {}, seeds, discover, pdf } = {}) {
     assert.strictEqual(await r('https://rera.example.gov/pdf'), 'not_text'); assert.strictEqual(await r('https://rera.example.gov/big'), 'too_large'); assert.strictEqual(await r('https://rera.example.gov/tiny'), 'no_text'); assert.strictEqual(await r('https://rera.example.gov/missing'), 'http_404');
     assert(!f.calls.includes('http://rera.example.gov/a') && !f.calls.includes('https://blog.example.com/a'), 'a refused page is never even requested');
   });
+  await t('a redirect to a host that is not allowed is never requested, and a redirect within the official host is followed', async () => {
+    const calls = []; const res = (status, loc, body) => ({ ok: status < 300, status, url: '', headers: { get: k => (k.toLowerCase() === 'location' ? loc : k.toLowerCase() === 'content-type' ? 'text/html' : '') }, text: async () => body || '', arrayBuffer: async () => Buffer.from(body || '') });
+    const f = async (url, init) => { calls.push([url, init && init.redirect]);
+      if (url === 'https://rera.example.gov/to-metadata') return res(302, 'http://169.254.169.254/latest/meta-data/');
+      if (url === 'https://rera.example.gov/to-local') return res(301, 'https://localhost:5432/');
+      if (url === 'https://rera.example.gov/old') return res(301, '/register');
+      if (url === 'https://rera.example.gov/register') { const r = res(200, '', PAGE_HTML); r.url = url; return r; }
+      if (url === 'https://rera.example.gov/loop') return res(302, '/loop');
+      return res(404, ''); };
+    const { keeper } = setup({ fetchImpl: f });
+    assert.strictEqual((await keeper.fetchPage('https://rera.example.gov/to-metadata', 'IN')).reason, 'redirected_off_official');
+    assert.strictEqual((await keeper.fetchPage('https://rera.example.gov/to-local', 'IN')).reason, 'redirected_off_official');
+    assert(!calls.some(([u]) => /169\.254|localhost/.test(u)), 'the internal address was requested: ' + JSON.stringify(calls));
+    assert.strictEqual((await keeper.fetchPage('https://rera.example.gov/old', 'IN')).ok, true);
+    assert.strictEqual((await keeper.fetchPage('https://rera.example.gov/loop', 'IN')).reason, 'too_many_redirects');
+    assert(calls.every(([, mode]) => mode === 'manual'));
+  });
   await t('a host a person has listed is accepted for that market only', async () => {
     const f = web({ 'https://housing.example.org/x': PAGE_HTML }); const seeds = { markets: { IN: { allowedHosts: ['example.org'], topics: {} } } }; const { keeper } = setup({ fetchImpl: f, seeds });
     assert.strictEqual((await keeper.fetchPage('https://housing.example.org/x', 'IN')).ok, true); assert.strictEqual((await keeper.fetchPage('https://housing.example.org/x', 'GB')).reason, 'not_official');
