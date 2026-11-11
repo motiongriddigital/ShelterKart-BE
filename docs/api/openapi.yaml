@@ -2726,6 +2726,17 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/funnel/users:
+    get:
+      operationId: adminFunnelUsers
+      tags: [Admin]
+      summary: Free versus premium, step by step
+      description: 'Where people stop on the way to a paid report, for the last N days (1 to 400, default 30). visitors follows anonymous traffic: visited and searched (visitor-days, one per visitor and day), then the sign-in wall shown, code requested and signed in (events). newUsers follows the people who signed up in the window: signed up, opened a report, started checkout, paid, paid again (each step includes everyone who got further), with the checkouts abandoned and the median hours from sign-up to the first payment. classes counts every live account as free (never paid) or premium (at least one paid report, not refunded) and how many of each signed in during the last 30 days. Each chain has ofPrevious and ofFirst in percent, the number lost at each step, and largestDrop, the step that lost the biggest share. definition states what free and premium mean here; there is no membership. Counts only, nothing personal. Without a database stored is false and only visitors is returned.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/funnelAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 400, default: 30}}
   /api/admin/sales/series:
     get:
       operationId: adminSalesSeries
@@ -2749,6 +2760,14 @@ paths:
                   ok: {type: boolean, const: true}
                   stored: {type: boolean}
                   days: {type: integer}
+                  definition: {type: string}
+                  visitors: {$ref: '#/components/schemas/FunnelChain'}
+                  newUsers:
+                    allOf:
+                      - {$ref: '#/components/schemas/FunnelChain'}
+                      - type: object
+                        properties: {abandonedCheckout: {type: integer}, medianHoursToFirstPayment: {type: [number, 'null']}}
+                  classes: {type: object, properties: {users: {type: integer}, free: {type: integer}, premium: {type: integer}, premiumShare: {type: [number, 'null']}, active30d: {type: object, properties: {free: {type: integer}, premium: {type: integer}}}}}
                   by: {type: string}
                   rows: {type: array, items: {type: object, properties: {day: {type: string}, key: {type: string}, currency: {type: string}, orders: {type: integer}, gross: {type: number}, tax: {type: number}, net: {type: number}, refunds: {type: integer}, refunded: {type: number}, grossUsd: {type: [number, 'null']}, refundedUsd: {type: [number, 'null']}}}}
                   daily: {type: array, items: {type: object, properties: {day: {type: string}, orders: {type: integer}, grossUsd: {type: number}, refundedUsd: {type: number}}}}
@@ -4335,6 +4354,11 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
   schemas:
+    FunnelChain:
+      type: object
+      properties:
+        stages: {type: array, items: {type: object, properties: {label: {type: string}, count: {type: integer}, unit: {type: string}, ofPrevious: {type: [number, 'null']}, ofFirst: {type: [number, 'null']}, lost: {type: [integer, 'null']}}}}
+        largestDrop: {type: [object, 'null'], properties: {from: {type: string}, to: {type: string}, lost: {type: integer}, percent: {type: number}}}
     SalesPeriod:
       type: object
       properties: {orders: {type: integer}, grossUsd: {type: number}, refundedUsd: {type: number}, refunds: {type: integer}, avgOrderUsd: {type: [number, 'null']}, refundRate: {type: [number, 'null']}, unpaidCheckouts: {type: integer}, checkoutToPaid: {type: [number, 'null']}}
