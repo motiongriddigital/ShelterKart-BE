@@ -38,7 +38,8 @@
 
 'use strict';
 
-const dns = require('dns').promises;
+const dnsCb = require('dns');
+const dns = dnsCb.promises;
 const net = require('net');
 
 class EgressBlocked extends Error {
@@ -68,32 +69,117 @@ const BLOCKED_V4 = [
   ['169.254.0.0',    16, 'link-local / cloud metadata'],
   ['172.16.0.0',     12, 'private'],
   ['192.0.0.0',      24, 'IETF protocol assignments'],
+  ['192.0.2.0',      24, 'documentation'],
+  ['192.88.99.0',    24, '6to4 relay'],
   ['192.168.0.0',    16, 'private'],
   ['198.18.0.0',     15, 'benchmarking'],
+  ['198.51.100.0',   24, 'documentation'],
+  ['203.0.113.0',    24, 'documentation'],
   ['224.0.0.0',      4,  'multicast'],
   ['240.0.0.0',      4,  'reserved'],
 ];
 
-function classifyIp(ip) {
-  if (net.isIPv4(ip)) {
-    const v = ipv4ToInt(ip);
-    for (const [base, bits, label] of BLOCKED_V4) {
-      const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
-      if ((v & mask) === (ipv4ToInt(base) & mask)) return { blocked: true, reason: label };
+function classifyV4(ip) {
+  const v = ipv4ToInt(ip);
+  for (const [base, bits, label] of BLOCKED_V4) {
+    const mask = (~0 << (32 - bits)) >>> 0;
+    if ((v & mask) === (ipv4ToInt(base) & mask)) return { blocked: true, reason: label };
+  }
+  return { blocked: false };
+}
+
+/** Sixteen bytes of an IPv6 address, or null. Handles "::", a dotted IPv4 tail and a zone id. */
+function ipv6Bytes(ip) {
+  const addr = ip.split('%')[0].toLowerCase();
+  if (!net.isIPv6(addr)) return null;
+  const halves = addr.split('::');
+  const side = part => {
+    if (!part) return [];
+    const groups = part.split(':');
+    const last = groups[groups.length - 1];
+    if (last.includes('.')) {
+      const o = last.split('.').map(Number);
+      groups.splice(groups.length - 1, 1, ((o[0] << 8) | o[1]).toString(16), ((o[2] << 8) | o[3]).toString(16));
     }
-    return { blocked: false };
+    return groups.map(g => parseInt(g, 16));
+  };
+  const head = side(halves[0]);
+  const tail = halves.length > 1 ? side(halves[1]) : [];
+  const words = [...head, ...new Array(8 - head.length - tail.length).fill(0), ...tail];
+  const bytes = [];
+  for (const w of words) bytes.push(w >> 8, w & 255);
+  return bytes;
+}
+
+function classifyV6(ip) {
+  const b = ipv6Bytes(ip);
+  if (!b) return { blocked: true, reason: 'unparseable address' };
+  const embedded = at => `${b[at]}.${b[at + 1]}.${b[at + 2]}.${b[at + 3]}`;
+  if (b.every(x => x === 0)) return { blocked: true, reason: 'IPv6 unspecified' };
+  if (b.slice(0, 15).every(x => x === 0) && b[15] === 1) return { blocked: true, reason: 'IPv6 loopback' };
+  if (b.slice(0, 10).every(x => x === 0) && b[10] === 255 && b[11] === 255) {
+    const c = classifyV4(embedded(12));
+    return c.blocked ? { blocked: true, reason: `IPv4-mapped ${c.reason}` } : c;
   }
-  if (net.isIPv6(ip)) {
-    const a = ip.toLowerCase();
-    if (a === '::1' || a === '::') return { blocked: true, reason: 'IPv6 loopback' };
-    if (a.startsWith('fe80')) return { blocked: true, reason: 'IPv6 link-local' };
-    if (a.startsWith('fc') || a.startsWith('fd')) return { blocked: true, reason: 'IPv6 unique-local' };
-    // ::ffff:127.0.0.1 — IPv4 wearing an IPv6 costume.
-    const m = a.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (m) return classifyIp(m[1]);
-    return { blocked: false };
+  if (b[0] === 0) return { blocked: true, reason: 'IPv6 reserved (IPv4-compatible, NAT64, discard)' };
+  if (b[0] === 1) return { blocked: true, reason: 'IPv6 reserved' };
+  if ((b[0] & 0xfe) === 0xfc) return { blocked: true, reason: 'IPv6 unique-local' };
+  if (b[0] === 0xfe) return { blocked: true, reason: 'IPv6 link-local or site-local' };
+  if (b[0] === 0xff) return { blocked: true, reason: 'IPv6 multicast' };
+  if (b[0] === 0x20 && b[1] === 0x02) {
+    const c = classifyV4(embedded(2));
+    return c.blocked ? { blocked: true, reason: `6to4 ${c.reason}` } : c;
   }
+  if (b[0] === 0x20 && b[1] === 0x01 && (b[2] & 0xfe) === 0) return { blocked: true, reason: 'IPv6 IETF protocol (Teredo)' };
+  if (b[0] === 0x20 && b[1] === 0x01 && b[2] === 0x0d && b[3] === 0xb8) return { blocked: true, reason: 'IPv6 documentation' };
+  if (b[0] === 0x3f && b[1] === 0xff && (b[2] & 0xf0) === 0) return { blocked: true, reason: 'IPv6 documentation' };
+  return { blocked: false };
+}
+
+function classifyIp(ip) {
+  if (net.isIPv4(ip)) return classifyV4(ip);
+  if (net.isIPv6(ip.split('%')[0])) return classifyV6(ip);
   return { blocked: true, reason: 'unparseable address' };
+}
+
+/* ------------------------------------------------------------
+   Connect-time check. The pre-request lookup in validateTarget
+   gives a readable refusal, but the HTTP client resolves the name
+   again when it opens the socket, and an attacker-controlled DNS
+   server can answer differently the second time. This lookup is
+   handed to the client itself, so the address that is checked is
+   the address that is connected to.
+   ------------------------------------------------------------ */
+function guardedLookup(hostname, options, cb) {
+  if (typeof options === 'function') { cb = options; options = {}; }
+  dnsCb.lookup(hostname, { ...options, all: true, verbatim: true }, (err, addrs) => {
+    if (err) return cb(err);
+    for (const a of addrs) {
+      const c = classifyIp(a.address);
+      if (c.blocked) return cb(new EgressBlocked(`resolves to ${c.reason} (${a.address})`, hostname));
+    }
+    if (options && options.all) return cb(null, addrs);
+    return cb(null, addrs[0].address, addrs[0].family);
+  });
+}
+
+let pinnedAgent = null;
+function pinnedDispatcher() {
+  if (!pinnedAgent) {
+    const { Agent } = require('undici');
+    pinnedAgent = new Agent({ connect: { lookup: guardedLookup } });
+  }
+  return pinnedAgent;
+}
+
+// A replaced globalThis.fetch (tests, tooling: an anonymous function) is used as it is; only the platform fetch, named fetch, goes through the pinned agent.
+function defaultFetch() {
+  const g = globalThis.fetch;
+  if (typeof g !== 'function') return null;
+  if (g.name !== 'fetch') return g;
+  const { fetch } = require('undici');
+  const dispatcher = pinnedDispatcher();
+  return (url, init) => fetch(url, { ...init, dispatcher });
 }
 
 /* ------------------------------------------------------------
@@ -143,6 +229,11 @@ async function validateTarget(rawUrl, allowSet, opts = {}) {
 
   const host = url.hostname.toLowerCase().replace(/\.$/, '');
 
+  // Registers answer on the standard ports. Any other port on a permitted host is a service nobody registered.
+  const port = Number(url.port || (url.protocol === 'https:' ? 443 : 80));
+  const portsOk = new Set([443, ...(opts.allowHttp ? [80] : []), ...(opts.allowPorts || [])]);
+  if (!portsOk.has(port)) throw new EgressBlocked(`port ${port} not permitted`, rawUrl);
+
   // A literal IP can never be on the allow-list, which is built from
   // registered hostnames. Reject explicitly so the reason is clear.
   if (net.isIP(host)) {
@@ -181,8 +272,8 @@ async function validateTarget(rawUrl, allowSet, opts = {}) {
    validate only the first URL.
    ------------------------------------------------------------ */
 async function guardedFetch(rawUrl, { allowSet, maxRedirects = 3, timeoutMs = 15000,
-                                      allowHttp = false, fetchImpl, headers = {}, method = 'GET', body } = {}) {
-  const doFetch = fetchImpl || globalThis.fetch;
+                                      allowHttp = false, allowPorts = [], fetchImpl, headers = {}, method = 'GET', body } = {}) {
+  const doFetch = fetchImpl || defaultFetch();
   if (typeof doFetch !== 'function') throw new Error('No fetch implementation available');
 
   let target = rawUrl;
@@ -194,7 +285,7 @@ async function guardedFetch(rawUrl, { allowSet, maxRedirects = 3, timeoutMs = 15
   const originHost = (() => { try { return new URL(rawUrl).hostname.toLowerCase(); } catch { return ''; } })();
 
   for (let hop = 0; hop <= maxRedirects; hop++) {
-    const checked = await validateTarget(target, allowSet, { allowHttp });
+    const checked = await validateTarget(target, allowSet, { allowHttp, allowPorts });
     chain.push(checked.url.toString());
 
     const ctrl = new AbortController();
@@ -215,6 +306,9 @@ async function guardedFetch(rawUrl, { allowSet, maxRedirects = 3, timeoutMs = 15
           ...(checked.host === originHost ? headers : {}),
         },
       });
+    } catch (e) {
+      if (e && e.cause instanceof EgressBlocked) throw e.cause;
+      throw e;
     } finally {
       clearTimeout(timer);
     }
@@ -233,5 +327,5 @@ async function guardedFetch(rawUrl, { allowSet, maxRedirects = 3, timeoutMs = 15
 
 module.exports = {
   EgressBlocked, classifyIp, buildAllowList, hostAllowed,
-  validateTarget, guardedFetch,
+  validateTarget, guardedFetch, guardedLookup,
 };
