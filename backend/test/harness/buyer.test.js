@@ -69,6 +69,9 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
   const v = await call(find('post', '/api/research/razorpay/verify'), { body: { ref, purchaseId: co.body.purchaseId, razorpay_payment_id: 'pay_BUYER1', razorpay_signature: sig } });
   ok('the existing verification confirms the payment and returns an access token', v.code === 200 && v.body.token);
   const token = v.body.token;
+  const hijack = await call(contact, { params: { ref }, body: { email: 'attacker@example.com' } });
+  ok('once the report is paid for, its delivery address cannot be replaced without the access token', hijack.code === 403);
+  ok('the holder of the access token can still correct it', (await call(contact, { params: { ref }, query: { t: token }, body: { email: 'buyer@example.com' } })).code === 200);
 
   const mail = await until(() => sent.length && sent[0]);
   ok('when the paid investigation completes, the report is e-mailed to the buyer with a link to it', mail && mail.to[0] === 'buyer@example.com' && mail.text.includes(`https://shelterkart.example/r/${ref}?t=`));

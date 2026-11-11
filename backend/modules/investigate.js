@@ -129,7 +129,9 @@ module.exports = function register(app, c) {
     const brief = await getByRefAsync(ref); if (!brief || brief.kind !== 'dossier') return res.status(404).json({ ok: false, error: 'Unknown report.' });
     if (ACCOUNTS.enabled) return res.json({ ok: true });
     const c = DOSSIER_BRIEF.cleanContact(req.body || {}); if (c.error) return res.status(400).json({ ok: false, error: c.error });
-    const job = liveJobs.get(ref); if (job) { job.contact = c.contact; persistJob(job); }
+    const job = liveJobs.get(ref);
+    if (job && job.paid && !(await fullAccess(req, ref, req.query && req.query.t))) return res.status(403).json({ ok: false, code: 'contact_locked', error: 'This report is paid for. Open it from your link to change where it is sent.' });
+    if (job) { job.contact = c.contact; persistJob(job); }
     registerBrief({ ...brief, contact: c.contact });
     res.json({ ok: true });
   }));
