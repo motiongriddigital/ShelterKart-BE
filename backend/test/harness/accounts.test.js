@@ -62,6 +62,10 @@ async function signIn(email, ip) {
   const q = (await call(find('post', '/api/research/quote'), { ref, country: 'IN', session: 'x' }, { headers: hA })).body.quote;
   const co = await call(find('post', '/api/research/checkout'), { ref, idempotencyKey: 'accounts-buyer-a-aaaaaaaaaaaa', quoteId: q.id, billingCountry: 'IN' }, { headers: hA });
   ok('checkout works and stores the buyer as the owner of the purchase', co.code === 200 && _db.purchases.find(p => p.id === co.body.purchaseId).user_id === A.user.id);
+  const stolen = await call(find('post', '/api/research/checkout'), { ref, idempotencyKey: 'accounts-buyer-a-aaaaaaaaaaaa', quoteId: q.id, billingCountry: 'IN' }, { headers: hB });
+  ok('another buyer using the first buyer\u2019s idempotency key gets 409 and not that order', stolen.code === 409 && !stolen.body.razorpay && !stolen.body.purchaseId);
+  const retryA = await call(find('post', '/api/research/checkout'), { ref, idempotencyKey: 'accounts-buyer-a-aaaaaaaaaaaa', quoteId: q.id, billingCountry: 'IN' }, { headers: hA });
+  ok('the first buyer retrying the same key still gets the same purchase', retryA.code === 200 && retryA.body.purchaseId === co.body.purchaseId);
   ok('before payment: the report is still the preview and the PDF is refused', (await call(find('get', '/api/research/by-ref/:ref'), undefined, { headers: hA, params: { ref } })).body.brief.locked === true && (await call(find('get', '/r/:ref/pdf'), undefined, { headers: hA, params: { ref }, query: {} })).code === 403);
   ok('before payment: access is refused (402)', (await call(find('post', '/api/research/access'), { ref, purchaseId: co.body.purchaseId }, { headers: hA })).code === 402);
   const hook = find('post', '/api/payments/webhook');
