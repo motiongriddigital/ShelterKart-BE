@@ -7,7 +7,7 @@ const ANALYTICS = require('../engine/analytics');
 const { REF_RE } = require('../engine/access');
 const PRICING = require('../pricing');
 const ENGINES = require('../engines');               // which AI engine serves each agent (backend/engines)
-const { refundPurchase, RefundError } = require('../payments/refunds');
+const { refundPurchase, resolveRefund, RefundError } = require('../payments/refunds');
 const { MARKETS } = require('../engine/markets');
 const HEALTH = require('../engine/health');
 const PDF = require('../engine/pdf');
@@ -40,6 +40,25 @@ module.exports = function register(app, c) {
     try {
       const out = await refundPurchase({ db: pool, data: pricingData, store: pricingStore, purchaseId, amount, reason: String(reason || '').slice(0, 200), env: process.env });
       await pool.query(`INSERT INTO audit_log (actor, action, object_type, object_id, reason) VALUES ('admin','RESEARCH_PURCHASE_REFUNDED','report_purchase',$1,$2)`, [purchaseId, `${out.amount} ${out.currency}${out.full ? ' (full)' : ''}`]);
+      res.json({ ok: true, ...out });
+    } catch (e) {
+      if (e instanceof RefundError) return res.status(409).json({ ok: false, code: e.code, error: e.message });
+      throw e;
+    }
+  }));
+  app.get('/api/admin/refunds/pending', adminAuth, ah(async (req, res) => {
+    const rows = await pricingStore.listPendingRefunds();
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, refunds: rows.map(r => ({ id: String(r.id), purchaseId: r.purchaseId, reportRef: r.reportRef || null, amount: r.amount, currency: r.currency, taxReversed: r.taxReversed, reason: r.reason || '', createdAt: r.createdAt })) });
+  }));
+  app.post('/api/admin/refunds/:id/resolve', adminAuth, ah(async (req, res) => {
+    const id = String(req.params.id || '');
+    if (!/^\d{1,18}$/.test(id)) return res.status(400).json({ ok: false, error: 'Invalid refund id.' });
+    const { outcome, providerRef, note } = req.body || {};
+    try {
+      const out = await resolveRefund({ db: pool, data: pricingData, store: pricingStore, refundId: id, outcome, providerRef });
+      await pool.query(`INSERT INTO audit_log (actor, action, object_type, object_id, reason) VALUES ('admin',$1,'report_purchase',$2,$3)`,
+        [outcome === 'refunded' ? 'REFUND_CONFIRMED' : 'REFUND_RELEASED', out.purchaseId, ['refund ' + id, outcome === 'refunded' ? String(providerRef || '').slice(0, 100) : '', String(note || '').slice(0, 200)].filter(Boolean).join(' | ')]);
       res.json({ ok: true, ...out });
     } catch (e) {
       if (e instanceof RefundError) return res.status(409).json({ ok: false, code: e.code, error: e.message });
