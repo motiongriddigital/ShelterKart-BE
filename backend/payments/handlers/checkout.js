@@ -111,6 +111,7 @@ module.exports = function create(c) {
             razorpay: { keyId: process.env.RAZORPAY_KEY_ID, orderId: row.provider_order_id,
                         amountSubunits: rzp.toSubunits(row.amount, row.currency) } } };
         }
+        if (row) return { status: 409, body: { ok: false, code: 'in_progress', error: 'This payment is being set up. Please try again in a moment.' } };
       }
       throw e;
     }
