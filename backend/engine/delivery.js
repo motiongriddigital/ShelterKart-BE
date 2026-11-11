@@ -41,6 +41,16 @@ const EMAIL = {
     },
   },
 };
+const sender = from => { const m = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(String(from || '')); return m && m[1] ? { name: m[1], email: m[2].trim() } : { email: m ? m[2].trim() : String(from || '').trim() }; };
+EMAIL.brevo = {
+  configured: env => Boolean(env.BREVO_API_KEY && env.DELIVERY_FROM),
+  async send({ to, msg }, { env, fetchImpl }) {
+    const r = await fetchImpl('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': env.BREVO_API_KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ sender: sender(env.DELIVERY_FROM), to: [{ email: to }], subject: msg.subject, htmlContent: msg.html, textContent: msg.text }) });
+    if (!r.ok) throw new Error(`Brevo answered ${r.status}`);
+    const j = await r.json().catch(() => ({})); return { id: j.messageId || '' };
+  },
+};
 const WHATSAPP = {
   configured: env => Boolean(env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_ID && env.WHATSAPP_TEMPLATE),
   async send({ to, project, link }, { env, fetchImpl }) {

@@ -35,6 +35,7 @@ function safeUrl(url) {
   try { const u = new URL(t); return u.protocol === 'http:' || u.protocol === 'https:' ? t : ''; } catch { return ''; }
 }
 function host(url) { try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ''); } catch { return ''; } }
+const normUrl = u => { try { const x = new URL(String(u)); return x.hostname.toLowerCase().replace(/^www\./, '') + x.pathname.replace(/\/+$/, '') + x.search; } catch { return String(u); } };
 const isOfficial = url => { const h = host(url); return Boolean(h) && OFFICIAL.some(re => re.test(h)); };
 const sameSite = (url, site) => { const h = host(url), s = String(site || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''); return Boolean(h && s) && (h === s || h.endsWith('.' + s)); };
 
@@ -42,7 +43,7 @@ const sameSite = (url, site) => { const h = host(url), s = String(site || '').to
 function statusOf(fact, developerSite) {
   const urls = (fact.sources || []).map(s => s.url);
   if (fact.kind === 'inference') return 'inference';
-  if (urls.some(isOfficial)) return 'verified';
+  if ((fact.sources || []).some(s => isOfficial(s.url) && s.seen !== false)) return 'verified';
   if (urls.length && urls.every(u => sameSite(u, developerSite))) return 'claim';
   return 'reported';
 }
@@ -88,11 +89,12 @@ function sameValue(a, b) {
  */
 function mergeFacts(raw, { developerSite = '', retrieved = new Set() } = {}) {
   const facts = [], conflicts = [];
+  const seenUrls = new Set([...(retrieved || [])].map(normUrl));
   const byField = new Map();
   for (const f of raw) {
     if (!f || !(f.claim || f.value)) continue;
     const sources = (f.sources || []).map(s => (typeof s === 'string' ? { url: s } : s)).filter(s => s && /^https?:\/\//.test(s.url || ''))
-      .map(s => ({ url: s.url, title: s.title || '', seen: retrieved.has(s.url) }));
+      .map(s => ({ url: s.url, title: s.title || '', seen: seenUrls.has(normUrl(s.url)) }));
     const item = { area: f.area || 'other', field: f.field ? norm(f.field) : '', label: f.field ? String(f.field).trim() : '', value: String(f.value || '').trim(), claim: String(f.claim || f.value).trim(),
       kind: f.kind || 'fact', sources, foundBy: [...new Set([].concat(f.foundBy || []))], round: f.round || 0 };
     if (item.field) {

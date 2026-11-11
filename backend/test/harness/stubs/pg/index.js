@@ -21,8 +21,8 @@ async function query(sql, p=[]) {
   if (/SELECT brief, created_at FROM research_briefs WHERE ref = \$1/.test(q)) {
     const r = db.briefs.get(p[0]); return { rows: r ? [{ brief: JSON.parse(JSON.stringify(r.brief)), created_at: r.created_at }] : [] };
   }
-  if (/SELECT cache_key, brief, created_at FROM research_briefs WHERE created_at > \$1 ORDER BY created_at ASC LIMIT \$2/.test(q))
-    return { rows: [...db.briefs.values()].filter(r => r.created_at > p[0]).sort((a,b)=>a.created_at-b.created_at).slice(0, p[1])
+  if (/SELECT cache_key, brief, created_at FROM \( SELECT cache_key, brief, created_at FROM research_briefs WHERE created_at > \$1 ORDER BY created_at DESC LIMIT \$2 \) newest ORDER BY created_at ASC/.test(q))
+    return { rows: [...db.briefs.values()].filter(r => r.created_at > p[0]).sort((a,b)=>b.created_at-a.created_at).slice(0, p[1]).sort((a,b)=>a.created_at-b.created_at)
       .map(r => ({ cache_key:r.cache_key, brief: JSON.parse(JSON.stringify(r.brief)), created_at:r.created_at })) };
   if (/SELECT ref, brief FROM research_briefs WHERE cardinality\(page_urls\) = 0 AND brief->>'kind' = 'dossier'/.test(q))
     return { rows: [...db.briefs.entries()].filter(([, r]) => r.page_urls.length === 0 && r.brief && r.brief.kind === 'dossier').map(([ref, r]) => ({ ref, brief: JSON.parse(JSON.stringify(r.brief)) })) };

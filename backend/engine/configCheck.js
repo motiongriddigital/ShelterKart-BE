@@ -32,6 +32,8 @@ function check(env = process.env) {
   }
   if (!has(env, 'ALLOWED_ORIGINS') && !['development', 'test'].includes(env.NODE_ENV))
     warnings.push('ALLOWED_ORIGINS is empty and NODE_ENV is not "development": browsers on other websites are refused. Set ALLOWED_ORIGINS, or NODE_ENV=development on a developer machine.');
+  if (production && /^(on|true|1|yes)$/i.test(String(env.ACCOUNTS_ENABLED || '')) && String(env.ACCOUNTS_CSRF || '').toLowerCase() !== 'on')
+    warnings.push('ACCOUNTS_CSRF is not "on": the cross-site request guard only reports and refuses nothing. Set ACCOUNTS_CSRF=on once the frontend sends its Origin.');
   if (production && !has(env, 'TRUST_PROXY')) warnings.push('TRUST_PROXY is not set: behind a load balancer every visitor shares one rate limit.');
 
   // Outside production the same findings are advice, not a reason to stop (a developer machine has no payment keys).
