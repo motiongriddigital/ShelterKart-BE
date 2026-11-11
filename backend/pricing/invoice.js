@@ -9,7 +9,9 @@
  * V1 records the invoice data. Items for the tax adviser before launch are listed in LAUNCH.md: the service's
  * accounting code, the CGST/SGST versus IGST split (needs the buyer's state), and the Letter of Undertaking number.
  */
-const fyOf = (d) => { const y = d.getUTCFullYear(), m = d.getUTCMonth() + 1; const a = m >= 4 ? y : y - 1; return `${a}-${String((a + 1) % 100).padStart(2, '0')}`; };
+const IST_MS = 330 * 60000;
+const inIndia = d => new Date(d.getTime() + IST_MS);
+const fyOf = (d) => { const i = inIndia(d), y = i.getUTCFullYear(), m = i.getUTCMonth() + 1; const a = m >= 4 ? y : y - 1; return `${a}-${String((a + 1) % 100).padStart(2, '0')}`; };
 
 async function issueInvoice({ data, store, purchase, quote, now = new Date(), env = process.env }) {
   const domestic = quote.buyer.country === 'IN' && quote.currency === 'INR';
@@ -18,7 +20,7 @@ async function issueInvoice({ data, store, purchase, quote, now = new Date(), en
   const n = await store.nextInvoiceNumber(series);
   const number = `${series}/${String(n).padStart(6, '0')}`;
   const body = {
-    number, date: now.toISOString().slice(0, 10), kind,
+    number, date: inIndia(now).toISOString().slice(0, 10), kind,
     supplier: { name: env.BUSINESS_LEGAL_NAME || '', gstin: env.GSTIN || '', address: env.BUSINESS_ADDRESS || '', state: env.SUPPLIER_STATE || '' },
     recipient: { country: quote.buyer.country, billingCountry: purchase.billing_country || quote.buyer.country, state: purchase.billing_state || '',
                  kind: purchase.buyer_kind || 'individual', taxId: purchase.tax_id || '', taxIdValidated: false },
