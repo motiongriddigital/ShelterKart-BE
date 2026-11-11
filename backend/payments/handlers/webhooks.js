@@ -48,7 +48,12 @@ module.exports = function create(c) {
     }
     // An authorized payment (auto-capture off) is captured here, for exactly the quote's total in its currency; the payment.captured event that follows settles it.
     if (p.kind === 'payment.authorized') {
-      await rzp.capturePayment({ paymentId: p.paymentId, amountSubunits: expected, currency: row.currency }, { env: process.env });
+      try { await rzp.capturePayment({ paymentId: p.paymentId, amountSubunits: expected, currency: row.currency }, { env: process.env }); }
+      catch (e) {
+        const said = e && e.detail && String(e.detail.description || '');
+        if (e && e.status === 400 && /already.*captured/i.test(said || '')) { await done('processed'); return { status: 200, body: { ok: true, alreadyCaptured: true } }; }
+        throw e;
+      }
       await done('processed'); return { status: 200, body: { ok: true, captured: true } };
     }
     // A card issued in India can only be charged in rupees: a foreign-currency payment on an Indian card is flagged for review.
