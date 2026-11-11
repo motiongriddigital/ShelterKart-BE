@@ -2727,6 +2727,186 @@ paths:
         '400': {$ref: '#/components/responses/AdminBadRequest'}
         '401': {$ref: '#/components/responses/AdminUnauthorized'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/funnel/users:
+    get:
+      operationId: adminFunnelUsers
+      tags: [Admin]
+      summary: Free versus premium, step by step
+      description: 'Where people stop on the way to a paid report, for the last N days (1 to 400, default 30). visitors follows anonymous traffic: visited and searched (visitor-days, one per visitor and day), then the sign-in wall shown, code requested and signed in (events). newUsers follows the people who signed up in the window: signed up, opened a report, started checkout, paid, paid again (each step includes everyone who got further), with the checkouts abandoned and the median hours from sign-up to the first payment. classes counts every live account as free (never paid) or premium (at least one paid report, not refunded) and how many of each signed in during the last 30 days. Each chain has ofPrevious and ofFirst in percent, the number lost at each step, and largestDrop, the step that lost the biggest share. definition states what free and premium mean here; there is no membership. Counts only, nothing personal. Without a database stored is false and only visitors is returned.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/funnelAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 400, default: 30}}
+  /api/admin/sales/series:
+    get:
+      operationId: adminSalesSeries
+      tags: [Admin]
+      summary: Sales per day
+      description: 'Paid and refunded purchases of the last N days (1 to 400, default 30), grouped by UTC day and by currency (by=currency, the default) or by the buyer country (by=country, unknown when none was recorded). Each row has the order count and, in the sale currency, the gross amount, the tax in it, the net and the amount refunded that day (a refund is counted on the day it was made); grossUsd and refundedUsd are the same amounts at the price book rate, null for a currency with no rate. daily has one entry for every day of the window, in US dollars, for a chart. byCurrency adds the rows up per currency. totals.unconvertedOrders counts orders in a currency with no rate, which are left out of the dollar totals. Without a database stored is false and every list is empty.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/salesAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 400, default: 30}}
+        - {name: by, in: query, schema: {type: string, enum: [currency, country], default: currency}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  stored: {type: boolean}
+                  days: {type: integer}
+                  definition: {type: string}
+                  visitors: {$ref: '#/components/schemas/FunnelChain'}
+                  newUsers:
+                    allOf:
+                      - {$ref: '#/components/schemas/FunnelChain'}
+                      - type: object
+                        properties: {abandonedCheckout: {type: integer}, medianHoursToFirstPayment: {type: [number, 'null']}}
+                  classes: {type: object, properties: {users: {type: integer}, free: {type: integer}, premium: {type: integer}, premiumShare: {type: [number, 'null']}, active30d: {type: object, properties: {free: {type: integer}, premium: {type: integer}}}}}
+                  by: {type: string}
+                  rows: {type: array, items: {type: object, properties: {day: {type: string}, key: {type: string}, currency: {type: string}, orders: {type: integer}, gross: {type: number}, tax: {type: number}, net: {type: number}, refunds: {type: integer}, refunded: {type: number}, grossUsd: {type: [number, 'null']}, refundedUsd: {type: [number, 'null']}}}}
+                  daily: {type: array, items: {type: object, properties: {day: {type: string}, orders: {type: integer}, grossUsd: {type: number}, refundedUsd: {type: number}}}}
+                  byCurrency: {type: array, items: {type: object, properties: {currency: {type: string}, orders: {type: integer}, gross: {type: number}, tax: {type: number}, net: {type: number}, refunded: {type: number}}}}
+                  totals: {type: object, properties: {orders: {type: integer}, refunds: {type: integer}, grossUsd: {type: number}, refundedUsd: {type: number}, unconvertedOrders: {type: integer}}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/sales/summary:
+    get:
+      operationId: adminSalesSummary
+      tags: [Admin]
+      summary: Sales this period against the one before
+      description: 'The last N days (1 to 200, default 30) and the N days before them: orders, gross and refunded US dollars, refunds, average order, refund rate (refunds over orders), checkouts that started and never paid, and checkout-to-paid (orders over orders plus unpaid checkouts). change is the percentage change in orders and gross dollars, null when the earlier period had none. top is the five buyer countries with the most dollars. Amounts in a currency with no rate are left out and counted in unconvertedOrders.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/salesAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 30}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  stored: {type: boolean}
+                  days: {type: integer}
+                  current: {$ref: '#/components/schemas/SalesPeriod'}
+                  previous: {$ref: '#/components/schemas/SalesPeriod'}
+                  change: {type: object, properties: {orders: {type: [number, 'null']}, grossUsd: {type: [number, 'null']}}}
+                  unconvertedOrders: {type: integer}
+                  top: {type: array, items: {type: object, properties: {key: {type: string}, usd: {type: number}}}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/sales/orders:
+    get:
+      operationId: adminSalesOrders
+      tags: [Admin]
+      summary: Purchases, newest first
+      description: 'Purchases created in the last N days (1 to 400, default 30). By default paid and refunded ones; status=pending_payment lists checkouts that never paid. country is the buyer country (two letters); q finds part of a report reference, a purchase id or a payment id (80 characters at most). The buyer appears only as userId (open it with the users route); no e-mail, name or contact is returned. refunded is the sum refunded so far in the sale currency. total counts every match, for paging.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/salesAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 400, default: 30}}
+        - {name: status, in: query, schema: {type: string, enum: [paid, refunded, pending_payment]}}
+        - {name: country, in: query, schema: {type: string, pattern: '^[A-Za-z]{2}$'}}
+        - {name: q, in: query, schema: {type: string, maxLength: 80}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  stored: {type: boolean}
+                  days: {type: integer}
+                  limit: {type: integer}
+                  offset: {type: integer}
+                  total: {type: integer}
+                  orders:
+                    type: array
+                    items:
+                      type: object
+                      properties: {id: {type: string}, reportRef: {type: string}, status: {type: string}, amount: {type: number}, currency: {type: string}, tax: {type: [number, 'null']}, net: {type: [number, 'null']}, refunded: {type: number}, buyerCountry: {type: [string, 'null']}, billingCountry: {type: [string, 'null']}, provider: {type: [string, 'null']}, createdAt: {type: [string, 'null']}, paidAt: {type: [string, 'null']}, userId: {type: [string, 'null']}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/sales/refunds:
+    get:
+      operationId: adminSalesRefunds
+      tags: [Admin]
+      summary: Refunds, newest first
+      description: 'Money returned in the last N days (1 to 400, default 90): the purchase and report it belongs to, the amount and tax reversed in the sale currency, the reason given by the admin, the provider status and reference, and the buyer country. Nothing about the buyer. total counts every match, for paging.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/salesAdmin.js
+      parameters:
+        - {name: days, in: query, schema: {type: integer, minimum: 1, maximum: 400, default: 90}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  stored: {type: boolean}
+                  days: {type: integer}
+                  limit: {type: integer}
+                  offset: {type: integer}
+                  total: {type: integer}
+                  refunds:
+                    type: array
+                    items:
+                      type: object
+                      properties: {id: {type: integer}, purchaseId: {type: string}, reportRef: {type: [string, 'null']}, amount: {type: number}, currency: {type: string}, taxReversed: {type: number}, reason: {type: [string, 'null']}, status: {type: [string, 'null']}, providerRef: {type: [string, 'null']}, buyerCountry: {type: [string, 'null']}, createdAt: {type: [string, 'null']}}
+        '400': {$ref: '#/components/responses/AdminBadRequest'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/insights:
+    get:
+      operationId: adminInsights
+      tags: [Admin]
+      summary: What needs attention, in plain sentences
+      description: 'A short list of sentences worked out by fixed rules from numbers the other admin routes show, most urgent first (bad, warn, info, good), at most twelve. Rules: backups failed, overdue or not set up; official registers down or failing; 20 or more errors in 24 hours (100 or more is bad); open disputes and pending developer replies; failed paid reports and deliveries; visitors down or up 30% on the week before; paid reports down or up 25% on the period before; a refund rate of 10% or more; fewer than 30% of started checkouts paid; fewer than half of the people who see the sign-in wall asking for a code; the step where new users stop most; the share of accounts that have paid; a fifth of AI calls failing; recent paid reports costing half or all of their price in AI. Each insight has an id, a tone, the admin screen to open (page), the text and sometimes the number behind it. When nothing applies one calm line is returned. A source that cannot be read (no database, an error) is named in missing and its rules are skipped; the other rules still run. Nothing personal.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/insights.js
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  at: {type: string}
+                  insights:
+                    type: array
+                    items:
+                      type: object
+                      properties: {id: {type: string}, tone: {type: string, enum: [bad, warn, info, good]}, page: {type: string}, text: {type: string}, value: {type: number}}
+                  missing: {type: array, items: {type: string}}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/audit:
     get:
       operationId: adminAuditLedger
@@ -4202,6 +4382,14 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/Error'}
   schemas:
+    FunnelChain:
+      type: object
+      properties:
+        stages: {type: array, items: {type: object, properties: {label: {type: string}, count: {type: integer}, unit: {type: string}, ofPrevious: {type: [number, 'null']}, ofFirst: {type: [number, 'null']}, lost: {type: [integer, 'null']}}}}
+        largestDrop: {type: [object, 'null'], properties: {from: {type: string}, to: {type: string}, lost: {type: integer}, percent: {type: number}}}
+    SalesPeriod:
+      type: object
+      properties: {orders: {type: integer}, grossUsd: {type: number}, refundedUsd: {type: number}, refunds: {type: integer}, avgOrderUsd: {type: [number, 'null']}, refundRate: {type: [number, 'null']}, unpaidCheckouts: {type: integer}, checkoutToPaid: {type: [number, 'null']}}
     User:
       type: object
       properties:

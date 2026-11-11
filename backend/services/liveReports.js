@@ -83,17 +83,34 @@ module.exports = function setup(c) {
       const d = (job.inv && job.inv.dossier) || (job.saved && job.saved.dossier);
       if (!d || !cites({ dossier: d }, { url, host })) continue;
       if (job.status === 'sweeping' || job.status === 'completing' || job.completing) { running++; continue; }
-      liveJobs.delete(ref); JOBS.remove(ref);
-      for (const [k, v] of liveIndex) if (v.ref === ref) liveIndex.delete(k);
-      for (const [k, v] of regIndex) if (v.ref === ref) regIndex.delete(k);
+      dropLiveJob(ref);
       removed++;
     }
     return { removed, running };
   }
+  /* A saved investigation is kept as long as the report it belongs to (30 days, the published schedule), then deleted, file and memory together.
+     A paid report that has neither finished nor failed is never deleted: it is still owed to the buyer. */
+  const jobTtlMs = () => num('JOB_RETENTION_DAYS', 30) * 24 * 3600 * 1000;
+  const jobIsStale = (rec, now = Date.now()) => {
+    if (rec.status === 'sweeping' || rec.status === 'completing' || rec.completing) return false;
+    if (rec.paid && rec.status !== 'done' && rec.status !== 'failed') return false;
+    return now - (rec.updatedAt || rec.createdAt || 0) > jobTtlMs();
+  };
+  function dropLiveJob(ref) {
+    liveJobs.delete(ref); JOBS.remove(ref);
+    for (const [k, v] of liveIndex) if (v.ref === ref) liveIndex.delete(k);
+    for (const [k, v] of regIndex) if (v.ref === ref) regIndex.delete(k);
+  }
+  function pruneLiveJobs(now = Date.now()) {
+    let removed = 0;
+    for (const [ref, job] of liveJobs) if (jobIsStale(job, now)) { dropLiveJob(ref); removed++; }
+    return removed;
+  }
   function persistJob(job) {
+    job.updatedAt = Date.now();
     JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), purchaseId: job.purchaseId || null, contact: job.contact || null,
       costUsd: job.costUsd || 0, stageCosts: job.stageCosts || null, capUsd: job.capUsd == null ? null : job.capUsd, delivered: Boolean(job.delivered), createdAt: job.createdAt || Date.now(),
-      failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: Date.now(), saved: job.inv ? job.inv.exportState() : (job.saved || null) });
+      failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: job.updatedAt, saved: job.inv ? job.inv.exportState() : (job.saved || null) });
   }
   const fullAccess = (req, ref, token) => (ACCOUNTS.enabled ? ACCOUNTS.entitled(req, ref) : tokenGrants(token ? String(token) : '', ref));
   const ownsPurchase = async (req, purchaseId) => { const u = await ACCOUNTS.user(req); return Boolean(u) && (await pool.query(`SELECT 1 FROM report_purchases WHERE id=$1 AND user_id=$2`, [purchaseId, u.id])).rows.length > 0; };
@@ -132,7 +149,11 @@ module.exports = function setup(c) {
     job.delivered = true;
     const token = issueToken(job.ref, process.env.ACCESS_TOKEN_SECRET, 30, Date.now(), job.purchaseId), link = ACCOUNTS.enabled ? reportLink(process.env, job.ref, '').replace(/\?t=$/, '') : reportLink(process.env, job.ref, token);
     if (contact.email) RESPONSES.watch(job.ref, contact.email).catch(() => {});   // told if a finding in this report is corrected: that one purpose only
-    return DELIVERY.send({ ref: job.ref, project: (brief && brief.project && brief.project.name) || job.input.query, email: contact.email, phone: contact.phone, link, pdfLink: ACCOUNTS.enabled ? link + '/pdf' : link.replace(/\?t=/, '/pdf?t=') });
+    const sent = DELIVERY.send({ ref: job.ref, project: (brief && brief.project && brief.project.name) || job.input.query, email: contact.email, phone: contact.phone, link, pdfLink: ACCOUNTS.enabled ? link + '/pdf' : link.replace(/\?t=/, '/pdf?t=') });
+    // The delivery layer now holds the address for its own retries. A finished report has no further use for it, so the saved file stops carrying it;
+    // a report that stopped early keeps it, because the operator's retry sends the complete report to the same buyer.
+    if (job.status === 'done') { job.contact = null; persistJob(job); }
+    return sent;
   }
   /** Run the paid part. Never twice. After a restart it resumes from the saved state, so the research is not paid for again. */
   function completeLive(job) {
@@ -188,6 +209,7 @@ module.exports = function setup(c) {
   /* At start: reload saved investigations. Finished previews stay reusable for 30 days; a paid report that was still
      running resumes on its own from its saved state. */
   for (const rec of JOBS.all()) {
+    if (jobIsStale(rec)) { JOBS.remove(rec.ref); continue; }
     const job = { ...rec, listeners: new Set(), events: [], inv: null, completing: false };
     if (rec.status === 'sweeping' && !(rec.saved && rec.saved.swept)) job.status = 'interrupted';
     if (rec.status === 'completing') job.status = 'preview';
@@ -197,6 +219,7 @@ module.exports = function setup(c) {
     // Without a database the report store is in memory: put each saved report back, so buyers' links work after a restart.
     if (!process.env.DATABASE_URL && rec.saved && rec.saved.dossier) { try { saveLiveDossier(job, JSON.parse(JSON.stringify(rec.saved.dossier))); } catch (e) { console.error('[investigate] could not restore report ' + rec.ref + ':', e && e.message); } }
   }
+  setInterval(() => { try { const n = pruneLiveJobs(); if (n) console.log('[jobs] removed ' + n + ' saved investigation' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[jobs] retention sweep failed:', e && e.message); } }, 6 * 3600 * 1000).unref();
   setImmediate(() => { for (const job of liveJobs.values()) if (job.paid && job.status !== 'done' && job.status !== 'failed' && !job.completing) { try { completeLive(job); } catch (e) { console.error('[investigate] could not resume ' + job.ref + ':', e && e.message); } } });
-  Object.assign(c, { DELIVERY, purgeLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
+  Object.assign(c, { DELIVERY, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
 };

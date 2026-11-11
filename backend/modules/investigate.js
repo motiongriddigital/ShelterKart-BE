@@ -1,5 +1,5 @@
 'use strict';
-const express = require('express');
+const bodyGuard = require('../middleware/body');
 const { getByRefAsync } = require('../engine/research');
 const REVIEW = require('../engine/review');
 const BOT = require('../engine/botguard');             // proof-of-work before NEW research (BOT_GUARD)         // licence credits for the official registers a report used          // adverse findings held for a person (ADVERSE_HOLD_MARKETS)
@@ -35,7 +35,7 @@ module.exports = function register(app, c) {
     if (ev.dossier) job.dossier = ev.dossier;
     for (const res of job.listeners) { try { res.write(`event: ${ev.type}\ndata: ${JSON.stringify(ev.dossier ? { ...slim, dossier: ev.dossier } : slim)}\n\n`); } catch { /* client gone */ } }
   }
-  app.post('/api/admin/investigate', adminAuth, express.json({ limit: '20kb' }), (req, res) => {
+  app.post('/api/admin/investigate', adminAuth, bodyGuard.json({ limit: '20kb' }), (req, res) => {
     sweepInvestigations();
     const b = req.body || {};
     const query = String(b.query || '').trim().slice(0, 200);
