@@ -7,6 +7,7 @@
  * One browser is started once and reused; each PDF gets its own context, closed afterwards. At most PDF_CONCURRENCY
  * (default 2) render at a time and the rest wait their turn, so a burst of buyers cannot exhaust the server's memory.
  * If the browser dies it is started again on the next render.
+ * The page is printed with JavaScript off and every network request refused (see renderPdf).
  */
 let chromium = null;
 try { ({ chromium } = require('playwright')); } catch { chromium = null; }
@@ -33,7 +34,10 @@ async function renderPdf(html, { footer = 'ShelterKart. Research, not advice.' }
   let context = null;
   try {
     const b = await browser();
-    context = await b.newContext();
+    // The report is a self-contained page: it needs no script and no network. Everything in it is escaped text, but if an escape gap ever appeared, this
+    // renderer would reach the server's internal network without the egress guard, so it is shut: no JavaScript, and every request the page makes is refused.
+    context = await b.newContext({ javaScriptEnabled: false, serviceWorkers: 'block', acceptDownloads: false });
+    await context.route('**/*', route => route.abort('blockedbyclient'));
     const page = await context.newPage();
     await page.setContent(html, { waitUntil: 'load' });
     const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
