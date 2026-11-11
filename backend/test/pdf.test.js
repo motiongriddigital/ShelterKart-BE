@@ -23,6 +23,17 @@ let failures = 0; const ok = (label, c) => { if (!c) failures++; console.log((c 
   ok('the queue is empty afterwards', PDF.queueState().active === 0 && PDF.queueState().waiting === 0);
   const t1 = Date.now(); await PDF.renderPdf(html(4)); const reuse = Date.now() - t1;
   ok('a later PDF reuses the running browser (no fresh start)', reuse < (Date.now() - t0));
+  // The printer is shut: a page that tries to reach a server (image, stylesheet, script, form) gets nothing, and the PDF still prints.
+  const http = require('http'); const hits = [];
+  const srv = http.createServer((req, res) => { hits.push(req.url); res.end('x'); });
+  await new Promise(r => srv.listen(0, '127.0.0.1', r)); const base = 'http://127.0.0.1:' + srv.address().port;
+  const hostile = `<!doctype html><html><head><link rel="stylesheet" href="${base}/css"><script src="${base}/js"></script><script>fetch("${base}/fetch");new Image().src="${base}/beacon"</script></head>
+    <body><h1>Hostile</h1><img src="${base}/img"><iframe src="${base}/frame"></iframe><p>text</p></body></html>`;
+  const hostilePdf = await PDF.renderPdf(hostile);
+  await new Promise(r => setTimeout(r, 300));
+  ok('a page that points at a server (image, stylesheet, script, frame, fetch) reaches nothing', hits.length === 0);
+  ok('and the PDF still prints', hostilePdf.length > 1000 && hostilePdf.slice(0, 4).toString() === '%PDF');
+  srv.close();
   await PDF.closeBrowser();
   console.log(failures ? '\n' + failures + ' FAILED' : '\nall passing'); process.exitCode = failures ? 1 : 0;
 })();

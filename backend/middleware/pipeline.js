@@ -71,7 +71,7 @@ module.exports.install = function install(app, c) {
      object threw -- so no payment confirmation could ever be processed.
      The document check needs a larger limit than 10 KB. */
   const OWN_BODY_PARSER = new Set(['/api/payments/webhook', '/api/payments/razorpay/webhook', '/api/payments/mor/webhook', '/api/research/document-check']);
-  const jsonSmall = express.json({ limit: '10kb' });
+  const jsonSmall = require('./body').json({ limit: '10kb' });
   app.use((req, res, next) => OWN_BODY_PARSER.has(req.path.toLowerCase().replace(/\/+$/, '')) ? next() : jsonSmall(req, res, next));
   app.use((req, res, next) => ACCOUNTS.csrf(req, res, next));
   app.use(CONTRACT.middleware);
