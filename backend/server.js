@@ -6,7 +6,7 @@
  */
 require('dotenv').config();
 const { app, c } = require('./app');
-const express = require('express');
+const bodyGuard = require('./middleware/body');
 const { hydrate } = require('./engine/research');
 const ANALYTICS = require('./engine/analytics');
 const HEALTH = require('./engine/health');
@@ -46,13 +46,13 @@ if (require.main === module) {
     let social = null;
     try {
       social = await require('./social').createSocial({ env: process.env, pool: process.env.DATABASE_URL ? pool : null });
-      social.mount(app, { adminAuth, ah, jsonParser: express.json({ limit: '20kb' }) });
+      social.mount(app, { adminAuth, ah, jsonParser: bodyGuard.json({ limit: '20kb' }) });
       if (social.start()) console.log('[social] the marketing desk is running');
     } catch (e) { console.error('[social] the marketing desk did not start: ' + (e && e.message)); }
     // The marketing dashboard (backend/marketing): the weekly numbers per market, early warnings and decision triggers from the
     // launch strategy, read from analytics, refunds, replies and the desk. Read-only except for the founder's own inputs.
     try {
-      require('./marketing').mount(app, { adminAuth, ah, jsonParser: express.json({ limit: '20kb' }), loadRows: since => ANALYTICS.loadRows(since, 250000), pool: process.env.DATABASE_URL ? pool : null, social });
+      require('./marketing').mount(app, { adminAuth, ah, jsonParser: bodyGuard.json({ limit: '20kb' }), loadRows: since => ANALYTICS.loadRows(since, 250000), pool: process.env.DATABASE_URL ? pool : null, social });
     } catch (e) { console.error('[marketing] the dashboard did not start: ' + (e && e.message)); }
     // Run the nightly source-health check on ONE instance only
     // (SOURCE_HEALTH_SCHEDULE=true); run several and each would alert.
