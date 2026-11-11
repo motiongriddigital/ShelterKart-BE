@@ -1694,6 +1694,42 @@ paths:
         '403': {$ref: '#/components/responses/OriginNotAllowed'}
         '429': {$ref: '#/components/responses/RateLimitedJson'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/readiness:
+    get:
+      operationId: adminGetReadiness
+      tags: [Admin]
+      summary: What is still missing before each part of the product can run
+      description: 'Names the settings still missing for the payment providers, the company registration (GSTIN), the e-mail sender, the SEC identity and the operator alert address, and groups every country that does not sell by reason with the alternatives that would open it. onSale lists the countries that sell now. Never returns a value of any setting. Not cached.'
+      security:
+        - adminBasic: []
+      x-source: backend/engine/readiness.js
+      responses:
+        '200':
+          description: Done.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: {type: boolean, const: true}
+                  onSale: {type: array, items: {type: string}}
+                  company: {type: object, properties: {missing: {type: array, items: {type: string}}}}
+                  providers:
+                    type: object
+                    additionalProperties: {type: object, properties: {ready: {type: boolean}, missing: {type: array, items: {type: string}}}}
+                  mail: {type: object, properties: {provider: {type: string}, ready: {type: boolean}, missing: {type: array, items: {type: string}}}}
+                  ops: {type: object, properties: {missing: {type: array, items: {type: string}}}}
+                  sec: {type: object, properties: {missing: {type: array, items: {type: string}}}}
+                  countries:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        reason: {type: string}
+                        countries: {type: array, items: {type: string}}
+                        options: {type: array, items: {type: array, items: {type: string}}}
+                        registrationSettings: {type: object, additionalProperties: {type: string}}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
   /api/admin/timing:
     get:
       operationId: adminGetTiming
