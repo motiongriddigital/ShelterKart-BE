@@ -155,7 +155,7 @@ function mountSalesAdmin(app, { adminAuth, wrap, rateLimit, source, fx, now = ()
     const q = req.query || {}, days = intIn(q.days, 30, 1, 400), limit = intIn(q.limit, 50, 1, 200), offset = intIn(q.offset, 0, 0, 100000);
     if ([days, limit, offset].some(Number.isNaN)) return bad(res, 'days (1 to 400), limit (1 to 200) and offset (0 or more) must be whole numbers.');
     if (q.status !== undefined && !STATUSES.includes(q.status)) return bad(res, `status must be one of ${STATUSES.join(', ')}.`);
-    if (q.country !== undefined && !COUNTRY.test(q.country)) return bad(res, 'country must be a two-letter code.');
+    if (q.country !== undefined && (typeof q.country !== 'string' || !COUNTRY.test(q.country))) return bad(res, 'country must be a two-letter code.');
     if (q.q !== undefined && (typeof q.q !== 'string' || q.q.length > 80)) return bad(res, 'q must be text of at most 80 characters.');
     if (!source) return reply(res, 200, { ok: true, stored: false, days, total: 0, orders: [] });
     const rows = await source.orders({ since: new Date(startOfDay(now(), days - 1)).toISOString(), status: q.status, country: q.country, q: q.q, limit, offset });

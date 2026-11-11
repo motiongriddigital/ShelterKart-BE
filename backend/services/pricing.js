@@ -1,4 +1,5 @@
 'use strict';
+const { UUID_RE } = require('../lib/ids');
 const { pickLanguage } = require('../engine/languages');
 const TRANSLATE = require('../engine/translate');
 const { paywallActive, previewOf, tokenInfo } = require('../engine/access');
@@ -88,7 +89,7 @@ module.exports = function setup(c) {
      Only used when accounts are off; with accounts the purchase itself is the entitlement (ACCOUNTS.entitled). */
   async function tokenGrants(token, ref) {
     const t = tokenInfo(token, ref, process.env.ACCESS_TOKEN_SECRET);
-    if (!t || !t.pid || !/^[0-9a-f-]{36}$/i.test(t.pid)) return false;
+    if (!t || !t.pid || !UUID_RE.test(t.pid)) return false;
     try { const r = await pool.query(`SELECT status FROM report_purchases WHERE id=$1 AND report_ref=$2`, [t.pid, ref]); return Boolean(r.rows[0]) && r.rows[0].status === 'paid'; }
     catch { return false; }
   }
