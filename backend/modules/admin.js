@@ -132,20 +132,51 @@ module.exports = function register(app, c) {
   BACKUPS.mountAdmin(app, { adminAuth, ah, rateLimit });
   require('../engine/adminAudit').mountAudit(app, { adminAuth, wrap: ah, rateLimit, audit: ADMIN_AUDIT });
   require('../engine/jobsAdmin').mountJobsAdmin(app, { adminAuth, wrap: ah, rateLimit, liveJobs, delivery: DELIVERY, retryReport: retryFailedReport, markets: MARKETS, history: days => (pgStore ? pgStore.healthHistory(days) : HEALTH.memoryHistory(days)) });
+  const enginePrices = async refs => {
+    const m = new Map(); if (!process.env.DATABASE_URL || !refs.length) return m;
+    const r = await pool.query(`SELECT report_ref, amount, currency FROM report_purchases WHERE report_ref = ANY($1) AND status = 'paid'`, [refs]);
+    for (const x of r.rows) { const per = pricingData.book.fx.perUsd[x.currency]; if (per) m.set(x.report_ref, (m.get(x.report_ref) || 0) + Number(x.amount) / per); }
+    return m;
+  };
   require('../engine/enginesAdmin').mountEnginesAdmin(app, { adminAuth, wrap: ah, rateLimit, history: ENGINE_HISTORY, jobs: () => liveJobs.values(),
-    pricesFor: async refs => {
-      const m = new Map(); if (!process.env.DATABASE_URL || !refs.length) return m;
-      const r = await pool.query(`SELECT report_ref, amount, currency FROM report_purchases WHERE report_ref = ANY($1) AND status = 'paid'`, [refs]);
-      for (const x of r.rows) { const per = pricingData.book.fx.perUsd[x.currency]; if (per) m.set(x.report_ref, (m.get(x.report_ref) || 0) + Number(x.amount) / per); }
-      return m;
-    } });
+    pricesFor: enginePrices });
   const SALES = require('../engine/salesAdmin');
   SALES.mountSalesAdmin(app, { adminAuth, wrap: ah, rateLimit, source: process.env.DATABASE_URL ? SALES.pgSource(pool) : null, fx: () => pricingData.book.fx.perUsd });
-  require('../engine/funnelAdmin').mountFunnelAdmin(app, { adminAuth, wrap: ah, rateLimit, source: process.env.DATABASE_URL ? require('../engine/funnelAdmin').pgSource(pool) : null,
-    analytics: async days => {
-      const since = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10) + 'T00:00:00.000Z';
-      return ANALYTICS.aggregate(await ANALYTICS.loadRows(since, 250000), { days, now: new Date() });
-    } });
+  const FUNNEL = require('../engine/funnelAdmin'), funnelSource = process.env.DATABASE_URL ? FUNNEL.pgSource(pool) : null;
+  const analyticsOver = async days => {
+    const since = new Date(Date.now() - (days - 1) * 86400000).toISOString().slice(0, 10) + 'T00:00:00.000Z';
+    return ANALYTICS.aggregate(await ANALYTICS.loadRows(since, 250000), { days, now: new Date() });
+  };
+  FUNNEL.mountFunnelAdmin(app, { adminAuth, wrap: ah, rateLimit, source: funnelSource, analytics: analyticsOver });
+  const salesSource = process.env.DATABASE_URL ? SALES.pgSource(pool) : null;
+  const dayStart = back => Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate()) - back * 86400000;
+  require('../engine/insights').mountInsightsAdmin(app, { adminAuth, wrap: ah, rateLimit, sources: {
+    backups: () => BACKUPS.notice(),
+    registers: () => Object.entries(MARKETS).filter(([, m]) => m.registry).map(([code, m]) => ({ market: code, label: m.label, state: (HEALTH.getHealth(code) || { state: 'not_checked' }).state })),
+    errors: () => ERRORLOG.summary(24),
+    queues: async () => ({ disputes: (await REVIEWS.openDisputes()).length, replies: (await REVIEWS.pendingReplies()).length }),
+    failedJobs: () => require('../engine/jobsAdmin').listFailed({ liveJobs, delivery: DELIVERY }).total,
+    traffic: async () => {
+      const a = await analyticsOver(14), v = a.daily.map(d => d.visitors);
+      return { current: v.slice(-7).reduce((n, x) => n + x, 0), previous: v.slice(-14, -7).reduce((n, x) => n + x, 0) };
+    },
+    sales: async () => {
+      if (!salesSource) return undefined;
+      const days = 7, from = dayStart(days - 1), prevFrom = from - days * 86400000, since = new Date(prevFrom).toISOString(), fromIso = new Date(from).toISOString();
+      const [sales, refunds, current, previous] = await Promise.all([salesSource.sales(since, 'country'), salesSource.refunds(since, 'country'), salesSource.pending(fromIso, new Date(Date.now() + 86400000).toISOString()), salesSource.pending(since, fromIso)]);
+      return SALES.buildSummary(sales, refunds, { fx: pricingData.book.fx.perUsd, now: Date.now(), days, pending: { current, previous } });
+    },
+    funnel: async () => {
+      if (!funnelSource) return undefined;
+      const since = new Date(dayStart(29)).toISOString();
+      return FUNNEL.buildFunnel({ analytics: await analyticsOver(30), cohort: await funnelSource.cohort(since), classes: await funnelSource.classes(new Date(Date.now() - 30 * 86400000).toISOString()) });
+    },
+    engineHistory: async () => { const t = (await ENGINE_HISTORY.rows(7)).reduce((n, r) => ({ calls: n.calls + r.calls, failures: n.failures + r.failures }), { calls: 0, failures: 0 }); return t; },
+    engineCosts: async () => {
+      const since = Date.now() - 30 * 86400000, list = [...liveJobs.values()].filter(j => j.paid && (j.updatedAt || j.createdAt || 0) >= since);
+      return require('../engine/enginesAdmin').costRows(list, await enginePrices(list.map(j => j.ref)), since).reports;
+    },
+  } });
   app.get('/api/admin/timing', adminAuth, (req, res) => res.json({ ok: true, ...TIMING.stats() }));
   app.get('/api/admin/contract', adminAuth, (req, res) => res.json({ ok: true, ...CONTRACT.stats() }));
   app.get('/api/admin/stats', adminAuth, ah(async (req, res) => {
