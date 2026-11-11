@@ -18,6 +18,8 @@ const { stripPII } = require('../lib/pii');
 module.exports = function register(app, c) {
   const { ACCOUNTS, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, pricingData, publicEvent, researchLimiter } = c;
 
+  const streamsByIp = new Map(), streamCap = (k, d) => { const v = Number(process.env[k]); return Number.isFinite(v) && v > 0 ? Math.floor(v) : d; };
+
   /* Which AI engine serves each agent, in what fail-over order, and what each did since the server started. Never shows a key. Admin only. */
   /* ------------------------------------------------------------------
    * The investigator (pilot, admin only): a panel of AI engines investigates a property, follows every lead,
@@ -111,12 +113,16 @@ module.exports = function register(app, c) {
     const ref = String(req.params.ref || ''); if (!REF_RE.test(ref)) return res.status(400).json({ ok: false });
     ACCOUNTS.touch(req, ref);
     const job = liveJobs.get(ref), full = await fullAccess(req, ref, req.query && req.query.t);
+    // A stream holds a socket until the job ends, and this route is open to anyone with a reference: cap how many one address and one report may hold.
+    const ip = String(req.ip || ''), mine = streamsByIp.get(ip) || 0;
+    if (job && (job.listeners.size >= streamCap('EVENT_STREAMS_PER_JOB', 25) || mine >= streamCap('EVENT_STREAMS_PER_IP', 6))) return res.status(429).json({ ok: false, error: 'Too many progress streams are open. Close one and try again.' });
     res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     if (res.flushHeaders) res.flushHeaders();
     for (const e of (job ? job.events : [])) res.write(`event: ${e.type}\ndata: ${JSON.stringify(full ? e : publicEvent(e))}\n\n`);
     const open = job && (job.status === 'sweeping' || (full && job.status === 'completing'));
     if (!open) return res.end();
-    const l = { res, full }; job.listeners.add(l); req.on('close', () => job.listeners.delete(l));
+    const l = { res, full }; job.listeners.add(l); streamsByIp.set(ip, mine + 1);
+    req.on('close', () => { job.listeners.delete(l); const n = (streamsByIp.get(ip) || 1) - 1; if (n > 0) streamsByIp.set(ip, n); else streamsByIp.delete(ip); });
   }));
   app.post('/api/investigate/:ref/contact', ACCOUNTS.guard, checkoutResearchLimiter, ah(async (req, res) => {
     const ref = String(req.params.ref || ''); if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Unknown report reference.' });
