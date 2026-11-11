@@ -51,8 +51,9 @@ function makePgStore(pool) {
 
     async loadRecent(since, limit) {
       const r = await pool.query(
-        `SELECT cache_key, brief, created_at FROM research_briefs
-          WHERE created_at > $1 ORDER BY created_at ASC LIMIT $2`, [since, limit]);
+        `SELECT cache_key, brief, created_at FROM (
+           SELECT cache_key, brief, created_at FROM research_briefs WHERE created_at > $1 ORDER BY created_at DESC LIMIT $2
+         ) newest ORDER BY created_at ASC`, [since, limit]);
       return r.rows.map(x => ({ cacheKey: x.cache_key, brief: x.brief, createdAt: new Date(x.created_at) }));
     },
 
