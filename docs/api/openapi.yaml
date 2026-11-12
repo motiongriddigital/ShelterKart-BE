@@ -856,6 +856,67 @@ paths:
             application/javascript:
               schema: {type: string}
         '403': {$ref: '#/components/responses/OriginNotAllowed'}
+  /api/report/{ref}:
+    get:
+      operationId: getPropertyReport
+      tags: [Investigate]
+      summary: The report as the property report page draws it (JSON)
+      description: |
+        The same investigation as `GET /r/{ref}`, laid out for the front end's property report page: title, key facts, number tiles, the differences between what is marketed and what the record shows, the questions to ask, the numbers, a checklist by team, and the sources.
+        Not cached (`Cache-Control no-store`, `X-Robots-Tag noindex, nofollow`). Shares `researchLimiter`. When accounts are on, a missing session answers 401 `auth_required`.
+        What it holds depends on access, decided on the server. When payments are switched off (`PAYMENTS_ENABLED` not true, or no keys) nothing is for sale and the report is always open, as on `GET /api/research/by-ref/{ref}`. With a valid access token (`X-Report-Access`, or `t` as on the report page) or, with accounts on, a paid purchase by the signed-in user, `locked` is false and the report is complete.
+        Otherwise `locked` is true and the view holds only what the free preview page shows: the counts and tiles, the differences between marketing and record, three questions in full, and the remaining questions only as a count per team.
+        In the free view `ledger`, `numbers.rows`, `numbers.checks`, `sources` and `checklist.items` are empty, `numbers.statutory` is null, `registration.registeredOn` is empty and `lockedCounts` says how much is withheld.
+        An investigation whose first sweep has not finished answers 202 `{ ok, ready: false, ref, phase }`. A malformed reference is 400. An unknown reference, or one from `POST /api/research` (a search report, not an investigation), is 404.
+        Lists are cut to the page design's limits: 5 key facts, 3 differences, 8 questions, 10 checklist items (questions 9 to 18), 6 price rows, 8 sources. `counts` carries the true totals and `checklist.more` the questions not shown anywhere. Text is never shortened.
+      security:
+        - {}
+        - accessToken: []
+        - sessionCookie: []
+      x-rate-limit: researchLimiter
+      x-source: backend/modules/investigate.js:158
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {$ref: '#/components/parameters/XReportAccess'}
+        - {$ref: '#/components/parameters/TokenQuery'}
+      responses:
+        '200':
+          description: The report view.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, ready, held, report]
+                properties:
+                  ok: {type: boolean, const: true}
+                  ready: {type: boolean, const: true}
+                  held: {type: boolean, description: True while the report is held for a person to check adverse findings.}
+                  report: {$ref: '#/components/schemas/PropertyReport'}
+        '202':
+          description: The investigation has no report yet.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, ready, ref, phase]
+                properties:
+                  ok: {type: boolean, const: true}
+                  ready: {type: boolean, const: false}
+                  ref: {$ref: '#/components/schemas/ReportRef'}
+                  phase: {type: string, example: starting}
+        '400':
+          description: 'The reference is malformed: "Not a valid report reference."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '404':
+          description: 'No such investigation: "That report was not found."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
   /r/{ref}:
     get:
       operationId: getReportPage
@@ -4460,6 +4521,200 @@ components:
       required: [ok]
       properties:
         ok: {type: boolean, const: true}
+    PropertyReport:
+      type: object
+      description: One investigation as the property report page draws it. Field names match the front end's PropertyReport type; the fields marked as extra are additions.
+      required: [slug, ref, researchedTo, registration, name, address, headline, summary, ledger, stats, discrepancies, questions, numbers, checklist, sources, counts, phase, locked]
+      properties:
+        slug: {type: string, description: 'The project name as a lower-case hyphenated word. Open the page by `ref`, not by slug: two projects can share a name.'}
+        ref: {$ref: '#/components/schemas/ReportRef'}
+        researchedTo: {type: string, example: 13 October 2026}
+        registration:
+          type: object
+          required: [id, registeredOn, jurisdiction]
+          properties:
+            id: {type: string, description: 'The first registration number found, or empty.'}
+            registeredOn: {type: string, description: 'As written in the record. Empty in the free view.'}
+            jurisdiction: {type: string, description: 'The country the research named, for example India. There is no regulator or state field.'}
+        name: {type: string}
+        address: {type: string}
+        headline: {type: string}
+        summary: {type: string}
+        ledger:
+          type: array
+          maxItems: 5
+          items:
+            type: object
+            required: [label, value, highlight]
+            properties:
+              label: {type: string}
+              value: {type: string, description: 'Several values are joined with " / ".'}
+              highlight: {type: boolean, description: True when sources disagree on this fact.}
+        stats:
+          type: array
+          items:
+            type: object
+            required: [label, value, tone, hint]
+            properties:
+              label: {type: string}
+              value: {type: integer}
+              tone: {$ref: '#/components/schemas/ReportTone'}
+              hint: {type: string}
+        discrepancies:
+          type: array
+          maxItems: 3
+          items:
+            type: object
+            required: [tag, code, title, claimed, official, footer]
+            properties:
+              tag: {type: string}
+              code: {type: string, example: D1}
+              title: {type: string}
+              claimed: {$ref: '#/components/schemas/ReportClaim'}
+              official: {$ref: '#/components/schemas/ReportClaim'}
+              footer:
+                type: object
+                required: [label, text]
+                properties:
+                  label: {type: string}
+                  text: {type: string}
+        questions:
+          type: array
+          maxItems: 8
+          description: 'The first questions, in the order to ask them. Three in the free view.'
+          items:
+            type: object
+            required: [category, question, why, good, notClose]
+            properties:
+              id: {type: string, example: Q1, description: Extra. Matches the id in the checklist.}
+              category: {$ref: '#/components/schemas/ReportGroup'}
+              question: {type: string}
+              why: {type: string}
+              good: {type: string}
+              notClose: {type: string}
+              when: {type: string, description: 'Extra. One of: before booking, before signing, before each payment, before possession, after possession.'}
+        numbers:
+          type: object
+          required: [title, badge, rows, footnote, statutory]
+          properties:
+            title: {type: string}
+            badge: {type: string}
+            rows:
+              type: array
+              maxItems: 6
+              description: 'Listed prices per square foot. `benchmark` and `variance` are always empty: no registered-price benchmark is held.'
+              items:
+                type: object
+                required: [typology, area, quoted, effective, benchmark, variance]
+                properties:
+                  typology: {type: string}
+                  area: {type: string}
+                  quoted: {type: string}
+                  effective: {type: string}
+                  benchmark: {type: string}
+                  variance: {type: string}
+            checks:
+              type: array
+              description: Extra. The area and date checks the research made, as sentences.
+              items:
+                type: object
+                required: [label, text]
+                properties:
+                  label: {type: string, enum: [Area, Dates]}
+                  text: {type: string}
+            footnote: {type: string}
+            statutory:
+              description: What a month of delay costs per 1 crore paid. Null when the market has no delay rule in the research, and in the free view.
+              oneOf:
+                - type: 'null'
+                - type: object
+                  required: [rule, title, intro, rows, outro]
+                  properties:
+                    rule: {type: string}
+                    title: {type: string}
+                    intro: {type: string}
+                    rows:
+                      type: array
+                      items:
+                        type: object
+                        required: [label, value]
+                        properties:
+                          label: {type: string}
+                          value: {type: string}
+                          strong: {type: boolean}
+                    outro: {type: string}
+        checklist:
+          type: object
+          required: [items, groupCounts, more]
+          properties:
+            items:
+              type: array
+              maxItems: 10
+              description: 'Questions 9 to 18, so the page does not repeat the first eight. Empty in the free view. `status` is always "Pending Response": whether a document is in hand is the buyer''s own tick, kept on the front end.'
+              items:
+                type: object
+                required: [no, group, question, direction, status]
+                properties:
+                  no: {type: integer}
+                  group: {$ref: '#/components/schemas/ReportGroup'}
+                  id: {type: string, description: Extra.}
+                  question: {type: string}
+                  direction: {type: string}
+                  status: {type: string, enum: [Pending Response, Document in Hand]}
+            groupCounts:
+              type: object
+              description: 'Questions per team. All of them in the full view; the withheld ones in the free view.'
+              additionalProperties: {type: integer}
+            more: {type: integer, description: 'Questions not shown anywhere on the page.'}
+        sources:
+          type: array
+          maxItems: 8
+          description: 'Official sources first. Empty in the free view.'
+          items:
+            type: object
+            required: [authority, document, status, note]
+            properties:
+              authority: {type: string, description: The site's host name.}
+              document: {type: string, description: The page title, or the site and the end of its path.}
+              url: {type: string, description: 'Extra. A web address or empty. Only http and https links are ever sent.'}
+              status:
+                type: object
+                required: [label, tone]
+                properties:
+                  label: {type: string}
+                  tone: {$ref: '#/components/schemas/ReportTone'}
+              note: {type: string}
+        counts:
+          type: object
+          description: Extra. The true totals.
+          properties:
+            facts: {type: integer}
+            verified: {type: integer}
+            reported: {type: integer}
+            conflicts: {type: integer}
+            inferences: {type: integer}
+            questions: {type: integer}
+            sources: {type: integer}
+        phase: {type: string, description: 'Extra. The investigation phase, for example preview or complete.'}
+        locked: {type: boolean, description: 'Extra. True for the free view.'}
+        lockedCounts:
+          type: object
+          description: Extra. Present only when `locked` is true.
+          properties:
+            questions: {type: integer}
+            facts: {type: integer}
+            sources: {type: integer}
+            conflicts: {type: integer}
+            inferences: {type: integer}
+    ReportTone: {type: string, enum: [green, blue, amber, violet, slate, red]}
+    ReportGroup: {type: string, enum: [Legal, Accounts, Promoters, Sales, Engineering, Lawyer]}
+    ReportClaim:
+      type: object
+      required: [label, title, note]
+      properties:
+        label: {type: string}
+        title: {type: string}
+        note: {type: string, description: Empty today.}
     ReportRef:
       type: string
       pattern: '^SK-[0-9A-F]{12}$'
