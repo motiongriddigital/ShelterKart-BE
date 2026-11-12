@@ -43,7 +43,8 @@ const sameSite = (url, site) => { const h = host(url), s = String(site || '').to
 function statusOf(fact, developerSite) {
   const urls = (fact.sources || []).map(s => s.url);
   if (fact.kind === 'inference') return 'inference';
-  if ((fact.sources || []).some(s => isOfficial(s.url) && s.seen !== false)) return 'verified';
+  // A page that tried to instruct the AI can never earn "verified" on the strength of that instruction working.
+  if ((fact.sources || []).some(s => isOfficial(s.url) && s.seen !== false && !s.suspicious)) return 'verified';
   if (urls.length && urls.every(u => sameSite(u, developerSite))) return 'claim';
   return 'reported';
 }
@@ -87,14 +88,14 @@ function sameValue(a, b) {
  * and every version is kept. Facts without a field merge when their wording is near-identical.
  * A link the bot cited but the search never returned is kept and flagged, never deleted.
  */
-function mergeFacts(raw, { developerSite = '', retrieved = new Set() } = {}) {
+function mergeFacts(raw, { developerSite = '', retrieved = new Set(), suspicious = new Set() } = {}) {
   const facts = [], conflicts = [];
-  const seenUrls = new Set([...(retrieved || [])].map(normUrl));
+  const seenUrls = new Set([...(retrieved || [])].map(normUrl)), flaggedUrls = new Set([...(suspicious || [])].map(normUrl));
   const byField = new Map();
   for (const f of raw) {
     if (!f || !(f.claim || f.value)) continue;
     const sources = (f.sources || []).map(s => (typeof s === 'string' ? { url: s } : s)).filter(s => s && /^https?:\/\//.test(s.url || ''))
-      .map(s => ({ url: s.url, title: s.title || '', seen: seenUrls.has(normUrl(s.url)) }));
+      .map(s => ({ url: s.url, title: s.title || '', seen: seenUrls.has(normUrl(s.url)), ...(flaggedUrls.has(normUrl(s.url)) ? { suspicious: true } : {}) }));
     const item = { area: f.area || 'other', field: f.field ? norm(f.field) : '', label: f.field ? String(f.field).trim() : '', value: String(f.value || '').trim(), claim: String(f.claim || f.value).trim(),
       kind: f.kind || 'fact', sources, foundBy: [...new Set([].concat(f.foundBy || []))], round: f.round || 0 };
     if (item.field) {
@@ -109,7 +110,7 @@ function mergeFacts(raw, { developerSite = '', retrieved = new Set() } = {}) {
   }
   for (const [field, group] of byField) if (group.length > 1)
     conflicts.push({ field, label: group[0].label || field, area: group[0].area, versions: group.map(g => ({ value: g.value || g.claim, sources: g.sources, foundBy: g.foundBy })) });
-  facts.forEach((f, i) => { f.id = 'F' + (i + 1); f.status = statusOf(f, developerSite); f.inConflict = Boolean(f.field && conflicts.some(c => c.field === f.field)); });
+  facts.forEach((f, i) => { f.id = 'F' + (i + 1); f.status = statusOf(f, developerSite); f.flagged = f.sources.some(s => s.suspicious); f.inConflict = Boolean(f.field && conflicts.some(c => c.field === f.field)); });
   return { facts, conflicts };
 }
 function absorb(into, f) {
@@ -278,6 +279,6 @@ function sourceList(facts, developerSite) {
 const VERDICT = /\b(we recommend (buying|purchasing|avoiding)|do not buy|don'?t buy|proceed with conditions|safe to buy|good investment|avoid this project)\b/i;
 const hasVerdict = text => VERDICT.test(String(text || ''));
 
-module.exports = { STATUS, statusOf, isOfficial, host, safeUrl, norm, jaccard, parseDate, parseNumber, sameValue, mergeFacts, extractLeads,
+module.exports = { STATUS, statusOf, isOfficial, host, safeUrl, norm, normUrl, jaccard, parseDate, parseNumber, sameValue, mergeFacts, extractLeads,
   samePerson, commonControl, areaCheck, dateGaps, delayCost, priceTable, questionsFromReasoning, assembleQuestions, sourceList,
   WHEN, TO, hasVerdict, anchorIn };

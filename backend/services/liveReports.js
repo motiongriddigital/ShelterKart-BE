@@ -34,7 +34,17 @@ module.exports = function setup(c) {
   /* The same project under a different name: once a report is complete, its registration numbers point to it for 30 days.
      A later buyer of the same registered project gets that report, and its research is not paid for again. */
   const regIndex = new Map();       // registration number -> { ref, at }
-  const regIdsOf = d => ((d && d.project && d.project.ids) || []).map(x => String(x).toUpperCase().replace(/[^A-Z0-9]/g, '')).filter(x => x.length >= 4);
+  /* A registration number that can identify a project: at least 8 characters with a digit. A short id from a model's output (a year, a plot number) would hand a buyer another project's report. */
+  const regIdsOf = d => ((d && d.project && d.project.ids) || []).map(x => String(x).toUpperCase().replace(/[^A-Z0-9]/g, '')).filter(x => x.length >= 8 && /\d/.test(x));
+  const COMPANY_NOISE = new Set(['private', 'limited', 'pvt', 'ltd', 'llp', 'llc', 'plc', 'inc', 'corporation', 'corp', 'company', 'co', 'the']);
+  const companyKey = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(w => w && !COMPANY_NOISE.has(w)).join(' ');
+  /* The same registered project means the same developer: the registered company when both reports name one, else the brand. A report that names neither is never a twin. */
+  function sameDeveloper(a, b) {
+    const pa = a && a.project || {}, pb = b && b.project || {}, la = companyKey(pa.promoter_legal_name), lb = companyKey(pb.promoter_legal_name);
+    if (la && lb) return la === lb;
+    const ba = companyKey(pa.brand), bb = companyKey(pb.brand);
+    return Boolean(ba && bb && ba === bb);
+  }
   function indexFinished(job, d) { for (const id of regIdsOf(d)) regIndex.set(id, { ref: job.ref, at: Date.now() }); }
   function finishedTwin(job) {
     const d = (job.inv && job.inv.dossier) || (job.saved && job.saved.dossier);
@@ -42,7 +52,7 @@ module.exports = function setup(c) {
       const hit = regIndex.get(id); if (!hit || hit.ref === job.ref || Date.now() - hit.at > 30 * 24 * 3600 * 1000) continue;
       const twin = liveJobs.get(hit.ref);
       const done = twin && twin.status === 'done' && ((twin.inv && twin.inv.dossier) || (twin.saved && twin.saved.dossier));
-      if (done && done.phase === 'complete') return { ref: hit.ref, dossier: done };
+      if (done && done.phase === 'complete' && String((twin.input || {}).country || '').toUpperCase() === String((job.input || {}).country || '').toUpperCase() && sameDeveloper(d, done)) return { ref: hit.ref, dossier: done };
     }
     return null;
   }

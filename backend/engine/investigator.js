@@ -19,6 +19,7 @@
  * Web text is evidence, never instructions.
  */
 const D = require('./dossier');
+const { scanForInjection } = require('../connectors/untrusted');
 
 const DEFAULT_BUDGET = { rounds: 4, leadsPerRound: 6, searches: 25, fetches: 12, leadSearches: 10, leadFetches: 6, maxTokens: 16000, minutes: 15, panel: 0, leadPanel: 2,
   pauseRounds: 12, criticMaxTokens: 8000, questionMaxTokens: 12000, criticPanel: 2, questionPanel: 2, leadMaxTokens: 0, fetchMaxTokens: 0, rankLeads: false, leadLimit: 0 };
@@ -170,7 +171,7 @@ const AREA_TITLES = [['identity', 'Who you are paying'], ['record', 'The registr
 /** Build the dossier from the current state. Pure and cheap, so it runs after every round for live updates. */
 function build(state, { query, location, market, ratePct, asOf }) {
   const developerSite = state.project.developer_site || '';
-  const { facts, conflicts } = D.mergeFacts(state.raw, { developerSite, retrieved: state.retrieved });
+  const { facts, conflicts } = D.mergeFacts(state.raw, { developerSite, retrieved: state.retrieved, suspicious: state.suspicious });
   // Code-level reasoning
   const chains = D.commonControl(state.entities.map(e => ({ ...e, brand: e.brand || (e.role === 'promoter' ? state.project.brand : e.brand) })));
   const unitsWinner = consensus(state.units, u => JSON.stringify(state.units.filter(x => x.engine === u.engine).map(x => [x.count, x.carpet])));
@@ -264,7 +265,15 @@ function createInvestigation({ query, location = '', market = '', country = '', 
   const panelArgs = (prompt, s, f, stage, maxTokens = B.maxTokens) => ({ prompt, maxTokens, rounds: B.pauseRounds, fetchPages: true, maxUses: s, fetchUses: f, stage, ...(B.fetchMaxTokens ? { maxContentTokens: B.fetchMaxTokens } : {}) });
   let followed = 0, outage = false;
   const absorb = (res, round) => {
-    for (const r of res.results) { state.used.add(r.engine); for (const x of r.retrieved || []) state.retrieved.add(x.url); ingest(state, parseLoose(r.text), r.engine, round); }
+    for (const r of res.results) {
+      state.used.add(r.engine);
+      for (const x of r.retrieved || []) {
+        state.retrieved.add(x.url);
+        // A page the model read in full that contains text addressed to an AI system is remembered, so what rests on it is never called verified.
+        if (x.snippet && scanForInjection(String(x.snippet)).suspicious) (state.suspicious || (state.suspicious = new Set())).add(x.url);
+      }
+      ingest(state, parseLoose(r.text), r.engine, round);
+    }
     for (const f of res.failed || []) state.failed.push({ engine: f.engine, round, error: f.error });
   };
   let d = null, swept = false;
@@ -346,11 +355,11 @@ function createInvestigation({ query, location = '', market = '', country = '', 
 
 /** The investigation's working state as plain JSON (Sets and Maps become arrays), and back. */
 function serialiseState(st) {
-  return { ...st, retrieved: [...st.retrieved], used: [...st.used], leads: [...st.leads.entries()] };
+  return { ...st, retrieved: [...st.retrieved], used: [...st.used], suspicious: [...(st.suspicious || [])], leads: [...st.leads.entries()] };
 }
 function restoreState(st, saved) {
   for (const [k, v] of Object.entries(saved)) {
-    if (k === 'retrieved' || k === 'used') st[k] = new Set(v || []);
+    if (k === 'retrieved' || k === 'used' || k === 'suspicious') st[k] = new Set(v || []);
     else if (k === 'leads') st[k] = new Map(v || []);
     else st[k] = v;
   }

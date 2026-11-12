@@ -68,7 +68,11 @@ module.exports = {
       if (b.type === 'server_tool_use' && b.name === 'web_search') searches++;
       if (b.type === 'web_search_tool_result' && Array.isArray(b.content)) for (const r of b.content) if (r && r.url) retrieved.push({ url: r.url, title: r.title || '' });
       // A page the model opened in full counts as retrieved, and is marked as read.
-      if (b.type === 'web_fetch_tool_result' && b.content && b.content.url) retrieved.push({ url: b.content.url, title: (b.content.content && b.content.content.title) || '', read: true });
+      if (b.type === 'web_fetch_tool_result' && b.content && b.content.url) {
+        // The page's own text (when it came back as text) rides along, so the injection scan reads the page and not only its title.
+        const doc = b.content.content, data = doc && doc.source && typeof doc.source.data === 'string' && /^text\//.test(String(doc.source.media_type || 'text/plain')) ? doc.source.data.slice(0, 30000) : '';
+        retrieved.push({ url: b.content.url, title: (doc && doc.title) || '', read: true, ...(data ? { snippet: data } : {}) });
+      }
     }
     return { text: textOf(blocks), retrieved, searches, stop, usage, model: modelOf(env, model), retrievedKind: 'all-results' };
   },
