@@ -36,6 +36,7 @@ const memory = () => {
     async settleRefund(id, { providerRef, status }) { const x = refunds.find(r => r.id === id); if (x) { x.providerRef = providerRef; x.status = status; } },
     async releaseRefund(id) { const i = refunds.findIndex(r => r.id === id && r.status === 'pending'); if (i >= 0) refunds.splice(i, 1); },
     async refundedTotal(purchaseId) { return refunds.filter(r => r.purchaseId === purchaseId).reduce((a, r) => a + r.amount, 0); },
+    async refundByProviderRef(ref) { const x = ref && refunds.find(r => r.providerRef === ref); return x ? { ...x } : null; },
     async nextInvoiceNumber(series) { const n = (counters.get(series) || 0) + 1; counters.set(series, n); return n; },
     async saveInvoice(inv) { invoices.push({ ...inv }); },
     async listInvoices() { return invoices.map(i => ({ ...i })); },
@@ -107,6 +108,11 @@ const postgres = (pool) => ({
   async refundedTotal(purchaseId) {
     const r = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS refunded FROM refunds WHERE purchase_id = $1`, [purchaseId]);
     return Number(r.rows[0].refunded);
+  },
+  async refundByProviderRef(ref) {
+    if (!ref) return null;
+    const r = await pool.query(`SELECT id, purchase_id, amount, currency, tax_reversed, reason, provider_ref, status, created_at FROM refunds WHERE provider_ref = $1 LIMIT 1`, [ref]);
+    return r.rows.length ? refundRow(r.rows[0]) : null;
   },
   async nextInvoiceNumber(series) {
     const r = await pool.query(`INSERT INTO invoice_counters (series, last) VALUES ($1, 1) ON CONFLICT (series) DO UPDATE SET last = invoice_counters.last + 1 RETURNING last`, [series]);

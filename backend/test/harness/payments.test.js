@@ -44,7 +44,7 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
   ok('before payment, access is refused (402)', (await call(find('post','/api/research/access'), { ref, purchaseId: c1.body.purchaseId })).code === 402);
   // 4. the webhook, signed over raw bytes, for buyer 1 only
   const hook = find('post','/api/payments/webhook');
-  const raw = Buffer.from(JSON.stringify({ id:'evt_1', type:'payment.succeeded', data:{ reportRef: ref, purchaseId: c1.body.purchaseId, amount: c1.body.amount } }));
+  const raw = Buffer.from(JSON.stringify({ id:'evt_1', type:'payment.succeeded', data:{ reportRef: ref, purchaseId: c1.body.purchaseId, amount: c1.body.amount, currency: c1.body.currency } }));
   const sig = crypto.createHmac('sha256','whsec').update(raw).digest('hex');
   const wh = await call(hook, raw, { 'x-sk-provider':'test', 'x-sk-signature': sig }, '/api/payments/webhook');
   ok('signed webhook processed', wh.code===200 && wh.body.ok);
