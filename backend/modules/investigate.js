@@ -16,7 +16,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { stripPII } = require('../lib/pii');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, pricingData, publicEvent, researchLimiter } = c;
+  const { ACCOUNTS, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
 
   const streamsByIp = new Map(), streamCap = (k, d) => { const v = Number(process.env[k]); return Number.isFinite(v) && v > 0 ? Math.floor(v) : d; };
 
@@ -88,6 +88,12 @@ module.exports = function register(app, c) {
       ACCOUNTS.touch(req, seen.ref);
       return res.json({ ok: true, ref: seen.ref, reused: true });
     }
+    const twin = previewTwin(query, location);
+    if (twin) {
+      try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: true }); } catch {}
+      ACCOUNTS.touch(req, twin);
+      return res.json({ ok: true, ref: twin, reused: true });
+    }
     if (BOT.enabled(process.env)) { const v = BOT.verify(b.pow, process.env); if (!v.ok) return res.status(428).json({ ok: false, code: 'challenge', error: 'Please complete the quick check and try again.' }); }
     const today = new Date().toISOString().slice(0, 10);
     if (investigateDaily.day !== today) { investigateDaily.day = today; investigateDaily.count = 0; investigateDaily.byMarket = {}; }
@@ -105,7 +111,7 @@ module.exports = function register(app, c) {
     const job = newLiveJob(ref, input); job.key = key;
     try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: false }); } catch {}   // the new search, in the shadow
     job.inv.sweep({ panel: previewPanel() })
-      .then(() => { job.status = 'preview'; persistJob(job); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
+      .then(() => { job.status = 'preview'; indexPreview(job, job.inv && job.inv.dossier); persistJob(job); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
       .catch(e => { job.status = 'failed'; if ((liveIndex.get(key) || {}).ref === ref) liveIndex.delete(key); persistJob(job); console.error('[investigate] sweep failed for ' + ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation could not run just now. Please try again later.' }); });
     res.status(202).json({ ok: true, ref });
   }));

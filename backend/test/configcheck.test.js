@@ -65,6 +65,14 @@ function run(env, { port, wait = 3500 } = {}) {
     const r = check({ NODE_ENV: 'development' }); assert.deepStrictEqual(r.errors, []); assert(r.warnings.length >= 6 && r.warnings.every(w => w.length > 10));
     assert.deepStrictEqual(check({}).errors, []);
   });
+  await t('SHEL-81: with an AI key and no dollar ceiling, production warns once (a warning, never a reason to stop); a ceiling or no AI key silences it', () => {
+    const warn = env => check(env).warnings.filter(w => /AI_DAILY_MAX_USD/.test(w));
+    assert.strictEqual(warn({ ...GOOD, ANTHROPIC_API_KEY: 'k' }).length, 1); assert.deepStrictEqual(check({ ...GOOD, ANTHROPIC_API_KEY: 'k' }).errors, []);
+    for (const k of ['OPENAI_API_KEY', 'GEMINI_API_KEY', 'XAI_API_KEY', 'DEEPSEEK_API_KEY']) assert.strictEqual(warn({ ...GOOD, [k]: 'k' }).length, 1, k);
+    assert.deepStrictEqual(warn({ ...GOOD, ANTHROPIC_API_KEY: 'k', AI_DAILY_MAX_USD: '25' }), []);
+    assert.strictEqual(warn({ ...GOOD, ANTHROPIC_API_KEY: 'k', AI_DAILY_MAX_USD: '0' }).length, 1); assert.strictEqual(warn({ ...GOOD, ANTHROPIC_API_KEY: 'k', AI_DAILY_MAX_USD: 'lots' }).length, 1);
+    assert.deepStrictEqual(warn(GOOD), []); assert.deepStrictEqual(warn({ NODE_ENV: 'development', ANTHROPIC_API_KEY: 'k' }), []);
+  });
   await t('no message ever contains a secret value', () => {
     const r = check({ ...GOOD, ADMIN_PASSWORD: 'hunter2', ACCESS_TOKEN_SECRET: 'tok-short-secret-value', QUOTE_SECRET: 'tok-short-secret-value' });
     assert(!JSON.stringify(r).match(/hunter2|tok-short-secret-value/));
