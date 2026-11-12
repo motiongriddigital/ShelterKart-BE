@@ -327,5 +327,5 @@ async function guardedFetch(rawUrl, { allowSet, maxRedirects = 3, timeoutMs = 15
 
 module.exports = {
   EgressBlocked, classifyIp, buildAllowList, hostAllowed,
-  validateTarget, guardedFetch, guardedLookup,
+  validateTarget, guardedFetch, guardedLookup, defaultFetch,
 };
