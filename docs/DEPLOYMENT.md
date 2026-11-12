@@ -23,6 +23,20 @@ The image (`Dockerfile`) holds `backend/` and `tools/`, runs as the unprivileged
 - Indexes on a table over about 100,000 rows go in a migration whose first line is `-- migrate: no-transaction`, using `CREATE INDEX CONCURRENTLY IF NOT EXISTS`. If a concurrent build fails, the runner names the invalid index; `DROP INDEX` it and run the migration again. `node tools/check_fk_indexes.js` fails when a foreign key has no index and is not allow-listed with a reason.
 - A health check on `/api/health`.
 
+## One address or two (website and API)
+
+Every address below is an exact origin: `https://host` with no path and no trailing slash. A wrong one fails silently in a browser, so in production the server refuses to start on a malformed one and says which (`engine/configCheck.js`).
+
+| Setting | Job | Default |
+| --- | --- | --- |
+| `ALLOWED_ORIGINS` | the websites whose pages may call the API with the session cookie (CORS and the cookie guard) | none: required in production |
+| `API_PUBLIC_URL` | the API's own address; allowed to call the API without being listed above (the report pages the API serves itself call it) | none |
+| `PUBLIC_BASE_URL` | the website: sitemap, robots, and the default for the next two | none |
+| `REPORT_LINK_BASE` | the link e-mailed or sent by WhatsApp to the buyer (`{this}/r/{ref}`) | `PUBLIC_BASE_URL` |
+| `PAYMENT_RETURN_BASE` | where the merchant checkout sends the buyer back after paying | `PUBLIC_BASE_URL` |
+
+Same host for both: set `PUBLIC_BASE_URL` and `ALLOWED_ORIGINS` to it; nothing else. Split hosts (website `https://shelterkart.com`, API `https://api.shelterkart.com`): set `ALLOWED_ORIGINS=https://shelterkart.com`, `API_PUBLIC_URL=https://api.shelterkart.com`, `PUBLIC_BASE_URL=https://shelterkart.com`; the report link in e-mails must reach `/r/{ref}` on the API, so either the website proxies `/r/*` to the API (the front end already does) or set `REPORT_LINK_BASE` to the API's address. Not verified against a deployed split: no host exists yet.
+
 ## Not built yet: the last step
 
 Nothing in this repository starts the image on a server, because the host is not chosen. When it is, add a `deploy` job to `release.yml` with `environment: staging` for the `main` image and `environment: production` (required reviewers) for tags. Typical options: a container host that pulls from GHCR (Render, Fly.io, Railway), or a VPS reached over SSH running `docker compose pull && docker compose up -d`.
