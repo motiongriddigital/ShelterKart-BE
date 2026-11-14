@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('assert');
 const { renderPreviewPdf, renderDossier } = require('../engine/dossierHtml');
-const { createPdfDocs, freeView } = require('../engine/pdfDocs');
+const { createPdfDocs, freeView, filenameOf } = require('../engine/pdfDocs');
 const { createMemoryPdfStore } = require('../engine/pdfStore');
 let passed = 0, failed = 0;
 async function t(name, fn) { try { await fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
@@ -32,6 +32,26 @@ const PAID = ['SENTINEL_QUESTION_FOUR', 'SENTINEL_QUESTION_FIVE', 'SENTINEL_WHY_
   'sentinel-source.example', 'SENTINEL_SOURCE_TITLE', 'SENTINEL_INFERENCE', 'SENTINEL_STEP', 'SENTINEL_CONFLICT', 'SENTINEL_V1', 'SENTINEL_AREA', 'SENTINEL_UNREACHED', 'SENTINEL_GLANCE', 'SENTINEL_GLANCE_VALUE'];
 
 (async () => {
+  console.log('the file names');
+  await t('a file is named for the developer (the paid one), a date and a short code, so two reports never look alike; the free one says preview', () => {
+    const full = { ref: REF, dossier: dossier({ project: { name: 'Marigold Heights', developer: 'Hubtown Limited', ids: [] } }) };
+    assert.strictEqual(filenameOf(full, 'full'), 'Hubtown-Limited_2026-11-14_012345.pdf');
+    assert.strictEqual(filenameOf(full, 'preview'), 'Marigold-Heights_preview_2026-11-14_012345.pdf');
+    assert.strictEqual(filenameOf({ ref: REF, project: { name: 'Marigold Heights', developer: 'Hubtown Limited' }, dossier: dossier() }, 'full'), 'Hubtown-Limited_2026-11-14_012345.pdf');
+    const other = { ref: 'SK-ABCDEF012345', dossier: full.dossier };
+    assert.notStrictEqual(filenameOf(full, 'full'), filenameOf(other, 'full'));
+  });
+  await t('the free file never carries a name the free view does not show: the developer appears only in the paid file name', () => {
+    const b = { ref: REF, dossier: dossier({ project: { name: 'Marigold Heights', developer: 'SENTINEL_DEVELOPER', ids: [] } }) };
+    assert(!filenameOf(b, 'preview').includes('SENTINEL')); assert(filenameOf(b, 'full').startsWith('SENTINEL-DEVELOPER_'));
+  });
+  await t('a name is made safe and short: no path or header characters, at most 40 characters of name, a fallback when there is nothing', () => {
+    const wild = { ref: REF, dossier: dossier({ query: 'x', project: { name: 'n', developer: '../../etc/passwd "; \r\nX: y ' + 'A'.repeat(200), ids: [] } }) };
+    const n = filenameOf(wild, 'full'); assert(/^[A-Za-z0-9._-]+\.pdf$/.test(n), n); assert(n.length < 80, n); assert(!n.includes('..'));
+    assert(/^Report_/.test(filenameOf({ ref: REF, dossier: { asOf: '2026-11-14' } }, 'full')));
+    assert.strictEqual(filenameOf({ dossier: {} }, 'full'), 'Report.pdf');
+  });
+
   console.log('the free preview PDF page');
   const price = { display: 'GBP 36', line: 'Set by the property value.' };
   const html = renderPreviewPdf(dossier(), { price, link: 'https://shelterkart.example/r/' + REF });
@@ -157,7 +177,7 @@ const PAID = ['SENTINEL_QUESTION_FOUR', 'SENTINEL_QUESTION_FIVE', 'SENTINEL_WHY_
     const { docs, calls, state, brief } = rig();
     assert.deepStrictEqual(docs.describe(brief({ dossier: null }), { kind: 'preview', ctx: CTX }), { kind: 'preview', ready: false, reason: 'pending' });
     assert.strictEqual(docs.describe(brief(), { kind: 'preview', ctx: CTX, held: true }).reason, 'held');
-    const nm = docs.describe(brief(), { kind: 'preview', ctx: CTX }); assert.strictEqual(nm.reason, 'not_made'); assert.strictEqual(nm.url, '/r/SK-0123456789AB/preview.pdf'); assert.strictEqual(nm.filename, 'ShelterKart-Preview-Marigold-Heights.pdf');
+    const nm = docs.describe(brief(), { kind: 'preview', ctx: CTX }); assert.strictEqual(nm.reason, 'not_made'); assert.strictEqual(nm.url, '/r/SK-0123456789AB/preview.pdf'); assert.strictEqual(nm.filename, 'Marigold-Heights_preview_2026-11-14_012345.pdf');
     assert.strictEqual(docs.describe(brief({}, { phase: 'completing' }), { kind: 'full' }).reason, 'completing');
     assert.strictEqual(calls.length, 0);
     await docs.serve(brief(), { kind: 'preview', ctx: CTX });

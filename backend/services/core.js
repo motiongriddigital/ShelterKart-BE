@@ -51,7 +51,7 @@ module.exports = function setup(c) {
     entitled: async (userId, ref) => (await pool.query(`SELECT 1 FROM report_purchases WHERE user_id=$1 AND report_ref=$2 AND status='paid' LIMIT 1`, [userId, ref])).rows.length > 0,
     purchasesOf: async userId => (await pool.query(`SELECT report_ref, amount, currency, status, created_at FROM report_purchases WHERE user_id=$1 ORDER BY created_at DESC LIMIT 500`, [userId]))
       .rows.map(r => ({ ref: r.report_ref, amount: r.amount, currency: r.currency, status: r.status, createdAt: r.created_at })),
-    briefInfo: async ref => { const b = await getByRefAsync(ref); return b ? { projectName: b.project && b.project.name, market: b.market } : null; },
+    briefInfo: async ref => { const b = await getByRefAsync(ref); if (!b) return null; const { filenameOf } = require('../engine/pdfDocs'); return { projectName: b.project && b.project.name, market: b.market, pdfFilename: b.dossier ? filenameOf(b, 'full') : null, previewPdfFilename: b.dossier ? filenameOf(b, 'preview') : null }; },
   });
   // With a database configured, reports, aliases and the daily ceiling are
   // durable: a deploy or crash no longer erases what buyers paid for.

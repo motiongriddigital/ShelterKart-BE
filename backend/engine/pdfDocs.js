@@ -4,8 +4,17 @@ const H = require('./dossierHtml');
 const { createPdfStore, defaultDir } = require('./pdfStore');
 
 const TEMPLATE_VERSION = 'pdf-1';
-const nameOf = brief => String((brief && brief.project && brief.project.name) || (brief && brief.dossier && brief.dossier.query) || 'Report').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'Report';
-const filenameOf = (brief, kind) => (kind === 'full' ? 'ShelterKart-Report-' : 'ShelterKart-Preview-') + nameOf(brief) + '.pdf';
+const clean = s => String(s == null ? '' : s).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40).replace(/-$/, '');
+const subjectOf = (brief, kind) => {
+  const d = (brief && brief.dossier) || {}, bp = (brief && brief.project) || {}, dp = d.project || {};
+  const dev = bp.developer || dp.developer || dp.promoter_legal_name || dp.brand;
+  return clean((kind === 'full' && dev) || d.query || bp.name) || 'Report';
+};
+const stampOf = brief => {
+  const day = /^\d{4}-\d{2}-\d{2}/.exec(String((brief && brief.dossier && brief.dossier.asOf) || '')), code = String((brief && brief.ref) || '').replace(/^SK-/, '').slice(0, 6);
+  return [day ? day[0] : null, code || null].filter(Boolean).join('_');
+};
+const filenameOf = (brief, kind) => [subjectOf(brief, kind), kind === 'preview' ? 'preview' : null, stampOf(brief)].filter(Boolean).join('_') + '.pdf';
 
 function freeView(d) {
   const qs = d.questions || [], p = d.project || {};

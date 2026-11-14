@@ -960,9 +960,8 @@ paths:
       summary: The free preview of a report as a PDF
       description: |
         The free view only, written for paper: the project, the counts, the marketing-versus-record differences, three questions in full, what the full report adds, the research date and the unlock link. It holds nothing that is paid. It is made automatically when the first sweep finishes and served from storage (`Cache-Control private, no-store`, `X-Robots-Tag noindex, nofollow`, `Content-Disposition attachment`); a request that finds none prints it once.
-        Needs a session when accounts are on (401 `auth_required`). Any signed-in visitor may have it, including one who has paid. A held report answers 423; a server without PDF printing answers 503 `pdf_unavailable`.
-      security:
-        - sessionCookie: []
+        No sign-in is needed: the free PDF is made to be saved and shared, and anyone with the report address can have it. It holds only the free view. The file is named `<what was searched for>_preview_<research date>_<six characters of the reference>.pdf`. A held report answers 423; a server without PDF printing answers 503 `pdf_unavailable`.
+      security: []
       x-source: backend/modules/investigate.js:preview.pdf
       parameters:
         - {$ref: '#/components/parameters/RefPath'}
@@ -4555,6 +4554,8 @@ paths:
                         ref: {type: string}
                         projectName: {type: [string, 'null']}
                         market: {type: [string, 'null']}
+                        pdf: {type: [object, 'null'], description: 'The full PDF, for a paid report: its address and its file name (`<developer>_<research date>_<six characters of the reference>.pdf`). Null for a report not bought.', properties: {url: {type: string}, filename: {type: string}}}
+                        previewPdf: {type: [object, 'null'], description: 'The free preview PDF: address and file name. Null when the report is no longer held.', properties: {url: {type: string}, filename: {type: string}}}
                         paid: {type: boolean}
                         purchasedAt: {type: [string, 'null'], format: date-time}
                         amount: {type: [number, 'null']}

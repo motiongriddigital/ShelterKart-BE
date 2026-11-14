@@ -105,10 +105,10 @@ The full-PDF route answers 403 `payment_required` and names the preview PDF in t
 
 | ID | Requirement |
 | --- | --- |
-| FR-12 | `GET /r/:ref/preview.pdf`: any signed-in visitor who may open the preview page. It always serves the preview PDF, even to a buyer who has paid (the full one has its own route). |
+| FR-12 | `GET /r/:ref/preview.pdf`: anyone with the address, no sign-in (owner, 2026-11-14: the free PDF is for sharing). It always serves the preview PDF, even to a buyer who has paid (the full one has its own route). |
 | FR-13 | `GET /r/:ref/pdf` (existing): the full PDF, only for a purchase that entitles the visitor, exactly as the full report page. Anyone else: 403 `payment_required` with `previewPdf` in the body. |
 | FR-14 | Responses carry `Content-Type: application/pdf`, a filename, `Cache-Control: private, no-store` and `X-Robots-Tag: noindex`. Stored files are streamed with the content length. |
-| FR-15 | The routes sit behind the same sign-in wall and rate limits as the pages (accounts FR-13). |
+| FR-15 | The full PDF route sits behind the sign-in wall. The free preview PDF route does not (owner, 2026-11-14); both keep the general rate limits. |
 | FR-16 | `GET /api/report/:ref` carries a `pdf` block: `kind` (`preview` or `full`), `ready`, `url`, `filename`, `bytes`, `generatedAt`, `reason` when not ready. The block describes the PDF this visitor may download now. |
 
 ### 7.4 Keeping and removing
@@ -164,7 +164,7 @@ The preview PDF holds the same facts as the preview page and nothing about the b
 | D8 | English only; brand fonts are an installation step, not in scope. | non-goals |
 | Q1 | Should the "ready" e-mail attach the full PDF (size about 200 to 400 KB) instead of linking? Needs the mail provider. | delivery |
 | Q2 | Should a buyer who has paid also be able to download the preview PDF? Default yes (harmless, same facts). | FR-12 |
-| Q3 | Should the preview PDF be public (no sign-in) so it can be shared by link? Default no: the sign-in wall covers every report page (accounts decision 4). | FR-15 |
+| Q3 | Should the preview PDF be public (no sign-in) so it can be shared by link? Answered by the owner on 2026-11-14: yes, no sign-in is needed to share or save the free PDF. | FR-15 |
 
 ## 12. Risks
 

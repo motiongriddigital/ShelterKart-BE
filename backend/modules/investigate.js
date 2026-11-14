@@ -215,7 +215,7 @@ module.exports = function register(app, c) {
       throw e;
     }
   };
-  app.get('/r/:ref/preview.pdf', ACCOUNTS.guard, ah(async (req, res) => {
+  app.get('/r/:ref/preview.pdf', ah(async (req, res) => {
     const ref = String(req.params.ref || '');
     const brief = REF_RE.test(ref) ? await getByRefAsync(ref) : null;
     if (!brief || brief.kind !== 'dossier' || !brief.dossier) return res.status(404).json({ ok: false, error: 'That report was not found.' });

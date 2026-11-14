@@ -130,6 +130,8 @@ function createAccounts(deps = {}) {
     for (const r of rows) {
       let info = null; try { info = await briefInfo(r.ref); } catch { info = null; }
       r.projectName = (info && info.projectName) || null; r.market = (info && info.market) || null;
+      r.pdf = r.paid && info && info.pdfFilename ? { url: `/r/${r.ref}/pdf`, filename: info.pdfFilename } : null;
+      r.previewPdf = info && info.previewPdfFilename ? { url: `/r/${r.ref}/preview.pdf`, filename: info.previewPdfFilename } : null;
       for (const k of ['firstOpenedAt', 'lastOpenedAt', 'purchasedAt']) r[k] = r[k] ? new Date(r[k]).toISOString() : null;
     }
     return rows;

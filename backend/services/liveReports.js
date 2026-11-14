@@ -4,7 +4,7 @@ const { cites } = require('../engine/briefPages');
 const PRICING = require('../pricing');
 const INVESTIGATOR = require('../engine/investigator');
 const DOSSIER_BRIEF = require('../engine/dossierBrief');
-const { alertOperator } = require('../engine/delivery');
+const { alertOperator, pdfAttachment } = require('../engine/delivery');
 const { reportLink } = require('../engine/delivery');
 const { registerBrief, getByRef } = require('../engine/research');
 const { createPdfDocs } = require('../engine/pdfDocs');
@@ -193,7 +193,7 @@ module.exports = function setup(c) {
     const prepared = fresh && fresh.dossier && fresh.dossier.phase === 'complete'
       ? Promise.race([PDFS.ensure(fresh, { kind: 'full', held: REVIEW.isHeld(fresh) }), new Promise(r => setTimeout(r, Number(process.env.PDF_BEFORE_DELIVERY_MS) || 60000).unref())]).catch(() => null)
       : Promise.resolve(null);
-    const sent = prepared.then(() => DELIVERY.send(message));
+    const sent = prepared.then(async out => DELIVERY.send({ ...message, attachment: await pdfAttachment(out, { env: process.env, filename: PDFS.filenameOf(fresh, 'full') }) }));
     // The delivery layer now holds the address for its own retries. A finished report has no further use for it, so the saved file stops carrying it;
     // a report that stopped early keeps it, because the operator's retry sends the complete report to the same buyer.
     if (job.status === 'done') { job.contact = null; persistJob(job); }
