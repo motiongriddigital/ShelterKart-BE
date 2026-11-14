@@ -14,7 +14,7 @@ const sweepFor = name => ({ project: { name, location: 'Worli, Mumbai', brand: '
   listings: [{ label: '2 BHK', price: 21000000, currency: 'INR', area_sqft: 700, source: SRC }],
   questions: [{ question: 'Please share the registered agreement for sale.', why: 'It matters.', to: 'legal team', when: 'before signing', good: 'The document.', not_accepted: 'A verbal answer.' }],
   leads: [{ kind: 'company', value: 'Example Realty Private Limited', why: 'the seller' }] });
-const tools = []; let orderN = 0, aiCalls = 0, aiDown = false, aiDelay = 0;
+const tools = []; let orderN = 0, aiCalls = 0, aiDown = false, aiDelay = 0, aiEmpty = false;
 globalThis.fetch = async (url, o) => {
   const mk = (c, status = 200) => ({ ok: status < 400, status, json: async () => c });
   if (url === 'https://api.razorpay.com/v1/orders') { const q = JSON.parse(o.body); return mk({ id: 'order_S' + (++orderN), amount: q.amount, currency: q.currency }); }
@@ -23,7 +23,7 @@ globalThis.fetch = async (url, o) => {
   if (b.tools) {
     tools.push({ lead: /Lead: /.test(prompt), tools: b.tools });
     const name = (prompt.match(/"([A-Z][A-Za-z ]+ Residency)"/) || prompt.match(/([A-Z][a-z]+ [A-Z][a-z]+ Residency)/) || [])[1] || 'Example Residency';
-    const text = /Lead: /.test(prompt) ? JSON.stringify({ facts: [{ area: 'money', claim: 'A lead round found open charges on the seller.', sources: ['https://example-data.com/charges'] }] }) : JSON.stringify(sweepFor(name));
+    const text = aiEmpty ? '{}' : /Lead: /.test(prompt) ? JSON.stringify({ facts: [{ area: 'money', claim: 'A lead round found open charges on the seller.', sources: ['https://example-data.com/charges'] }] }) : JSON.stringify(sweepFor(name));
     return mk({ stop_reason: 'end_turn', usage, content: [{ type: 'web_search_tool_result', content: [{ url: SRC, title: 'Record' }] }, { type: 'text', text }] });
   }
   return mk({ usage, content: [{ type: 'text', text: '{"questions":[],"leads":[]}' }] });
@@ -115,4 +115,15 @@ const isSoon = (iso, minutes) => Date.parse(iso) > Date.now() && Date.parse(iso)
   ok('and it works: the new attempt reaches a preview and the report call serves it', Boolean(okNow) && view2.code === 200 && view2.body.ready === true && view2.body.report);
   const old = await call(find('get', '/api/report/:ref'), { params: { ref: f.body.ref } });
   ok('the old failed reference still says unavailable', old.body.state === 'unavailable');
+
+  console.log('a first look that found nothing is a failed attempt, not a preview');
+  aiEmpty = true;
+  const e = await go('Empty Answer Residency', 'US', 'Austin');
+  const emptied = await until(() => { const s = saved(e.body.ref); return s && s.status === 'failed' ? s : null; });
+  ok('an answer with no facts and no questions (even if searches ran) fails the attempt with the same reason as a down engine', e.code === 202 && Boolean(emptied) && emptied.failReason === 'engines_unavailable');
+  const eview = await call(find('get', '/api/report/:ref'), { params: { ref: e.body.ref } });
+  ok('the buyer sees unavailable, never a report that says it found 0 things', eview.body.state === 'unavailable' && !eview.body.report);
+  aiEmpty = false;
+  const e2 = await go('Empty Answer Residency', 'US', 'Austin');
+  ok('it is not kept for reuse: searching again starts a new attempt and reaches a real preview', e2.code === 202 && e2.body.ref !== e.body.ref && e2.body.reused !== true && Boolean(await until(() => { const s = saved(e2.body.ref); return s && s.status === 'preview' ? s : null; })));
 })();

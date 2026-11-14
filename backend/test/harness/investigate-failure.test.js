@@ -2,7 +2,7 @@ Object.assign(process.env, { ANTHROPIC_API_KEY: 'k', ACCESS_TOKEN_SECRET: 'tok-s
 let aiDown = true, aiCalls = 0;
 globalThis.fetch = async (url, o) => { aiCalls++; if (aiDown) return { ok: false, status: 503, json: async () => ({ error: 'down' }), text: async () => 'down' };
   const mk = c => ({ ok: true, status: 200, json: async () => c });
-  return mk({ stop_reason: 'end_turn', usage: { input_tokens: 1000, output_tokens: 100 }, content: [{ type: 'text', text: JSON.stringify({ project: { name: 'Hubtown Celeste' }, facts: [] }) }] }); };
+  return mk({ stop_reason: 'end_turn', usage: { input_tokens: 1000, output_tokens: 100 }, content: [{ type: 'text', text: JSON.stringify({ project: { name: 'Hubtown Celeste' }, facts: [{ area: 'identity', claim: 'The record names the promoter.', sources: ['https://example-data.com/record'] }] }) }] }); };
 const app = require(require('path').join(__dirname, '..', '..', 'server.js'));
 const find = (m, p) => app.routes.find(r => r.method === m && r.path === p);
 function call(route, body) { return new Promise(resolve => {
