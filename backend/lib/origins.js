@@ -3,6 +3,9 @@ const trim = v => String(v || '').replace(/\/+$/, '');
 const originOf = v => { try { const u = new URL(String(v)); return /^https?:$/.test(u.protocol) ? u.origin : ''; } catch { return ''; } };
 const configured = env => String(env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean);
 
+/** Explicit override: every origin is allowed, no matter what ALLOWED_ORIGINS says. For a local machine only - never production. */
+const devModeOpen = (env = process.env) => ['true', 'on', '1'].includes(String(env.DEV_MODE || '').trim().toLowerCase());
+
 /** The origins a browser may call the API from: ALLOWED_ORIGINS plus the API's own origin (API_PUBLIC_URL), so the pages the API serves itself never need it listed by hand. */
 function allowedOrigins(env = process.env) {
   const out = configured(env), own = originOf(env.API_PUBLIC_URL);
@@ -18,6 +21,7 @@ const returnBase = (env = process.env) => trim(env.PAYMENT_RETURN_BASE) || siteB
 /** Mistakes in the origin settings that fail silently otherwise (a trailing slash or a path never matches the browser's Origin header). */
 function originProblems(env = process.env) {
   const out = [], production = env.NODE_ENV === 'production';
+  if (devModeOpen(env)) out.push('DEV_MODE must not be set in production: it allows every origin, the exact thing ALLOWED_ORIGINS exists to stop.');
   for (const o of configured(env)) {
     if (o === '*') { out.push('ALLOWED_ORIGINS contains "*": list the exact website origins instead.'); continue; }
     const norm = originOf(o);
@@ -33,4 +37,4 @@ function originProblems(env = process.env) {
   return out;
 }
 
-module.exports = { allowedOrigins, configured, originOf, siteBase, linkBase, returnBase, originProblems };
+module.exports = { allowedOrigins, configured, devModeOpen, originOf, siteBase, linkBase, returnBase, originProblems };
