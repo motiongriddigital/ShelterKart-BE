@@ -8,6 +8,7 @@ const PRICING = require('../pricing');
 const INVESTIGATOR = require('../engine/investigator');
 const { renderDossier } = require('../engine/dossierHtml');
 const DOSSIER_BRIEF = require('../engine/dossierBrief');
+const { reportView } = require('../engine/reportView');
 const PAGES = require('../engine/reportPages');
 const PDF = require('../engine/pdf');
 const { registerBrief, pausedReason } = require('../engine/research');
@@ -16,7 +17,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { stripPII } = require('../lib/pii');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, pricingData, publicEvent, researchLimiter } = c;
+  const { ACCOUNTS, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
 
   const streamsByIp = new Map(), streamCap = (k, d) => { const v = Number(process.env[k]); return Number.isFinite(v) && v > 0 ? Math.floor(v) : d; };
 
@@ -88,6 +89,12 @@ module.exports = function register(app, c) {
       ACCOUNTS.touch(req, seen.ref);
       return res.json({ ok: true, ref: seen.ref, reused: true });
     }
+    const twin = previewTwin(query, location);
+    if (twin) {
+      try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: true }); } catch {}
+      ACCOUNTS.touch(req, twin);
+      return res.json({ ok: true, ref: twin, reused: true });
+    }
     if (BOT.enabled(process.env)) { const v = BOT.verify(b.pow, process.env); if (!v.ok) return res.status(428).json({ ok: false, code: 'challenge', error: 'Please complete the quick check and try again.' }); }
     const today = new Date().toISOString().slice(0, 10);
     if (investigateDaily.day !== today) { investigateDaily.day = today; investigateDaily.count = 0; investigateDaily.byMarket = {}; }
@@ -105,7 +112,7 @@ module.exports = function register(app, c) {
     const job = newLiveJob(ref, input); job.key = key;
     try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: false }); } catch {}   // the new search, in the shadow
     job.inv.sweep({ panel: previewPanel() })
-      .then(() => { job.status = 'preview'; persistJob(job); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
+      .then(() => { job.status = 'preview'; indexPreview(job, job.inv && job.inv.dossier); persistJob(job); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
       .catch(e => { job.status = 'failed'; if ((liveIndex.get(key) || {}).ref === ref) liveIndex.delete(key); persistJob(job); console.error('[investigate] sweep failed for ' + ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation could not run just now. Please try again later.' }); });
     res.status(202).json({ ok: true, ref });
   }));
@@ -153,6 +160,17 @@ module.exports = function register(app, c) {
     let price = null;
     try { const f = PRICING.previewFee(pricingData, brief, buyer); price = { display: f.currency === 'INR' ? '₹' + Number(f.price).toLocaleString('en-IN') : `${f.currency} ${f.price}`, line: 'Set by the property\'s value and the depth of the research. The amount you pay is confirmed before payment.' }; } catch { price = null; }
     res.send(PAGES.previewPage(brief.dossier, { ref, price, country: buyer.country, held: REVIEW.isHeld(brief), payments: paywallActive(process.env) }));
+  }));
+  app.get('/api/report/:ref', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
+    const ref = String(req.params.ref || '');
+    if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
+    const brief = await getByRefAsync(ref);
+    if (!brief || brief.kind !== 'dossier') return res.status(404).json({ ok: false, error: 'That report was not found.' });
+    res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+    if (!brief.dossier) return res.status(202).json({ ok: true, ready: false, ref, phase: brief.phase || 'starting' });
+    ACCOUNTS.touch(req, ref);
+    const full = !paywallActive(process.env) || await fullAccess(req, ref, (req.query && req.query.t) || req.get('x-report-access'));
+    res.json({ ok: true, ready: true, held: REVIEW.isHeld(brief), report: reportView(brief.dossier, { locked: !full, ref }) });
   }));
   app.get('/r/:ref/pdf', ACCOUNTS.guard, ah(async (req, res) => {
     const ref = String(req.params.ref || ''); const t = String((req.query && req.query.t) || '');

@@ -134,6 +134,9 @@ const withinDailyCap = (env) => {
 const memory = new Map();        // cacheKey -> translated text
 let store = null;                // optional durable store: { getTranslations(keys), saveTranslations(rows) }
 const attachStore = s => { store = s; };
+/* The memory is a speed-up, never the record (the durable store keeps everything), so it is capped: the oldest entries go first. */
+const memoryMax = env => { const n = Number(env && env.TRANSLATE_MEMORY_MAX); return Number.isFinite(n) && n >= 100 ? Math.floor(n) : 20000; };
+function remember(key, text, env = process.env) { memory.delete(key); memory.set(key, text); const max = memoryMax(env); while (memory.size > max) memory.delete(memory.keys().next().value); }
 
 function prompt(lang, items, names) {
   const L = LANGUAGES[lang];
@@ -190,7 +193,7 @@ async function translateTexts(items, lang, { env = process.env, fetchImpl = glob
   const keys = items.map(it => cacheKey(lang, it.text));
   let missingKeys = keys.filter(k => !memory.has(k));
   if (missingKeys.length && store) {
-    try { const rows = await store.getTranslations(missingKeys); for (const r of rows) memory.set(r.key, r.text); } catch (e) { console.error('[translate] cache read:', e && e.message); }
+    try { const rows = await store.getTranslations(missingKeys); for (const r of rows) remember(r.key, r.text, env); } catch (e) { console.error('[translate] cache read:', e && e.message); }
     missingKeys = keys.filter(k => !memory.has(k));
   }
   const todo = []; const seen = new Set();
@@ -224,7 +227,7 @@ async function translateTexts(items, lang, { env = process.env, fetchImpl = glob
       }
       const rows = [];
       for (const e of todo) {
-        if (e.key in good) { memory.set(e.key, good[e.key]); rows.push({ key: e.key, lang, text: good[e.key] }); }
+        if (e.key in good) { remember(e.key, good[e.key], env); rows.push({ key: e.key, lang, text: good[e.key] }); }
       }
       if (rows.length && store) { try { await store.saveTranslations(rows); } catch (e) { console.error('[translate] cache write:', e && e.message); } }
     }
@@ -261,4 +264,4 @@ async function translateBrief(brief, lang, opts = {}) {
   }
 }
 
-module.exports = { translateBrief, translateTexts, collectTexts, checkTranslation, attachStore, setPath, cacheKey, asciiDigits, digitGroups, GLOSSARY, KEEP, GLOSSARY_VERSION, _memory: memory };
+module.exports = { translateBrief, translateTexts, collectTexts, checkTranslation, attachStore, setPath, cacheKey, asciiDigits, digitGroups, GLOSSARY, KEEP, GLOSSARY_VERSION, remember, memoryMax, _memory: memory };

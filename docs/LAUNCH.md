@@ -891,7 +891,7 @@ other-country reference cases.
 
 **Built and tested end to end** (`backend/test/harness/buyer.test.js`, through the real routes with the AI, Razorpay and e-mail mocked):
 1. **`/start`**: the buyer names the project; the existing proof-of-work check runs when `BOT_GUARD` is on.
-2. **Free preview at `/r/:ref`**: the panel's first sweep only (`INVESTIGATE_PREVIEW_PANEL`, default 2 engines), so unpaid traffic stays cheap. It shows promise-versus-record, three questions and what is locked, priced from the price book at gold-standard depth (an unknown visitor is priced in the project's own country).
+2. **Free preview at `/r/:ref`**: the panel's first sweep only (`INVESTIGATE_PREVIEW_PANEL`, default 1 engine), so unpaid traffic stays cheap. It shows promise-versus-record, three questions and what is locked, priced from the price book at gold-standard depth (an unknown visitor is priced in the project's own country).
 3. **Unlock**: the buyer leaves an e-mail and, optionally, a WhatsApp number, then pays through the **existing** quote, checkout, Razorpay verification and webhook. Each investigation is stored under a normal report ref, so there is no second payments path. The review hold applies: in a held market a person releases the report before it can be quoted.
 4. **Paid completion**: `markPurchasePaid` calls `onReportPaid`, which continues the same investigation (lead rounds, reviewer, question writer). The full report at `/r/:ref?t=token` updates live until complete.
 5. **Delivery**: when complete, the buyer receives an e-mail (Resend or Postmark) and a WhatsApp template message (Meta Cloud API) with the link; retried at 1, 5 and 30 minutes; status at `/api/admin/delivery`.

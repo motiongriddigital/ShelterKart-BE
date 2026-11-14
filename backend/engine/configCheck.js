@@ -30,10 +30,13 @@ function check(env = process.env) {
     if (!(has(env, 'RAZORPAY_KEY_ID') && has(env, 'RAZORPAY_KEY_SECRET') && has(env, 'ACCESS_TOKEN_SECRET')))
       warnings.push('PAYMENTS_ENABLED is true but the paywall will NOT lock reports: it needs RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and ACCESS_TOKEN_SECRET together, so every report is free until they are set.');
   }
+  for (const problem of require('../lib/origins').originProblems(env)) (env.NODE_ENV === 'production' ? errors : warnings).push(problem);
   if (!has(env, 'ALLOWED_ORIGINS') && !['development', 'test'].includes(env.NODE_ENV))
     warnings.push('ALLOWED_ORIGINS is empty and NODE_ENV is not "development": browsers on other websites are refused. Set ALLOWED_ORIGINS, or NODE_ENV=development on a developer machine.');
   if (production && /^(on|true|1|yes)$/i.test(String(env.ACCOUNTS_ENABLED || '')) && String(env.ACCOUNTS_CSRF || '').toLowerCase() !== 'on')
     warnings.push('ACCOUNTS_CSRF is not "on": the cross-site request guard only reports and refuses nothing. Set ACCOUNTS_CSRF=on once the frontend sends its Origin.');
+  if (production && ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'XAI_API_KEY', 'DEEPSEEK_API_KEY'].some(k => has(env, k)) && !(Number(env.AI_DAILY_MAX_USD) > 0))
+    warnings.push('AI_DAILY_MAX_USD is not set: nothing but INVESTIGATE_DAILY_CAP limits what free previews spend on AI in a day. Set a dollar ceiling (new previews pause when it is passed) and AI_DAILY_ALERT_USD.');
   if (production && !has(env, 'TRUST_PROXY')) warnings.push('TRUST_PROXY is not set: behind a load balancer every visitor shares one rate limit.');
 
   // Outside production the same findings are advice, not a reason to stop (a developer machine has no payment keys).

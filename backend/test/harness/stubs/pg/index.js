@@ -149,7 +149,7 @@ async function query(sql, p=[]) {
   }
   if (/INSERT INTO report_purchases/.test(q)) { const id = uuid(); db.purchases.push({ id, report_ref:p[0], amount:p[1], currency:p[2], status:'pending_payment', provider: /'razorpay'/.test(q)?'razorpay':null }); return { rows:[{id}] }; }
 
-  if (/SELECT amount FROM report_purchases WHERE id=\$1 AND report_ref=\$2/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0] && x.report_ref === p[1]).map(x => ({ amount: String(x.amount) })) };
+  if (/SELECT amount(, currency)? FROM report_purchases WHERE id=\$1 AND report_ref=\$2/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0] && x.report_ref === p[1]).map(x => ({ amount: String(x.amount), currency: x.currency })) };
   if (/SELECT status FROM report_purchases WHERE id=\$1 AND report_ref=\$2/.test(q)) return { rows: db.purchases.filter(x => x.id === p[0] && x.report_ref === p[1]).map(x => ({ status: x.status })) };
   if (/SELECT report_ref, id FROM report_purchases WHERE provider_payment_id=\$1 AND status='paid'/.test(q)) return { rows: db.purchases.filter(x => x.provider_payment_id === p[0] && x.status === 'paid').map(x => ({ report_ref: x.report_ref, id: x.id })) };
   if (/SELECT report_ref FROM report_purchases WHERE provider_payment_id=\$1 AND status='paid'/.test(q)) return { rows: db.purchases.filter(x => x.provider_payment_id === p[0] && x.status === 'paid').map(x => ({ report_ref: x.report_ref })) };
@@ -158,13 +158,15 @@ async function query(sql, p=[]) {
   if (/SET provider_order_id=\$2 WHERE id=\$1/.test(q)) { db.purchases.filter(x=>x.id===p[0]).forEach(x=>x.provider_order_id=p[1]); return { rows:[] }; }
   if (/SELECT status, provider, provider_order_id, amount, currency FROM report_purchases WHERE id=\$1 AND report_ref=\$2/.test(q)) return { rows: db.purchases.filter(x=>x.id===p[0]&&x.report_ref===p[1]) };
   if (/SELECT id, report_ref, amount, currency, status FROM report_purchases WHERE id=\$1 AND provider='mor'/.test(q)) return { rows: db.purchases.filter(x=>x.id===p[0]&&x.provider==='mor') };
+  if (/SELECT status, provider_payment_id FROM report_purchases WHERE id=\$1/.test(q)) return { rows: db.purchases.filter(x=>x.id===p[0]).map(x=>({status:x.status, provider_payment_id:x.provider_payment_id ?? null})) };
+  if (/FROM report_purchases WHERE provider=\$1 AND provider_payment_id=\$2/.test(q)) return { rows: db.purchases.filter(x=>x.provider===p[0]&&x.provider_payment_id===p[1]) };
   if (/SELECT status, provider_order_id FROM report_purchases/.test(q)) return { rows: db.purchases.filter(x=>x.id===p[0]&&x.report_ref===p[1]).map(x=>({status:x.status, provider_order_id:x.provider_order_id})) };
   if (/SELECT status FROM report_purchases/.test(q)) return { rows: db.purchases.filter(x=>x.id===p[0]&&x.report_ref===p[1]).map(x=>({status:x.status})) };
   if (/SELECT id, report_ref, amount, currency, status FROM report_purchases WHERE provider='razorpay' AND provider_order_id=\$1/.test(q)) return { rows: db.purchases.filter(x=>x.provider==='razorpay'&&x.provider_order_id===p[0]) };
   if (/SET status='paid', provider_payment_id=\$3/.test(q)) { const r = db.purchases.filter(x=>x.id===p[0]&&x.report_ref===p[1]&&x.status==='pending_payment'); r.forEach(x=>{x.status='paid'; x.provider_payment_id=p[2];}); return { rows: r.map(x=>({id:x.id, amount:String(x.amount), currency:x.currency, quote_id:x.quote_id ?? null, buyer_country:x.buyer_country ?? null, billing_country:x.billing_country ?? null, buyer_kind:x.buyer_kind ?? null, tax_id:x.tax_id ?? null})) }; }
   if (/INSERT INTO payment_events/.test(q)) {
     const lit = /'razorpay'/.test(q) ? 'razorpay' : /'mor'/.test(q) ? 'mor' : null, k = (lit || p[0]) + '|' + (lit ? p[0] : p[1]), old = db.events.get(k);
-    const reclaim = /DO UPDATE/.test(q) && old && old.status === 'received' && (Date.now() - old.at) / 1000 >= Number(p[2]);
+    const reclaim = /DO UPDATE/.test(q) && old && old.status === 'received' && (Date.now() - old.at) / 1000 >= Number(lit ? p[2] : p[3]);
     if (old && !reclaim) return { rows:[] };
     const id = old ? old.id : db.events.size + 1; db.events.set(k, { id, status: 'received', at: Date.now() }); return { rows:[{id}] };
   }

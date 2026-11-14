@@ -54,6 +54,20 @@ const norm = s => String(s || '').toLowerCase().normalize('NFKD').replace(/[\u03
 const tokens = s => new Set(norm(s).split(' ').filter(w => w.length > 2));
 function jaccard(a, b) { const A = tokens(a), B = tokens(b); if (!A.size || !B.size) return 0; let n = 0; for (const t of A) if (B.has(t)) n++; return n / (A.size + B.size - n); }
 
+const NEGATION = /\b(no|not|never|none|nil|without|cleared|withdrawn|dismissed|dropped|quashed|settled|resolved|closed|revoked|cancelled|canceled|refused|denied|failed|absent|zero)\b/i;
+const numbersOf = text => new Set((String(text || '').match(/\d[\d,]*(?:\.\d+)?/g) || []).map(x => x.replace(/,/g, '').replace(/\.$/, '')));
+/** Do two claims say the same thing in other words? Mostly the same words (jaccard 0.6), or nearly all the words of the shorter one (0.8, at least six words).
+ *  Either way they must carry the same figures (every figure of the one with fewer is in the other) and neither may be a negation of the other:
+ *  "a charge of 85 crore" and "a charge of 850 crore", or "a charge is registered" and "no charge is registered", are two facts. */
+function sameClaim(a, b) {
+  const A = tokens(a), B = tokens(b);
+  let n = 0; for (const t of A) if (B.has(t)) n++;
+  const near = jaccard(a, b) >= 0.6 || (Math.min(A.size, B.size) >= 6 && n / Math.min(A.size, B.size) >= 0.8);
+  if (!near || NEGATION.test(String(a)) !== NEGATION.test(String(b))) return false;
+  const na = numbersOf(a), nb = numbersOf(b), [small, big] = na.size <= nb.size ? [na, nb] : [nb, na];
+  return !small.size || [...small].every(x => big.has(x));
+}
+
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 /** A date as 'YYYY-MM' (or 'YYYY-MM-DD' when a day is given); null when the text holds no date. */
 function parseDate(text) {
@@ -103,7 +117,7 @@ function mergeFacts(raw, { developerSite = '', retrieved = new Set() } = {}) {
       if (twin) { absorb(twin, item); continue; }
       group.push(item); facts.push(item); continue;
     }
-    const twin = facts.find(g => !g.field && g.area === item.area && jaccard(g.claim, item.claim) >= 0.6);
+    const twin = facts.find(g => !g.field && g.area === item.area && sameClaim(g.claim, item.claim));
     if (twin) { absorb(twin, item); continue; }
     facts.push(item);
   }
@@ -127,14 +141,44 @@ const LEAD_PATTERNS = [
   { kind: 'case', re: /\b[A-Z][A-Za-z.()\s]{1,30}No\.?\s*\d{1,7}\s*(?:of|\/)\s*\d{4}\b/g },     // "M.A.S. No. 5714 of 2015"
   { kind: 'company', re: /\b[A-Z][A-Za-z&'.-]+(?:\s+[A-Z][A-Za-z&'.-]+){0,5}\s+(?:Private Limited|Pvt\.? Ltd\.?|Limited|LLP|LLC|PLC|Ltd\.?|Inc\.?)\b/g },
 ];
-/** Leads named in a fact's text, plus any the bots listed explicitly. Deduplicated by kind and value. */
-function extractLeads(facts, botLeads = [], known = new Map()) {
+const COMPANY_NOISE = new Set(['private', 'limited', 'pvt', 'ltd', 'llp', 'llc', 'plc', 'inc', 'corporation', 'corp', 'company', 'co', 'the']);
+const companyKey = name => norm(name).split(' ').filter(w => w && !COMPANY_NOISE.has(w)).join(' ');
+const idKey = v => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+/** Which entity a company or company-id lead is about, and which registration numbers are the project's own: so one target is followed once. */
+function leadTargets({ projectIds = [], entities = [], promoter = '' } = {}) {
+  const list = entities.map(e => ({ names: new Set([companyKey(e.name)]), ids: new Set((e.ids || []).map(idKey).filter(Boolean)) }));
+  if (promoter && !list.some(e => e.names.has(companyKey(promoter)))) list.push({ names: new Set([companyKey(promoter)]), ids: new Set() });
+  const own = new Set(projectIds.map(idKey).filter(Boolean));
+  const find = (kind, value) => {
+    const i = kind === 'company' ? list.findIndex(e => e.names.has(companyKey(value))) : kind === 'company-id' ? list.findIndex(e => e.ids.has(idKey(value))) : -1;
+    return i < 0 ? null : 'entity:' + i;
+  };
+  return { own, find };
+}
+
+/** Leads named in a fact's text, plus any the bots listed explicitly. Deduplicated by kind and value.
+ *  With `targets` (the project's registration numbers, the entities found so far) a lead is also dropped when it names the project's own registration
+ *  number (the first sweep already read that record), and a company named once by name and once by company number is one lead (the number's). */
+function extractLeads(facts, botLeads = [], known = new Map(), targets = null) {
   const out = new Map(known);
+  const T = targets ? leadTargets(targets) : null, byTarget = new Map();
+  if (T) for (const [key, l] of out) { const g = T.find(l.kind, l.value); if (g) byTarget.set(g, key); }
   const add = (kind, value, why, from) => {
     let v = String(value || '').replace(/\s+/g, ' ').trim();
     if (kind === 'company') v = v.replace(/^(?:(?:The|Promoter|Developer|Builder|Company|SPV|Seller|By|Of|And|Parent|Its|Subsidiary)\s+)+/i, '');
     if (v.length < 4) return;
     const key = kind + ':' + norm(v); if (out.has(key)) return;
+    if (T) {
+      if (kind === 'registration' && T.own.has(idKey(v))) return;
+      const g = T.find(kind, v);
+      if (g && byTarget.has(g)) {
+        const heldKey = byTarget.get(g), held = out.get(heldKey);
+        if (!(kind === 'company-id' && held && held.kind === 'company' && held.state === 'open')) return;
+        out.delete(heldKey); why = [why, 'the company: ' + held.value].filter(Boolean).join(' ');
+      }
+      if (g) byTarget.set(g, key);
+    }
     out.set(key, { key, kind, value: v, why: why || '', from: from || '', state: 'open' });
   };
   for (const f of facts) for (const p of LEAD_PATTERNS) for (const m of String(f.claim + ' ' + f.value).matchAll(p.re)) add(p.kind, m[0], 'named in ' + f.id, f.id);
@@ -278,6 +322,6 @@ function sourceList(facts, developerSite) {
 const VERDICT = /\b(we recommend (buying|purchasing|avoiding)|do not buy|don'?t buy|proceed with conditions|safe to buy|good investment|avoid this project)\b/i;
 const hasVerdict = text => VERDICT.test(String(text || ''));
 
-module.exports = { STATUS, statusOf, isOfficial, host, safeUrl, norm, jaccard, parseDate, parseNumber, sameValue, mergeFacts, extractLeads,
+module.exports = { STATUS, statusOf, isOfficial, host, safeUrl, norm, jaccard, sameClaim, leadTargets, parseDate, parseNumber, sameValue, mergeFacts, extractLeads,
   samePerson, commonControl, areaCheck, dateGaps, delayCost, priceTable, questionsFromReasoning, assembleQuestions, sourceList,
   WHEN, TO, hasVerdict, anchorIn };
