@@ -61,7 +61,7 @@ function questionCompact(q) {
 }
 function fact(f, ref) {
   const st = f.inConflict ? 'conflict' : f.status;
-  return `<li class="f st-${st}"><p class="f-text">${ID(f.id)} ${esc(f.claim)}</p><p class="f-status">${esc(LABEL[st])}${f.foundBy && f.foundBy.length > 1 ? `, found by ${f.foundBy.length} engines` : ''}</p>${sourcesLine(f.sources)}<p class="f-reply"><a href="#" data-reply="${esc(f.id)}" data-ref="${esc(ref || '')}" data-claim="${esc(f.claim)}">Respond or correct</a></p></li>`;
+  return `<li class="f st-${st}"><p class="f-text">${ID(f.id)} ${esc(f.claim)}</p><p class="f-status">${esc(LABEL[st])}${f.foundBy && f.foundBy.length > 1 ? `, found by ${f.foundBy.length} engines` : ''}</p>${f.flagged ? '<p class="note">A page behind this finding contains text that looks like an instruction to an AI system. It is not treated as verified; check the source yourself.</p>' : ''}${sourcesLine(f.sources)}<p class="f-reply"><a href="#" data-reply="${esc(f.id)}" data-ref="${esc(ref || '')}" data-claim="${esc(f.claim)}">Respond or correct</a></p></li>`;
 }
 const promiseCard = p => `<div class="pr"><p class="pr-label">${esc(p.label)}</p><div class="pr-grid"><div class="pr-a"><span>Promised or marketed</span><p>${esc(p.promise)}</p></div><div class="pr-b"><span>The record shows</span><p>${esc(p.record)}</p></div></div>${p.note ? `<p class="pr-note">${esc(p.note)}</p>` : ''}</div>`;
 
