@@ -179,6 +179,10 @@ function createAccounts(deps = {}) {
       if (!email || !/^\d{6}$/.test(code)) return fail(res, 400, 'invalid_code', 'That code is not right. Check the latest e-mail and try again.');
       if (await ipBanned(req)) { await ev('login_blocked_ip', { email, req, detail: 'verify-code' }); return fail(res, 403, 'ip_banned', 'This address is blocked.'); }
       if (await accountBanned(email)) { await ev('login_blocked_account', { email, req, detail: 'verify-code' }); return fail(res, 403, 'account_banned', 'This account is disabled. Write to us if you think that is a mistake.'); }
+      if (await store.attemptsSince(email, new Date(now() - 3600e3)) >= cfg.addressAttemptsPerHour) {
+        await ev('address_locked', { email, req });
+        return fail(res, 429, 'too_many_attempts', 'Too many attempts for this address. Please try again in an hour.', { retryAfter: 3600 });
+      }
       const open = await store.latestOpenCode(email, at());
       if (!open) { await ev('code_expired', { email, req }); return fail(res, 400, 'invalid_code', 'That code is not right or has expired. Ask for a new one.'); }
       const tries = await store.bumpAttempts(open.id);
@@ -193,13 +197,19 @@ function createAccounts(deps = {}) {
         return fail(res, 400, 'invalid_code', 'That code is not right. Check the latest e-mail and try again.', { attemptsLeft: Math.max(0, cfg.codeAttempts - tries) });
       }
       let u = await store.findUserByEmail(email), isNewUser = false;
+      if (!u && b.termsAccepted !== true) { await ev('consent_required', { email, req }); return fail(res, 400, 'consent_required', 'Please accept the terms and the privacy notice to create your account.'); }
+      if (u && u.disabledAt) { await ev('login_blocked_disabled', { email, userId: u.id, req }); return fail(res, 403, 'account_disabled', 'This account is disabled. Write to us if you think that is a mistake.'); }
+      if (!await store.consumeCode(open.id)) return fail(res, 400, 'invalid_code', 'That code is not right or has expired. Ask for a new one.');
       if (!u) {
-        if (b.termsAccepted !== true) { await ev('consent_required', { email, req }); return fail(res, 400, 'consent_required', 'Please accept the terms and the privacy notice to create your account.'); }
-        u = await store.createUser({ email, language: LANG_RE.test(String(b.language || '')) ? String(b.language) : null, country: countryFromRequest(req, cfg.edgeCountryHeader), termsVersion: cfg.termsVersion, privacyVersion: cfg.privacyVersion, now: at() });
+        try {
+          u = await store.createUser({ email, language: LANG_RE.test(String(b.language || '')) ? String(b.language) : null, country: countryFromRequest(req, cfg.edgeCountryHeader), termsVersion: cfg.termsVersion, privacyVersion: cfg.privacyVersion, now: at() });
+        } catch (e) {
+          if (!e || e.code !== '23505') throw e;
+          u = await store.findUserByEmail(email);
+          if (!u) throw e;
+        }
         isNewUser = true;
       }
-      if (u.disabledAt) { await ev('login_blocked_disabled', { email, userId: u.id, req }); return fail(res, 403, 'account_disabled', 'This account is disabled. Write to us if you think that is a mistake.'); }
-      await store.consumeCode(open.id);
       await store.markLogin(u.id, at());
       const token = S.newToken(), t = now();
       await store.createSession({ tokenHash: S.hashToken(token), userId: u.id, expiresAt: new Date(t + cfg.sessionDays * DAY), ipHash: S.hashIp(cfg.pepper, req.ip), userAgent: clip(req.get && req.get('user-agent'), 200), now: at() });
