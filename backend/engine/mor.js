@@ -123,7 +123,7 @@ function parseWebhook(event) {
   if (!kind) return null;
   const md = d.metadata || {}, num = v => (v == null || v === '' ? null : Number(v));
   return { kind, type: t, paymentId: d.payment_id || null, amountMinor: num(kind === 'refund' ? d.amount : d.total_amount), currency: d.currency || null,
-    taxMinor: num(d.tax), purchaseId: md.purchase_id || null, ref: md.ref || null, quoteId: md.quote_id || null, status: d.status || null };
+    refundId: d.refund_id || null, taxMinor: num(d.tax), purchaseId: md.purchase_id || null, ref: md.ref || null, quoteId: md.quote_id || null, status: d.status || null };
 }
 
 module.exports = { baseUrl, configured, sign, verifyWebhook, createCheckout, getSession, getPayment, refundPayment, parseWebhook, TOLERANCE_SEC };

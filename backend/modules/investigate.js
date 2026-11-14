@@ -8,6 +8,7 @@ const PRICING = require('../pricing');
 const INVESTIGATOR = require('../engine/investigator');
 const { renderDossier } = require('../engine/dossierHtml');
 const DOSSIER_BRIEF = require('../engine/dossierBrief');
+const { reportView } = require('../engine/reportView');
 const PAGES = require('../engine/reportPages');
 const PDF = require('../engine/pdf');
 const { registerBrief, pausedReason } = require('../engine/research');
@@ -153,6 +154,17 @@ module.exports = function register(app, c) {
     let price = null;
     try { const f = PRICING.previewFee(pricingData, brief, buyer); price = { display: f.currency === 'INR' ? '₹' + Number(f.price).toLocaleString('en-IN') : `${f.currency} ${f.price}`, line: 'Set by the property\'s value and the depth of the research. The amount you pay is confirmed before payment.' }; } catch { price = null; }
     res.send(PAGES.previewPage(brief.dossier, { ref, price, country: buyer.country, held: REVIEW.isHeld(brief), payments: paywallActive(process.env) }));
+  }));
+  app.get('/api/report/:ref', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
+    const ref = String(req.params.ref || '');
+    if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
+    const brief = await getByRefAsync(ref);
+    if (!brief || brief.kind !== 'dossier') return res.status(404).json({ ok: false, error: 'That report was not found.' });
+    res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+    if (!brief.dossier) return res.status(202).json({ ok: true, ready: false, ref, phase: brief.phase || 'starting' });
+    ACCOUNTS.touch(req, ref);
+    const full = !paywallActive(process.env) || await fullAccess(req, ref, (req.query && req.query.t) || req.get('x-report-access'));
+    res.json({ ok: true, ready: true, held: REVIEW.isHeld(brief), report: reportView(brief.dossier, { locked: !full, ref }) });
   }));
   app.get('/r/:ref/pdf', ACCOUNTS.guard, ah(async (req, res) => {
     const ref = String(req.params.ref || ''); const t = String((req.query && req.query.t) || '');

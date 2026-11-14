@@ -31,10 +31,22 @@ async function claimEvent(db, provider, eventId, payloadHash, env = process.env)
   return r.rows.length ? { claimed: true, id: r.rows[0].id } : { claimed: false, id: null };
 }
 
+/** The same claim for the older signed route, where the provider name comes from a header: it is a parameter here, never part of the SQL. */
+async function claimExternalEvent(db, provider, eventId, payloadHash, env = process.env) {
+  const r = await db.query(
+    `INSERT INTO payment_events (provider, event_id, payload_hash, signature_ok, process_status)
+     VALUES ($1, $2, $3, true, 'received')
+     ON CONFLICT (provider, event_id) DO UPDATE SET received_at = NOW(), payload_hash = EXCLUDED.payload_hash
+       WHERE payment_events.process_status = 'received' AND payment_events.received_at < NOW() - make_interval(secs => $4)
+     RETURNING id`,
+    [String(provider), String(eventId), payloadHash, retrySeconds(env)]);
+  return r.rows.length ? { claimed: true, id: r.rows[0].id } : { claimed: false, id: null };
+}
+
 /** Record how the event ended. Only a final status stops a later redelivery. */
 async function finishEvent(db, id, status) {
   if (!FINAL.has(status)) throw new Error('not a final status');
   await db.query(`UPDATE payment_events SET process_status=$2, processed_at=NOW() WHERE id=$1`, [id, status]);
 }
 
-module.exports = { claimEvent, finishEvent, retrySeconds, FINAL };
+module.exports = { claimEvent, claimExternalEvent, finishEvent, retrySeconds, FINAL };
