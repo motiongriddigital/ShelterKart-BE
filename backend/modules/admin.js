@@ -76,7 +76,7 @@ module.exports = function register(app, c) {
         .map(j => ({ ref: j.ref, market: j.input && j.input.country, status: j.status, paid: Boolean(j.paid), costUsd: r(j.costUsd), stages: stageTotals(j.stageCosts), capUsd: j.capUsd == null ? null : r(j.capUsd) })),
       pdf: PDF.queueState() });
   });
-  app.get('/api/admin/delivery', adminAuth, (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ok: true, ...DELIVERY.status(), pdf: PDF.available() }); });
+  app.get('/api/admin/delivery', adminAuth, (req, res) => { res.set('Cache-Control', 'no-store'); res.json({ ok: true, ...DELIVERY.status(), pdf: PDF.available(), pdfs: c.PDFS ? c.PDFS.stats() : null, pdfQueue: PDF.queueState() }); });
   app.get('/api/admin/engines', adminAuth, (req, res) => {
     res.set('Cache-Control', 'no-store');
     res.json({ ok: true, ...ENGINES.status(process.env) });

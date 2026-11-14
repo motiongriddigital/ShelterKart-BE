@@ -39,7 +39,7 @@ Both are made by the server by itself, shortly after the research they describe 
 - Translations. The PDFs are English, like the page.
 - Attaching the PDF to the e-mail. The e-mail keeps a link; attachments need a provider decision and file-size limits.
 - Object storage (S3). The store is a directory behind an interface, so a bucket can replace it when the host is chosen.
-- A different PDF per country or per price. The free PDF shows the price the page shows.
+- A different PDF per country or per price. The free PDF carries no price.
 - Editing or annotating a PDF, or a PDF of a bundle of reports.
 
 ## 5. Users
@@ -84,7 +84,7 @@ The full-PDF route answers 403 `payment_required` and names the preview PDF in t
 
 | ID | Requirement |
 | --- | --- |
-| FR-1 | The preview PDF is built from the free view only: the project block (name, place, registration ids, research date), the counts sentence, the "where the marketing and the record part ways" cards, the first three questions in full, the list of what the full report adds, the price line when payments are on, the unlock link, and the research-not-advice notice. |
+| FR-1 | The preview PDF is built from the free view only: the project block (name, place, registration ids, research date), the counts sentence, the "where the marketing and the record part ways" cards, the first three questions in full, the list of what the full report adds, the unlock link (no price: it depends on the buyer's country, and a PDF is forwarded), and the research-not-advice notice. |
 | FR-2 | The preview PDF carries a visible "Free preview" mark on every page and the reference. It holds no finding text beyond the cards, no source list, no question beyond the first three, no tracker. |
 | FR-3 | The full PDF is the existing full report (`renderDossier`), unchanged in content. |
 | FR-4 | A held report (under review) has no PDF of either kind and the routes answer 423. |
@@ -159,7 +159,7 @@ The preview PDF holds the same facts as the preview page and nothing about the b
 | D3 | A directory store (`PDF_DIR`), not the database: previews are many and mostly never downloaded. | TDD section 4 |
 | D4 | Preview PDFs expire after 7 days; full PDFs live with the report. | FR-17 |
 | D5 | The free route is separate (`/r/:ref/preview.pdf`); the existing route stays the paid one. | FR-12, FR-13, front end links |
-| D6 | The free PDF shows the price and an unlock link when payments are on. | FR-1 |
+| D6 | The free PDF carries the unlock link and no price: the price depends on the buyer's country and a forwarded PDF would show the wrong one. | FR-1, the free PDF's cache key |
 | D7 | Background previews yield to downloads. | FR-9 |
 | D8 | English only; brand fonts are an installation step, not in scope. | non-goals |
 | Q1 | Should the "ready" e-mail attach the full PDF (size about 200 to 400 KB) instead of linking? Needs the mail provider. | delivery |

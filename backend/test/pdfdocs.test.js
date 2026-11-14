@@ -1,7 +1,7 @@
 'use strict';
 const assert = require('assert');
 const { renderPreviewPdf, renderDossier } = require('../engine/dossierHtml');
-const { createPdfDocs } = require('../engine/pdfDocs');
+const { createPdfDocs, freeView } = require('../engine/pdfDocs');
 const { createMemoryPdfStore } = require('../engine/pdfStore');
 let passed = 0, failed = 0;
 async function t(name, fn) { try { await fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
@@ -99,6 +99,15 @@ const PAID = ['SENTINEL_QUESTION_FOUR', 'SENTINEL_QUESTION_FIVE', 'SENTINEL_WHY_
     assert.notStrictEqual(k('full', a), k('full', paidChange));
     assert.notStrictEqual(k('full', a), k('preview', a));
     assert(/^[a-f0-9]{16}$/.test(k('full', a)));
+    assert.strictEqual(k('full', a), k('full', a, {})); assert.strictEqual(k('full', a), k('full', a, { link: 'https://elsewhere.example/r/' + REF }));
+  });
+  await t('the free view is a whitelist: nothing else of the dossier goes into the preview page or its key', () => {
+    const d = dossier({ secretField: 'SENTINEL_EXTRA', entities: [{ name: 'SENTINEL_ENTITY' }] });
+    const v = freeView(d);
+    assert.deepStrictEqual(Object.keys(v).sort(), ['asOf', 'counts', 'location', 'market', 'project', 'promises', 'query', 'questions', 'ref']);
+    assert.deepStrictEqual(Object.keys(v.project).sort(), ['ids', 'name']);
+    assert.strictEqual(v.questions.length, 5); assert(v.questions[0].why && v.questions[2].good); assert.deepStrictEqual(Object.keys(v.questions[3]).sort(), ['id', 'to', 'when']);
+    assert(!JSON.stringify(v).includes('SENTINEL_'.concat('FINDING')) && !JSON.stringify(v).includes('SENTINEL_EXTRA') && !JSON.stringify(v).includes('SENTINEL_QUESTION_FOUR'));
   });
   await t('a preview is printed once and then served from storage', async () => {
     const { docs, calls, brief } = rig();

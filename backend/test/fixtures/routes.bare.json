@@ -73,6 +73,7 @@
 {"method":"post","path":"/api/investigate/:ref/contact","handlers":3},
 {"method":"get","path":"/r/:ref","handlers":2},
 {"method":"get","path":"/api/report/:ref","handlers":3},
+{"method":"get","path":"/r/:ref/preview.pdf","handlers":2},
 {"method":"get","path":"/r/:ref/pdf","handlers":2},
 {"method":"get","path":"/api/search/config","handlers":1},
 {"method":"post","path":"/api/search/candidates","handlers":3},

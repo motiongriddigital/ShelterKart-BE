@@ -63,7 +63,7 @@ function workingPage({ ref, query }) {
 }
 
 /** The free preview, with the unlock form in place of the plain button. */
-function previewPage(d, { ref, price, country = 'IN', held = false, payments = true }) {
+function previewPage(d, { ref, price, country = 'IN', held = false, payments = true, pdf = false }) {
   const html = H.renderPreview(B.previewDossier(d), { price });
   const form = held ? `<p>A person is checking this report before it can be unlocked. This usually takes less than a working day; this page updates when it is ready.</p>`
     : !payments ? `<p>Payments are not switched on yet.</p>`
@@ -72,7 +72,8 @@ function previewPage(d, { ref, price, country = 'IN', held = false, payments = t
 <label>Billing country<select name="country">${options(country)}</select></label>
 <button type="submit">Unlock the full report</button><p id="sk-unlock-msg" role="status" aria-live="polite"></p></form>`;
   const out = html.replace(/<a class="btn" href="#unlock">Unlock the full report<\/a>/, form);
-  return inject(out, { data: { ref, live: d.phase === 'preview' ? 'off' : 'on', phase: d.phase || 'preview' } });
+  const top = pdf && !held ? `<div class="bar"><span class="meta">Free preview</span><a class="pdf" href="/r/${encodeURIComponent(ref)}/preview.pdf">Download the free preview (PDF)</a></div>` : '';
+  return inject(out, { top, data: { ref, live: d.phase === 'preview' ? 'off' : 'on', phase: d.phase || 'preview' } });
 }
 
 /** The full report for a buyer who has paid, live until the investigation completes. */

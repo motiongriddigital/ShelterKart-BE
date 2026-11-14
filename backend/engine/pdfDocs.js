@@ -7,6 +7,12 @@ const TEMPLATE_VERSION = 'pdf-1';
 const nameOf = brief => String((brief && brief.project && brief.project.name) || (brief && brief.dossier && brief.dossier.query) || 'Report').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'Report';
 const filenameOf = (brief, kind) => (kind === 'full' ? 'ShelterKart-Report-' : 'ShelterKart-Preview-') + nameOf(brief) + '.pdf';
 
+function freeView(d) {
+  const qs = d.questions || [], p = d.project || {};
+  return { ref: d.ref, query: d.query, location: d.location, market: d.market, asOf: d.asOf, project: { name: p.name, ids: p.ids }, counts: d.counts, promises: d.promises,
+    questions: qs.slice(0, 3).concat(qs.slice(3).map(q => ({ id: q.id, to: q.to, when: q.when }))) };
+}
+
 function stable(v) {
   if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
   if (v && typeof v === 'object') return '{' + Object.keys(v).sort().filter(k => v[k] !== undefined).map(k => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';
@@ -23,14 +29,14 @@ function createPdfDocs({ pdf, store, env = process.env, log = console, now = () 
   const dossierOf = brief => (brief && brief.dossier) || null;
 
   function keyOf(kind, dossier, ctx = {}) {
-    const body = kind === 'full' ? dossier : { ...dossier, sections: undefined, sources: undefined, inferences: undefined, conflicts: undefined, checks: undefined, unreachable: undefined, glance: undefined, questions: (dossier.questions || []).slice(0, 3), phase: undefined };
-    return crypto.createHash('sha256').update(TEMPLATE_VERSION + '|' + kind + '|' + stable(body) + '|' + stable(ctx)).digest('hex').slice(0, 16);
+    const body = kind === 'full' ? dossier : freeView(dossier);
+    return crypto.createHash('sha256').update(TEMPLATE_VERSION + '|' + kind + '|' + stable(body) + '|' + stable(kind === 'full' ? {} : ctx)).digest('hex').slice(0, 16);
   }
 
   function htmlFor(kind, brief, ctx = {}) {
     const d = dossierOf(brief);
     if (kind === 'full') return H.renderDossier(d);
-    return H.renderPreviewPdf(d, { price: ctx.price || null, link: ctx.link || '' });
+    return H.renderPreviewPdf(freeView(d), { price: ctx.price || null, link: ctx.link || '' });
   }
   const footerFor = (kind, brief) => (kind === 'full'
     ? `ShelterKart report: ${brief.project.name}. ${brief.ref || ''}. Research, not advice.`
@@ -115,4 +121,4 @@ function createPdfDocs({ pdf, store, env = process.env, log = console, now = () 
   };
 }
 
-module.exports = { createPdfDocs, TEMPLATE_VERSION, filenameOf };
+module.exports = { createPdfDocs, TEMPLATE_VERSION, filenameOf, freeView };

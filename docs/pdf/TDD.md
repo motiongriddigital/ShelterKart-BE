@@ -56,7 +56,7 @@ Layout: `<dir>/<ref>/<kind>-<key16>.pdf`. `ref` matches `^SK-[A-F0-9]{12}$` and 
 
 ### 3.2 `engine/previewPdfHtml` inside `engine/dossierHtml.js` (new function)
 
-`renderPreviewPdf(d, { price, link })` returns a self-contained HTML page for printing, built from the same data as `renderPreview` and the same helpers (`question`, `promiseCard`, `head`), but written for paper: a cover block with a "Free preview" mark, the counts sentence, the cards, the three questions, the list of what the full report adds, a boxed unlock section with the price line and the printed link text, and the notice. It never reads `d.sections`, `d.sources`, `d.inferences`, `d.conflicts`, `d.checks`, `d.unreachable` or `d.questions` past the third. It is not derived from `renderDossier`.
+`renderPreviewPdf(d, { price, link })` returns a self-contained HTML page for printing, built from the same data as `renderPreview` and the same helpers (`question`, `promiseCard`, `head`), but written for paper (the service passes `freeView(d)` and no price): a cover block with a "Free preview" mark, the counts sentence, the cards, the three questions, the list of what the full report adds, a boxed unlock section with the price line and the printed link text, and the notice. It never reads `d.sections`, `d.sources`, `d.inferences`, `d.conflicts`, `d.checks`, `d.unreachable` or `d.questions` past the third. It is not derived from `renderDossier`.
 
 ### 3.3 `engine/pdfDocs.js` (new)
 
@@ -71,7 +71,8 @@ createPdfDocs({ pdf, store, env, log, now }) -> {
 ```
 
 - `TEMPLATE_VERSION = 'pdf-1'`; raise it when either template changes so old files are replaced.
-- `ctx` is what the free PDF shows besides the dossier: the price display line and the unlock link. Both go into the key, so a price change reprints.
+- `ctx` is what the free PDF shows besides the free view: the unlock link (the service passes no price). It goes into the key of the free PDF only; the full PDF's key ignores it.
+- `freeView(dossier)` is a whitelist: reference, query, place, market, research date, project name and ids, counts, the marketing-versus-record cards, the first three questions in full and the rest as stubs (id, team, stage). The free template receives only this object, and the free key is made from it, so no other field of the dossier can reach the free PDF or change its key.
 - `ensure` is single-flight per `ref:kind` (a map of promises). `background: true` returns `null` at once when the printer's queue has anyone waiting (`queueState().waiting > 0`) or printing is unavailable, so previews never delay a download (FR-9).
 - A full PDF is stored only when `dossier.phase === 'complete'` (FR-11). An incomplete report prints on demand and the route adds `X-Report-Phase`.
 - `describe` answers `reason`: `pending` (no dossier), `held`, `unavailable` (no Chromium), `completing` (full requested, phase not complete), `not_made` (printable, not stored yet; the next request makes it). It never prints, so the report call stays fast.
