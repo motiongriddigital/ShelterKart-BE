@@ -49,7 +49,11 @@ function makePgStore(pool) {
       const r = one(await pool.query(`UPDATE auth_codes SET attempts=attempts+1 WHERE id=$1 RETURNING attempts`, [id]));
       return r ? Number(r.attempts) : 0;
     },
-    async consumeCode(id) { await pool.query(`UPDATE auth_codes SET consumed_at=now() WHERE id=$1 AND consumed_at IS NULL`, [id]); },
+    async consumeCode(id) { const r = await pool.query(`UPDATE auth_codes SET consumed_at=now() WHERE id=$1 AND consumed_at IS NULL`, [id]); return (r && r.rowCount) > 0; },
+    async attemptsSince(emailLower, since) {
+      const r = one(await pool.query(`SELECT COALESCE(SUM(attempts),0)::int AS n FROM auth_codes WHERE email_lower=$1 AND created_at >= $2`, [emailLower, iso(since)]));
+      return r ? Number(r.n) : 0;
+    },
     async findUserByEmail(emailLower) {
       return userFromRow(one(await pool.query(`SELECT ${USER_COLS} FROM users WHERE lower(email)=$1 AND deleted_at IS NULL`, [emailLower])));
     },
@@ -195,7 +199,8 @@ function makeMemoryStore() {
       return l ? { id: l.id, codeHash: l.codeHash, attempts: l.attempts } : null;
     },
     async bumpAttempts(id) { const c = codes.find(x => x.id === id); if (!c) return 0; c.attempts++; return c.attempts; },
-    async consumeCode(id) { const c = codes.find(x => x.id === id); if (c && !c.consumedAt) c.consumedAt = new Date(); },
+    async consumeCode(id) { const c = codes.find(x => x.id === id); if (!c || c.consumedAt) return false; c.consumedAt = new Date(); return true; },
+    async attemptsSince(emailLower, since) { return codes.filter(c => c.emailLower === emailLower && c.createdAt >= iso(since)).reduce((n, c) => n + c.attempts, 0); },
     async findUserByEmail(emailLower) { return copy(live().find(u => u.email.toLowerCase() === emailLower)); },
     async userById(id) { const u = users.get(id); return u && !u.deletedAt ? copy(u) : null; },
     async createUser({ email, language, country, termsVersion, privacyVersion, now }) {
