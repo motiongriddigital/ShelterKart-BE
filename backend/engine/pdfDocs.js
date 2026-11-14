@@ -4,7 +4,13 @@ const H = require('./dossierHtml');
 const { createPdfStore, defaultDir } = require('./pdfStore');
 
 const TEMPLATE_VERSION = 'pdf-1';
-const clean = s => String(s == null ? '' : s).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40).replace(/-$/, '');
+const LEGAL_END = /-(Private-Limited|Pvt-Ltd|Pvt-Limited|Limited|Ltd|LLP|LLC|Inc|Corp|Corporation|GmbH|PLC)$/i;
+const clean = s => {
+  let n = String(s == null ? '' : s).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const shorter = n.replace(LEGAL_END, ''); if (shorter) n = shorter;
+  if (n.length > 40) { const cut = n.slice(0, 40); n = (n[40] === '-' ? cut : cut.replace(/-[^-]*$/, '') || cut).replace(/-$/, ''); }
+  return n;
+};
 const subjectOf = (brief, kind) => {
   const d = (brief && brief.dossier) || {}, bp = (brief && brief.project) || {}, dp = d.project || {};
   const dev = bp.developer || dp.developer || dp.promoter_legal_name || dp.brand;

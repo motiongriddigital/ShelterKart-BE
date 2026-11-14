@@ -13,7 +13,7 @@ Decided by the owner on 14 November 2026, on top of the report PDFs (PRD, TDD in
 
 ## File names
 
-- Paid: the developer's legal name or brand from the research, else what the buyer searched for, then the research date and the first six characters of the report reference. Example: `Hubtown-Limited_2026-11-14_B2FCF2.pdf`.
+- Paid: the developer's legal name or brand from the research, else what the buyer searched for, then the research date and the first six characters of the report reference. A company ending such as Private Limited, Pvt Ltd, LLP or Inc is dropped, and a long name is cut at a word, never in the middle of one. Example: `Sunrise-Landmark-Developers_2026-11-14_EB6DB2.pdf` for Sunrise Landmark Developers Private Limited.
 - Free: what the buyer searched for (never the developer's name, which the free view does not show), then `preview`, the date and the code. Example: `Hubtown-Celeste_preview_2026-11-14_B2FCF2.pdf`.
 - Letters, digits and hyphens only; at most 40 characters of name. Two researches of one developer on one day still differ by their code.
 - A date and code, not a clock time: the name is the same on every download, in the e-mail and in the account, and a clock time would change whenever the file is made again.

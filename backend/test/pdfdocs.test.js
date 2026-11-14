@@ -35,9 +35,14 @@ const PAID = ['SENTINEL_QUESTION_FOUR', 'SENTINEL_QUESTION_FIVE', 'SENTINEL_WHY_
   console.log('the file names');
   await t('a file is named for the developer (the paid one), a date and a short code, so two reports never look alike; the free one says preview', () => {
     const full = { ref: REF, dossier: dossier({ project: { name: 'Marigold Heights', developer: 'Hubtown Limited', ids: [] } }) };
-    assert.strictEqual(filenameOf(full, 'full'), 'Hubtown-Limited_2026-11-14_012345.pdf');
+    assert.strictEqual(filenameOf(full, 'full'), 'Hubtown_2026-11-14_012345.pdf');
     assert.strictEqual(filenameOf(full, 'preview'), 'Marigold-Heights_preview_2026-11-14_012345.pdf');
-    assert.strictEqual(filenameOf({ ref: REF, project: { name: 'Marigold Heights', developer: 'Hubtown Limited' }, dossier: dossier() }, 'full'), 'Hubtown-Limited_2026-11-14_012345.pdf');
+    assert.strictEqual(filenameOf({ ref: REF, project: { name: 'Marigold Heights', developer: 'Hubtown Limited' }, dossier: dossier() }, 'full'), 'Hubtown_2026-11-14_012345.pdf');
+    const legal = n => filenameOf({ ref: REF, dossier: dossier({ project: { name: 'P', developer: n, ids: [] } }) }, 'full');
+    assert.strictEqual(legal('Sunrise Landmark Developers Private Limited'), 'Sunrise-Landmark-Developers_2026-11-14_012345.pdf');
+    assert.strictEqual(legal('Acme Pvt. Ltd.'), 'Acme_2026-11-14_012345.pdf');
+    assert.strictEqual(legal('Limited'), 'Limited_2026-11-14_012345.pdf');
+    assert.strictEqual(legal('The Very Long Named Real Estate Development Holdings'), 'The-Very-Long-Named-Real-Estate_2026-11-14_012345.pdf');
     const other = { ref: 'SK-ABCDEF012345', dossier: full.dossier };
     assert.notStrictEqual(filenameOf(full, 'full'), filenameOf(other, 'full'));
   });
