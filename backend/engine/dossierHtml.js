@@ -329,6 +329,8 @@ const PREVIEW_PDF_CSS = `
 .pv-open{border:2px solid var(--ink);padding:1rem 1.2rem;margin:1.6rem 0;break-inside:avoid}
 .pv-open .price{font-size:1.4rem;margin:.2rem 0}
 .pv-open .url{word-break:break-all;font-weight:600}
+.q{break-inside:avoid}
+.lock{margin:.7rem 0;padding:.8rem 1.1rem}.pv-open{margin:1rem 0 .6rem;padding:.8rem 1.1rem}.pv-end{break-inside:avoid}.pv-end .notice{margin-top:.6rem}
 `;
 
 /** The free PDF: the free view and nothing else, written for paper. It never reads sections, sources, reasoning, conflicts, checks, or a question after the third. */
@@ -348,7 +350,7 @@ function renderPreviewPdf(d, { price = null, link = '' } = {}) {
   <p style="font-size:1.08rem;color:var(--ink-2);margin-top:1rem">We found ${c.facts || 0} things from ${c.sources || 0} sources and ${c.conflicts || 0} places where sources disagree, and turned them into ${c.questions || 0} questions for the developer's teams. Here is what stood out first.</p>
 </section>
 ${(d.promises || []).length ? `<h2 style="margin-top:1.8rem">Where the marketing and the record part ways</h2><div class="prs">${d.promises.map(promiseCard).join('')}</div>` : ''}
-${top.length ? `<h2 class="pagebreak" style="margin-top:0;border-top:0;padding-top:0">Three questions to start with</h2>
+${top.length ? `<h2 style="margin-top:1.8rem">Three questions to start with</h2>
 <p class="meta">Put these to the developer in writing. Each says who should answer and what a good answer looks like.</p>
 <ol class="plain">${top.map(q => question(q, { track: false })).join('')}</ol>` : ''}
 ${rest.length ? `<div class="lock"><h3>${rest.length} more questions are in the full report</h3>
@@ -360,11 +362,11 @@ ${rest.length ? `<div class="lock"><h3>${rest.length} more questions are in the 
 <li>Every one of the ${c.facts || 0} findings with a link to where it appears and a clear status</li>
 <li>A one-page tracker for answers and documents, and what to request where records are not online</li>
 <li>A PDF to keep, and a live page that is refreshed if we find something new</li></ul></div>
-<div class="pv-open"><h3 style="margin:0">Unlock the full report</h3>
+<div class="pv-end"><div class="pv-open"><h3 style="margin:0">Unlock the full report</h3>
 ${price ? `<p class="price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
 <p>One payment. No subscription. Open the report page to unlock it and receive the full PDF:</p>
 <p class="url">${esc(link || ('/r/' + (d.ref || '')))}</p></div>
-<p class="notice">Research, not advice. This document states what public sources show and what to ask. It does not tell you whether to buy. ShelterKart is paid only by buyers; no developer can influence it.</p>
+<p class="notice">Research, not advice. This document states what public sources show and what to ask. It does not tell you whether to buy. ShelterKart is paid only by buyers; no developer can influence it.</p></div>
 </main></body></html>`;
 }
 

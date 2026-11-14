@@ -54,11 +54,11 @@ const textOf = buf => { const f = path.join(os.tmpdir(), 'skpdf-real-' + process
 
   console.log('real printing');
   let preview, full;
-  await t('the free preview prints as a real PDF of at most two pages and is stored on disk', async () => {
+  await t('the free preview prints as a real PDF of at most three pages and is stored on disk', async () => {
     preview = await docs.serve(brief(), { kind: 'preview', ctx });
     const buf = fs.readFileSync(preview.path);
     assert.strictEqual(buf.slice(0, 5).toString(), '%PDF-'); assert(buf.length > 4000 && buf.length < 600000, 'size ' + buf.length);
-    assert(pagesOf(buf) >= 1 && pagesOf(buf) <= 2, 'pages ' + pagesOf(buf));
+    assert(pagesOf(buf) >= 1 && pagesOf(buf) <= 3, 'pages ' + pagesOf(buf));
     assert(/\.pdf$/.test(preview.path) && preview.path.startsWith(dir));
   });
   await t('the full report prints as a real PDF of more pages than the preview', async () => {

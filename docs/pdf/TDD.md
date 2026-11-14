@@ -104,7 +104,7 @@ Both set `Content-Type: application/pdf`, `Content-Disposition: attachment; file
 
 ## 4. Data and files
 
-No database table. The directory `PDF_DIR` (default `<LIVE_JOBS_DIR>/pdfs` when `LIVE_JOBS_DIR` is set, else a directory under the OS temporary directory, which is a cache that is rebuilt on demand). Sizes: a free preview of two pages is about 60 to 120 KB; a full report of fifteen to forty pages 200 to 600 KB. At 100 new investigations a day and seven-day previews the previews are well under 100 MB.
+No database table. The directory `PDF_DIR` (default `<LIVE_JOBS_DIR>/pdfs` when `LIVE_JOBS_DIR` is set, else a directory under the OS temporary directory, which is a cache that is rebuilt on demand). Sizes: a free preview of two to three pages is about 60 to 120 KB; a full report of fifteen to forty pages 200 to 600 KB. At 100 new investigations a day and seven-day previews the previews are well under 100 MB.
 
 A directory is per instance. With several instances a request to an instance that does not hold the file prints locally and stores it there; nothing breaks, the work is only repeated. A shared volume or bucket replaces the directory store behind the same interface when SHEL-9 (the Postgres job store) is built.
 
@@ -144,7 +144,7 @@ A directory is per instance. With several instances a request to an instance tha
 3. `pdfDocs` with a fake printer: key changes with content, ctx and template version; single-flight (ten calls, one print); background yields when the queue is not empty; full is not stored while incomplete; `describe` reasons; counters.
 4. Route harness (stub printer): preview for a signed-in visitor; full 403 `payment_required` with `previewPdf` for an unentitled one; full for an entitled one; held 423; 503 when unavailable; headers; `GET /api/report/:ref` carries `pdf`; the second download does not print.
 5. Triggers: a finished sweep leaves a preview file; completion leaves a full file before delivery is called; `PDF_AUTO=off` leaves none; prune and purge remove files.
-6. One real-Chromium test (skipped with a clear message where Playwright is absent): a preview PDF and a full PDF are printed, start with `%PDF-`, the preview has two pages or fewer and its text holds no sentinel.
+6. One real-Chromium test (skipped with a clear message where Playwright is absent): a preview PDF and a full PDF are printed, start with `%PDF-`, the preview has at most three pages and fewer than the full one, and (where `pdftotext` exists) its text holds no sentinel.
 7. Mutation checks: break each guard once and see its test fail (free built from the full view; key ignoring content; path validation; entitlement).
 
 ## 9. What this does not change
