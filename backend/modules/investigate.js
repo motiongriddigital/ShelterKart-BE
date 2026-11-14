@@ -17,7 +17,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { stripPII } = require('../lib/pii');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
+  const { ACCOUNTS, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
 
   const startsByUser = new Map(), userDailyCap = () => { const v = process.env.INVESTIGATE_PER_USER_DAILY; return v === undefined || v === '' ? 5 : Math.max(0, Math.floor(Number(v)) || 0); };
   const userStartsToday = id => { const today = new Date().toISOString().slice(0, 10), e = startsByUser.get(id); return e && e.day === today ? e.n : 0; };
@@ -118,7 +118,7 @@ module.exports = function register(app, c) {
     const job = newLiveJob(ref, input); job.key = key;
     try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: false }); } catch {}   // the new search, in the shadow
     job.inv.sweep({ panel: previewPanel() })
-      .then(() => { job.status = 'preview'; indexPreview(job, job.inv && job.inv.dossier); persistJob(job); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
+      .then(() => { job.status = 'preview'; indexPreview(job, job.inv && job.inv.dossier); persistJob(job); makePreviewPdf(ref); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
       .catch(e => { job.status = 'failed'; if ((liveIndex.get(key) || {}).ref === ref) liveIndex.delete(key); persistJob(job); console.error('[investigate] sweep failed for ' + ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation could not run just now. Please try again later.' }); });
     res.status(202).json({ ok: true, ref });
   }));
@@ -165,7 +165,7 @@ module.exports = function register(app, c) {
     if (buyer.source === 'default' && brief.market) buyer = await buyerOf({ ...req, body: {}, query: { country: brief.market.toUpperCase() } });
     let price = null;
     try { const f = PRICING.previewFee(pricingData, brief, buyer); price = { display: f.currency === 'INR' ? '₹' + Number(f.price).toLocaleString('en-IN') : `${f.currency} ${f.price}`, line: 'Set by the property\'s value and the depth of the research. The amount you pay is confirmed before payment.' }; } catch { price = null; }
-    res.send(PAGES.previewPage(brief.dossier, { ref, price, country: buyer.country, held: REVIEW.isHeld(brief), payments: paywallActive(process.env) }));
+    res.send(PAGES.previewPage(brief.dossier, { ref, price, country: buyer.country, held: REVIEW.isHeld(brief), payments: paywallActive(process.env), pdf: PDF.available() }));
   }));
   app.get('/api/report/:ref', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
     const ref = String(req.params.ref || '');
@@ -176,20 +176,44 @@ module.exports = function register(app, c) {
     if (!brief.dossier) return res.status(202).json({ ok: true, ready: false, ref, phase: brief.phase || 'starting' });
     ACCOUNTS.touch(req, ref);
     const full = !paywallActive(process.env) || await fullAccess(req, ref, (req.query && req.query.t) || req.get('x-report-access'));
-    res.json({ ok: true, ready: true, held: REVIEW.isHeld(brief), report: reportView(brief.dossier, { locked: !full, ref }) });
+    const held = REVIEW.isHeld(brief);
+    res.json({ ok: true, ready: true, held, report: reportView(brief.dossier, { locked: !full, ref }), pdf: PDFS.describe(brief, { kind: full ? 'full' : 'preview', ctx: pdfCtx(ref), held }) });
+  }));
+  const sendPdf = async (res, out, name, extra = {}) => {
+    const buf = out.buffer || await require('fs').promises.readFile(out.path);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${name}"`, 'Content-Length': String(buf.length), 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', ...extra });
+    res.send(buf);
+  };
+  const pdfProblem = (res, e) => {
+    const map = { pdf_unavailable: [503, 'PDF download is not available yet. Open the report and use your browser\'s print to save a PDF.'], pdf_pending: [404, 'No report yet.'], pdf_held: [423, 'A person is checking this report before it can be released.'] };
+    const hit = e && map[e.code]; if (!hit) return false;
+    res.status(hit[0]).json({ ok: false, code: e.code, error: hit[1] }); return true;
+  };
+  const pdfOnce = async (res, brief, opts, extra) => {
+    let out;
+    try { out = await PDFS.serve(brief, opts); await sendPdf(res, out, PDFS.filenameOf(brief, opts.kind), extra && extra(out)); }
+    catch (e) {
+      if (e && e.code === 'ENOENT' && out) { out = await PDFS.serve(brief, opts); return sendPdf(res, out, PDFS.filenameOf(brief, opts.kind), extra && extra(out)); }
+      throw e;
+    }
+  };
+  app.get('/r/:ref/preview.pdf', ACCOUNTS.guard, ah(async (req, res) => {
+    const ref = String(req.params.ref || '');
+    const brief = REF_RE.test(ref) ? await getByRefAsync(ref) : null;
+    if (!brief || brief.kind !== 'dossier' || !brief.dossier) return res.status(404).json({ ok: false, error: 'That report was not found.' });
+    ACCOUNTS.touch(req, ref);
+    try { await pdfOnce(res, brief, { kind: 'preview', ctx: pdfCtx(ref), held: REVIEW.isHeld(brief) }); }
+    catch (e) { if (!pdfProblem(res, e)) throw e; }
   }));
   app.get('/r/:ref/pdf', ACCOUNTS.guard, ah(async (req, res) => {
     const ref = String(req.params.ref || ''); const t = String((req.query && req.query.t) || '');
-    if (!REF_RE.test(ref) || !(await fullAccess(req, ref, t))) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
-    const brief = await getByRefAsync(ref); if (!brief || !brief.dossier) return res.status(404).json({ ok: false, error: 'No report yet.' });
-    try {
-      const pdf = await PDF.renderPdf(renderDossier(brief.dossier), { footer: `ShelterKart report: ${brief.project.name}. ${ref}. Research, not advice.` });
-      const name = 'ShelterKart-Report-' + String(brief.project.name).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf';
-      res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${name}"`, 'Cache-Control': 'no-store' });
-      res.send(pdf);
-    } catch (e) {
-      if (e && e.code === 'pdf_unavailable') return res.status(503).json({ ok: false, error: 'PDF download is not available yet. Open the report and use your browser\'s print to save a PDF.' });
-      throw e;
+    if (!REF_RE.test(ref)) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
+    if (!(await fullAccess(req, ref, t))) {
+      if (t) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
+      return res.status(403).json({ ok: false, code: 'payment_required', error: 'Unlock the full report to download this PDF. The free preview PDF is available.', previewPdf: `/r/${ref}/preview.pdf` });
     }
+    const brief = await getByRefAsync(ref); if (!brief || !brief.dossier) return res.status(404).json({ ok: false, error: 'No report yet.' });
+    try { await pdfOnce(res, brief, { kind: 'full', held: REVIEW.isHeld(brief) }, out => (out.stored ? {} : { 'X-Report-Phase': String(brief.dossier.phase || 'working') })); }
+    catch (e) { if (!pdfProblem(res, e)) throw e; }
   }));
 };

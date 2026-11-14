@@ -7,11 +7,15 @@ const DOSSIER_BRIEF = require('../engine/dossierBrief');
 const { alertOperator } = require('../engine/delivery');
 const { reportLink } = require('../engine/delivery');
 const { registerBrief, getByRef } = require('../engine/research');
+const { createPdfDocs } = require('../engine/pdfDocs');
+const REVIEW = require('../engine/review');
 const { costedEngines, addStageCost } = require('../engine/jobCosts');
 const ROOT = require('path').resolve(__dirname, '..');
 
 module.exports = function setup(c) {
   const { ACCOUNTS, RESPONSES, pool, pricingData, tokenGrants } = c;
+  const PDFS = c.PDFS || createPdfDocs({ pdf: require('../engine/pdf'), env: process.env });
+  const pdfCtx = ref => ({ link: reportLink(process.env, ref, '').replace(/\?t=$/, '') });
 
   /* ------------------------------------------------------------------
    * The investigator for buyers. /start names a property; /r/:ref shows the free preview (the panel's first sweep) with
@@ -104,7 +108,7 @@ module.exports = function setup(c) {
     for (const [ref, job] of liveJobs) {
       const d = (job.inv && job.inv.dossier) || (job.saved && job.saved.dossier);
       if (!d || !cites({ dossier: d }, { url, host })) continue;
-      if (job.status === 'sweeping' || job.status === 'completing' || job.completing) { running++; continue; }
+      if (job.status === 'sweeping' || job.status === 'completing') { running++; continue; }
       dropLiveJob(ref);
       removed++;
     }
@@ -120,6 +124,7 @@ module.exports = function setup(c) {
   };
   function dropLiveJob(ref) {
     liveJobs.delete(ref); JOBS.remove(ref);
+    try { PDFS.dropRef(ref); } catch (e) { console.error('[pdf] could not remove the files of ' + ref + ':', e && e.message); }
     for (const [k, v] of liveIndex) if (v.ref === ref) liveIndex.delete(k);
     for (const [k, v] of regIndex) if (v.ref === ref) regIndex.delete(k);
     for (const [k, v] of previewIndex) if (v.ref === ref) previewIndex.delete(k);
@@ -150,6 +155,11 @@ module.exports = function setup(c) {
     registerBrief(DOSSIER_BRIEF.briefOf({ ref: job.ref, query: job.input.query, location: job.input.location, country: job.input.country, marketLabel: job.input.market,
       dossier: d, phase: d.phase, contact: job.contact || prev.contact, review: prev.review }));
   }
+  function makePreviewPdf(ref) {
+    const brief = getByRef(ref);
+    if (!brief || !brief.dossier) return Promise.resolve(null);
+    return PDFS.ensure(brief, { kind: 'preview', ctx: pdfCtx(ref), held: REVIEW.isHeld(brief), background: true }).catch(() => null);
+  }
   function liveEmit(job, ev) {
     const slim = { type: ev.type, stage: ev.stage, round: ev.round, message: ev.message, phase: ev.dossier && ev.dossier.phase, counts: ev.dossier && ev.dossier.counts };
     job.events.push({ at: Date.now(), ...slim }); if (job.events.length > 200) job.events.shift();
@@ -176,7 +186,12 @@ module.exports = function setup(c) {
     job.delivered = true;
     const token = issueToken(job.ref, process.env.ACCESS_TOKEN_SECRET, 30, Date.now(), job.purchaseId), link = ACCOUNTS.enabled ? reportLink(process.env, job.ref, '').replace(/\?t=$/, '') : reportLink(process.env, job.ref, token);
     if (contact.email) RESPONSES.watch(job.ref, contact.email).catch(() => {});   // told if a finding in this report is corrected: that one purpose only
-    const sent = DELIVERY.send({ ref: job.ref, project: (brief && brief.project && brief.project.name) || job.input.query, email: contact.email, phone: contact.phone, link, pdfLink: ACCOUNTS.enabled ? link + '/pdf' : link.replace(/\?t=/, '/pdf?t=') });
+    const message = { ref: job.ref, project: (brief && brief.project && brief.project.name) || job.input.query, email: contact.email, phone: contact.phone, link, pdfLink: ACCOUNTS.enabled ? link + '/pdf' : link.replace(/\?t=/, '/pdf?t=') };
+    const fresh = getByRef(job.ref);
+    const prepared = fresh && fresh.dossier && fresh.dossier.phase === 'complete'
+      ? Promise.race([PDFS.ensure(fresh, { kind: 'full', held: REVIEW.isHeld(fresh) }), new Promise(r => setTimeout(r, Number(process.env.PDF_BEFORE_DELIVERY_MS) || 60000).unref())]).catch(() => null)
+      : Promise.resolve(null);
+    const sent = prepared.then(() => DELIVERY.send(message));
     // The delivery layer now holds the address for its own retries. A finished report has no further use for it, so the saved file stops carrying it;
     // a report that stopped early keeps it, because the operator's retry sends the complete report to the same buyer.
     if (job.status === 'done') { job.contact = null; persistJob(job); }
@@ -248,6 +263,9 @@ module.exports = function setup(c) {
     if (!process.env.DATABASE_URL && rec.saved && rec.saved.dossier) { try { saveLiveDossier(job, JSON.parse(JSON.stringify(rec.saved.dossier))); } catch (e) { console.error('[investigate] could not restore report ' + rec.ref + ':', e && e.message); } }
   }
   setInterval(() => { try { const n = pruneLiveJobs(); if (n) console.log('[jobs] removed ' + n + ' saved investigation' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[jobs] retention sweep failed:', e && e.message); } }, 6 * 3600 * 1000).unref();
+  const pdfCleanup = () => { try { const n = PDFS.prune({ previewMs: num('PDF_PREVIEW_DAYS', 7) * 24 * 3600 * 1000, keep: ref => liveJobs.has(ref) }); if (n) console.log('[pdf] removed ' + n + ' stored PDF' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[pdf] clean-up failed:', e && e.message); } };
+  setInterval(pdfCleanup, 24 * 3600 * 1000).unref();
+  setImmediate(pdfCleanup);
   setImmediate(() => { for (const job of liveJobs.values()) if (job.paid && job.status !== 'done' && job.status !== 'failed' && !job.completing) { try { completeLive(job); } catch (e) { console.error('[investigate] could not resume ' + job.ref + ':', e && e.message); } } });
-  Object.assign(c, { DELIVERY, indexPreview, previewTwin, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
+  Object.assign(c, { DELIVERY, PDFS, makePreviewPdf, pdfCtx, indexPreview, previewTwin, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
 };

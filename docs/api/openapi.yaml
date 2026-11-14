@@ -886,12 +886,13 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [ok, ready, held, report]
+                required: [ok, ready, held, report, pdf]
                 properties:
                   ok: {type: boolean, const: true}
                   ready: {type: boolean, const: true}
                   held: {type: boolean, description: True while the report is held for a person to check adverse findings.}
                   report: {$ref: '#/components/schemas/PropertyReport'}
+                  pdf: {$ref: '#/components/schemas/ReportPdf'}
         '202':
           description: The investigation has no report yet.
           content:
@@ -948,15 +949,57 @@ paths:
           content:
             text/html:
               schema: {type: string}
+  /r/{ref}/preview.pdf:
+    get:
+      operationId: getReportPreviewPdf
+      tags: [Pages]
+      summary: The free preview of a report as a PDF
+      description: |
+        The free view only, written for paper: the project, the counts, the marketing-versus-record differences, three questions in full, what the full report adds, the research date and the unlock link. It holds nothing that is paid. It is made automatically when the first sweep finishes and served from storage (`Cache-Control private, no-store`, `X-Robots-Tag noindex, nofollow`, `Content-Disposition attachment`); a request that finds none prints it once.
+        Needs a session when accounts are on (401 `auth_required`). Any signed-in visitor may have it, including one who has paid. A held report answers 423; a server without PDF printing answers 503 `pdf_unavailable`.
+      security:
+        - sessionCookie: []
+      x-source: backend/modules/investigate.js:preview.pdf
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+      responses:
+        '200':
+          description: The PDF.
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '401':
+          description: No session (accounts on).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '404':
+          description: 'The reference is malformed, unknown, or has no report yet: "That report was not found."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '423':
+          description: The report is held for a person to check; no PDF is made.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: 'Code `pdf_unavailable`: the PDF renderer is not installed on this server.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
   /r/{ref}/pdf:
     get:
       operationId: getReportPdf
       tags: [Pages]
       summary: The full report as a PDF
-      description: Requires a valid access token in `t`. Rendered on demand with a headless browser and sent as an attachment (`Content-Disposition attachment`, `Cache-Control no-store`).
+      description: |
+        For a visitor who owns a paid purchase of the report (or holds a valid access token in `t`). The PDF is made automatically when the report is complete, before the delivery e-mail, and served from storage (`Cache-Control private, no-store`, `Content-Disposition attachment`). A report that is not yet complete is printed on demand, is not stored, and the response carries `X-Report-Phase`.
+        A visitor who is not entitled and sent no token gets 403 `payment_required` with `previewPdf`, the address of the free PDF. A bad or expired token keeps the generic 403.
       security:
+        - sessionCookie: []
         - accessTokenQuery: []
-      x-source: backend/server.js:781
+      x-source: backend/modules/investigate.js:pdf
       parameters:
         - {$ref: '#/components/parameters/RefPath'}
         - {$ref: '#/components/parameters/TokenQuery'}
@@ -967,17 +1010,29 @@ paths:
             application/pdf:
               schema: {type: string, format: binary}
         '403':
-          description: 'The reference is malformed or the token is missing, expired or not valid: "This link has expired or is not valid." A CORS refusal (`Origin not allowed`) also returns 403 with a different message.'
+          description: 'Not entitled. Without a token: `{ ok: false, code: "payment_required", error, previewPdf }`. With a missing, expired or invalid token, or a malformed reference: "This link has expired or is not valid." A CORS refusal (`Origin not allowed`) also returns 403.'
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Error'}
+              schema:
+                type: object
+                required: [ok, error]
+                properties:
+                  ok: {type: boolean, const: false}
+                  code: {type: string, enum: [payment_required]}
+                  error: {type: string}
+                  previewPdf: {type: string, description: The address of the free preview PDF, present with payment_required.}
         '404':
           description: '"No report yet." (not held, or no dossier)'
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
+        '423':
+          description: The report is held for a person to check; no PDF is made.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
         '503':
-          description: '"PDF download is not available yet." when the PDF renderer is not installed.'
+          description: 'Code `pdf_unavailable`: the PDF renderer is not installed on this server.'
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
@@ -4625,6 +4680,21 @@ components:
       required: [ok]
       properties:
         ok: {type: boolean, const: true}
+    ReportPdf:
+      type: object
+      description: The PDF this visitor may download now. `kind` is `preview` (the free PDF) for a visitor who has not paid and `full` for one who has, or for everyone when payments are off. Describing it never prints anything.
+      required: [kind, ready]
+      properties:
+        kind: {type: string, enum: [preview, full]}
+        ready: {type: boolean, description: True when the file is made and can be downloaded at once.}
+        url: {type: string, description: 'Same-origin address, for example /r/SK-0123456789AB/preview.pdf. Present when the PDF exists or will be made on the next request.'}
+        filename: {type: string}
+        bytes: {type: integer}
+        generatedAt: {type: string, format: date-time}
+        reason:
+          type: string
+          enum: [pending, completing, not_made, unavailable, held]
+          description: 'Present when `ready` is false. pending: no report yet. completing: the paid report is not complete. not_made: the next request makes it (a few seconds). unavailable: this server cannot print. held: under review, no PDF.'
     PropertyReport:
       type: object
       description: One investigation as the property report page draws it. Field names match the front end's PropertyReport type; the fields marked as extra are additions.
