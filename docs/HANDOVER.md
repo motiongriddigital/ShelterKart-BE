@@ -90,9 +90,9 @@ I read the merchant's documentation but had no credentials. These five facts dec
 | Session metadata (`purchase_id`) returns on the payment | Primary way a webhook finds its purchase. If absent, the buyer's return still settles it (the server checks the payment itself), so no payment is lost | same command |
 | The live base URL (default `https://live.dodopayments.com`) | The test address is confirmed; the live one is the provider's standard | set `DODO_BASE_URL` if different |
 | The partial-refund request shape (`items[{item_id, amount, tax_inclusive}]`) | Full refunds name only the payment; partial refunds follow a third-party client's description | refund one test payment partly |
-| The refund webhook event name | Any `refund.*` event is recorded, not acted on | send a test refund and read `payment_events` |
+| The refund webhook event names | Razorpay `refund.processed` and the merchant's `refund.succeeded` are BOOKED (the refund row, the purchase's status and net revenue, the ledger; access ends when the purchase is refunded in full); every other `refund.*` event is recorded only. The merchant's `refund_id` field name is from its documentation, not confirmed: without it the event's webhook id is the refund's reference | send a test refund from each dashboard, read `payment_events` and the `refunds` table |
 
-Also run one test payment per mapped currency, one declined card, one 3-D Secure card, and one return before the webhook arrives. Support playbook: a `webhook_amount_mismatch` event means a buyer paid and was not unlocked; refund them and fix the product.
+Also run one test payment per mapped currency, one declined card, one 3-D Secure card, and one return before the webhook arrives. Support playbook: a `webhook_amount_mismatch` event means a buyer paid and was not unlocked; refund them and fix the product. A `duplicate_payment` event (also in the error log: "was paid twice") means one purchase was paid twice: the second payment was not unlocked again, so refund one of the two. A `provider_refund_rejected` event means a refund made at the provider could not be booked (more than was paid, another currency): compare the provider's dashboard with the books by hand.
 
 ## 5. Known limits and open decisions
 
