@@ -19,6 +19,8 @@
 {"method":"post","path":"/api/payments/webhook","handlers":3},
 {"method":"post","path":"/api/admin/purge","handlers":2},
 {"method":"post","path":"/api/admin/refunds","handlers":2},
+{"method":"get","path":"/api/admin/refunds/pending","handlers":2},
+{"method":"post","path":"/api/admin/refunds/:id/resolve","handlers":2},
 {"method":"get","path":"/api/admin/costs","handlers":2},
 {"method":"get","path":"/api/admin/delivery","handlers":2},
 {"method":"get","path":"/api/admin/engines","handlers":2},

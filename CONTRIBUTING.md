@@ -23,7 +23,7 @@ There is no `develop` or `test` branch. Testing happens in CI on every pull requ
 
 1. Branch from an up-to-date `main`: `git switch main && git pull && git switch -c fix/name`.
 2. Push and open a pull request. The template lists what to check.
-3. CI runs three jobs: `logic` (all test suites), `real-run` (real Postgres, migrations, smoke test) and `image` (builds the Docker image and starts it). All three must pass.
+3. CI runs three jobs: `logic` (all test suites), `real-run` (real Postgres, migrations, smoke test) and `image` (builds the Docker image and starts it). All three must pass. When GitHub Actions is unavailable, run the same three jobs in Docker before pushing: `tools/ci-local.sh` (see "Run CI locally" below).
 4. Another person reviews when one is available; otherwise the author re-reads the diff once before merging.
 5. Merge with rebase or squash, then delete the branch.
 
@@ -51,3 +51,18 @@ cd backend && npm ci && npm test
 ```
 
 The compose database is published on host port 5440 (`DB_PORT` overrides it).
+
+## Run CI locally
+
+`tools/ci-local.sh` runs the jobs of `.github/workflows/ci.yml` in Docker against the committed tree, so the result does not depend on GitHub Actions or its billing:
+
+```
+tools/ci-local.sh                 # logic, real-run, image (about the same steps as CI)
+tools/ci-local.sh logic           # one job
+tools/ci-local.sh --worktree      # the working tree, including uncommitted and new files
+git config core.hooksPath .githooks   # run it automatically before every push
+SKIP_CI_LOCAL=1 git push          # skip the hook once
+```
+
+`logic` runs `npm ci`, installs Chromium and runs `npm test` in `node:22-slim`. `real-run` starts a `postgres:16` container on a private Docker network and runs the migrations (twice), the foreign-key index check, the price-book seed, the real server and its smoke test, then a second server with accounts on and its smoke test. `image` builds the `Dockerfile` and waits for the health route (host port 14000, `CI_LOCAL_IMAGE_PORT` overrides). The expected migration count is read from `ci.yml`, so the two cannot drift. The scripts the containers run are in `tools/ci-local/`. Docker must be running.
+
