@@ -30,10 +30,13 @@ const memory = () => {
     },
     async salesSince(month) { return [...ledger.values()].filter(r => r.month >= month).map(r => ({ ...r })); },
     async saveRefund(r) { refunds.push({ ...r }); },
-    async reserveRefund(r) { const id = refunds.length + 1; refunds.push({ ...r, id, providerRef: null, status: 'pending' }); return id; },
+    async reserveRefund(r) { const id = refunds.length + 1; refunds.push({ ...r, id, providerRef: null, status: 'pending', createdAt: new Date() }); return id; },
+    async getRefund(id) { const x = refunds.find(r => String(r.id) === String(id)); return x ? { ...x } : null; },
+    async listPendingRefunds() { return refunds.filter(r => r.status === 'pending').map(r => ({ ...r })); },
     async settleRefund(id, { providerRef, status }) { const x = refunds.find(r => r.id === id); if (x) { x.providerRef = providerRef; x.status = status; } },
     async releaseRefund(id) { const i = refunds.findIndex(r => r.id === id && r.status === 'pending'); if (i >= 0) refunds.splice(i, 1); },
     async refundedTotal(purchaseId) { return refunds.filter(r => r.purchaseId === purchaseId).reduce((a, r) => a + r.amount, 0); },
+    async refundByProviderRef(ref) { const x = ref && refunds.find(r => r.providerRef === ref); return x ? { ...x } : null; },
     async nextInvoiceNumber(series) { const n = (counters.get(series) || 0) + 1; counters.set(series, n); return n; },
     async saveInvoice(inv) { invoices.push({ ...inv }); },
     async listInvoices() { return invoices.map(i => ({ ...i })); },
@@ -88,6 +91,14 @@ const postgres = (pool) => ({
       [r.purchaseId, r.amount, r.currency, r.taxReversed, r.reason]);
     return q.rows[0].id;
   },
+  async getRefund(id) {
+    const r = await pool.query(`SELECT id, purchase_id, amount, currency, tax_reversed, reason, provider_ref, status, created_at FROM refunds WHERE id = $1`, [id]);
+    return r.rows.length ? refundRow(r.rows[0]) : null;
+  },
+  async listPendingRefunds() {
+    const r = await pool.query(`SELECT r.id, r.purchase_id, r.amount, r.currency, r.tax_reversed, r.reason, r.provider_ref, r.status, r.created_at, p.report_ref FROM refunds r LEFT JOIN report_purchases p ON p.id = r.purchase_id WHERE r.status = 'pending' ORDER BY r.id`);
+    return r.rows.map(refundRow);
+  },
   async settleRefund(id, { providerRef, status }) {
     await pool.query(`UPDATE refunds SET provider_ref = $2, status = $3 WHERE id = $1`, [id, providerRef, status]);
   },
@@ -97,6 +108,11 @@ const postgres = (pool) => ({
   async refundedTotal(purchaseId) {
     const r = await pool.query(`SELECT COALESCE(SUM(amount), 0) AS refunded FROM refunds WHERE purchase_id = $1`, [purchaseId]);
     return Number(r.rows[0].refunded);
+  },
+  async refundByProviderRef(ref) {
+    if (!ref) return null;
+    const r = await pool.query(`SELECT id, purchase_id, amount, currency, tax_reversed, reason, provider_ref, status, created_at FROM refunds WHERE provider_ref = $1 LIMIT 1`, [ref]);
+    return r.rows.length ? refundRow(r.rows[0]) : null;
   },
   async nextInvoiceNumber(series) {
     const r = await pool.query(`INSERT INTO invoice_counters (series, last) VALUES ($1, 1) ON CONFLICT (series) DO UPDATE SET last = invoice_counters.last + 1 RETURNING last`, [series]);
@@ -109,5 +125,6 @@ const postgres = (pool) => ({
   async listInvoices() { const r = await pool.query(`SELECT number, kind, country, currency, amount_gross FROM invoices ORDER BY id ASC LIMIT 500`); return r.rows; },
 });
 
+const refundRow = x => ({ id: x.id, purchaseId: x.purchase_id, amount: Number(x.amount), currency: x.currency, taxReversed: Number(x.tax_reversed), reason: x.reason, providerRef: x.provider_ref, status: x.status, createdAt: x.created_at, reportRef: x.report_ref || null });
 function makeStore({ pool } = {}) { return pool ? postgres(pool) : memory(); }
 module.exports = { makeStore, memory, postgres };
