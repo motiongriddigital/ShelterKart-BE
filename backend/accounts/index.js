@@ -96,7 +96,7 @@ function createAccounts(deps = {}) {
   });
 
   const csrf = csrfGuard({ mode: enabled ? cfg.csrf : 'off', cookieName: S.cookieName(cfg.secure), openWhenEmpty: !cfg.production,
-    allowedOrigins: String(env.ALLOWED_ORIGINS || '').split(',').map(x => x.trim()).filter(Boolean), log: deps.csrfLog });
+    allowedOrigins: require('../lib/origins').allowedOrigins(env), log: deps.csrfLog });
 
   const guardStart = cfg.searchGate === 'start' ? guard : (req, res, next) => next();
 

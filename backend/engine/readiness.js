@@ -11,6 +11,15 @@ const RAZORPAY = ['RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SE
 const MERCHANT = ['DODO_API_KEY', 'DODO_WEBHOOK_KEY'];
 const MAIL_KEYS = ['RESEND_API_KEY', 'POSTMARK_SERVER_TOKEN', 'BREVO_API_KEY'];
 
+/** How old the exchange rates frozen into the active price book are. Rates are a pricing decision (a new snapshot is released by hand, see tools/fetch_fx.js), so a stale table is only reported, never replaced. */
+function fxStatus(data, env = process.env, now = Date.now()) {
+  const fx = (data && data.book && data.book.fx) || {}, at = Date.parse(fx.asOf), maxAgeDays = Number(env.FX_MAX_AGE_DAYS) > 0 ? Math.floor(Number(env.FX_MAX_AGE_DAYS)) : 45;
+  const ageDays = Number.isFinite(at) ? Math.max(0, Math.floor((now - at) / 864e5)) : null;
+  const stale = ageDays == null || ageDays > maxAgeDays;
+  return { asOf: fx.asOf || null, ageDays, maxAgeDays, stale, indicative: [...(fx.indicative || [])],
+    missing: stale ? ['fresh exchange rates: run node tools/fetch_fx.js, review backend/data/fx-snapshot.next.json, then node tools/build_price_book.js (a pricing decision)'] : [] };
+}
+
 function report(env, data) {
   const merchantMissing = [...lacking(env, MERCHANT), ...(Object.keys(data.morProducts || {}).length ? [] : ['MOR_PRODUCTS'])];
   const intlMissing = env.RAZORPAY_INTERNATIONAL === 'true' ? [] : ['RAZORPAY_INTERNATIONAL'];
@@ -46,6 +55,7 @@ function report(env, data) {
     mail: { provider: mailProvider || '', ready: Boolean(mailProvider), missing: mailProvider ? [] : [...lacking(env, ['DELIVERY_FROM']), `one of ${MAIL_KEYS.join(', ')}`] },
     ops: { missing: lacking(env, ['OPS_ALERT_EMAIL', 'PUBLIC_BASE_URL']) },
     sec: { missing: lacking(env, ['SEC_USER_AGENT']) },
+    fx: fxStatus(data, env),
     countries: [...groups.values()],
   };
 }
@@ -58,6 +68,7 @@ function summaryLines(env, data) {
   if (!r.mail.ready) out.push('e-mail sender not ready, missing: ' + r.mail.missing.join(', '));
   if (r.ops.missing.length) out.push('missing: ' + r.ops.missing.join(', '));
   if (r.sec.missing.length) out.push('SEC identity not set (the SEC connector stays off): ' + r.sec.missing.join(', '));
+  if (r.fx.stale) out.push(r.fx.ageDays == null ? 'the price book has no exchange-rate date' : `the price book's exchange rates are ${r.fx.ageDays} days old (from ${r.fx.asOf}; the limit is ${r.fx.maxAgeDays})`);
   return out;
 }
 
@@ -69,4 +80,4 @@ function mountReadiness(app, { adminAuth, wrap, rateLimit, data, env }) {
   }));
 }
 
-module.exports = { report, summaryLines, mountReadiness };
+module.exports = { report, summaryLines, mountReadiness, fxStatus };

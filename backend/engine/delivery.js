@@ -10,7 +10,7 @@
  * Each message is retried with backoff (1, 5 and 30 minutes by default); every attempt is recorded for the dashboard.
  * Nothing here ever blocks a buyer's page or a payment: delivery runs in the background.
  */
-const PUBLIC = env => String(env.PUBLIC_BASE_URL || env.SITE_URL || '').replace(/\/+$/, '');
+const PUBLIC = env => require('../lib/origins').linkBase(env);
 const DELAYS = [60e3, 5 * 60e3, 30 * 60e3];
 
 function messageOf({ project, link, pdfLink }) {

@@ -79,7 +79,7 @@ Not exercised against a running server (read from the code only): the success pa
 
 Observations that need a human decision or a code change (the contract documents the behaviour as it is; nothing was changed in the code):
 
-1. `PUBLIC_BASE_URL` serves two different roles (see above) and cannot be satisfied by split origins as the code stands.
+1. `PUBLIC_BASE_URL` served three roles and could not be satisfied by split origins. Fixed (SHEL-30): `REPORT_LINK_BASE`, `PAYMENT_RETURN_BASE` and `API_PUBLIC_URL` split them, each defaulting to the old behaviour; see `docs/DEPLOYMENT.md`.
 2. `POST /api/payments/webhook`: a request whose `Content-Type` is not `application/json` throws inside an async handler and, on Node 23, ended the whole server process (verified locally). The other two webhooks answer 401.
 3. Malformed JSON and bodies over 10 kb on any JSON route return 500 `Internal server error`, not 400 or 413, because the generic error handler ignores the error's status.
 4. `POST /api/investigate/{ref}/contact` needs no token. Anyone who knows a report reference can set the contact that the finished report is delivered to.

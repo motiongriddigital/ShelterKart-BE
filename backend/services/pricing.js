@@ -14,7 +14,9 @@ module.exports = function setup(c) {
   { const problems = PRICING.validate(pricingData); if (problems.length) console.error('[pricing] data problems:\n  ' + problems.join('\n  ')); }
   const pricingStore = PRICING.makeStore({ pool: (process.env.DATABASE_URL || process.env.PRICING_STORE === 'pg') ? pool : null });
   { const on = [...pricingData.countries.keys()].filter(c => PRICING.saleStatus(pricingData, c).onSale);
-    if (process.env.NODE_ENV !== 'test') console.log('[pricing] book ' + pricingData.book.version + '; on sale in ' + on.length + ' countries: ' + (on.join(' ') || 'none (set GSTIN for India; RAZORPAY_INTERNATIONAL=true and a tax profile for others)')); }
+    if (process.env.NODE_ENV !== 'test') console.log('[pricing] book ' + pricingData.book.version + '; on sale in ' + on.length + ' countries: ' + (on.join(' ') || 'none (set GSTIN for India; RAZORPAY_INTERNATIONAL=true and a tax profile for others)'));
+    const fx = require('../engine/readiness').fxStatus(pricingData, process.env);
+    if (fx.stale && process.env.NODE_ENV !== 'test') console.warn(fx.ageDays == null ? '[pricing] the price book has no exchange-rate date' : `[pricing] the price book's exchange rates are ${fx.ageDays} days old (from ${fx.asOf}; the limit is ${fx.maxAgeDays}). Run tools/fetch_fx.js and review the candidate.`); }
 
   /** The buyer for this request: their own selection, else the network's suggestion. A country that has reached its tax
    *  registration threshold stops selling until registration is configured. */
@@ -115,8 +117,8 @@ module.exports = function setup(c) {
      collects any tax, included in the total), and comes back to ?sk_ref=...&sk_purchase=..., where the page confirms the payment.
      A session is single-use, so a retry gets a fresh one for the same pending purchase. */
   function startMor(quote, purchaseId, billingCountry) {
-    const base = SITE_BASE();
-    if (!base) throw new Error('PUBLIC_BASE_URL is not set: the merchant checkout needs a return address');
+    const base = require('../lib/origins').returnBase(process.env);
+    if (!base) throw new Error('PUBLIC_BASE_URL (or PAYMENT_RETURN_BASE) is not set: the merchant checkout needs a return address');
     const ref = encodeURIComponent(quote.ref);
     return PAYMENTS.PROVIDERS.mor.createCheckout(quote, { purchaseId, env: process.env, billingCountry,
       productId: (pricingData.morProducts || {})[quote.currency], returnUrl: `${base}/?sk_ref=${ref}&sk_purchase=${encodeURIComponent(purchaseId)}`, cancelUrl: `${base}/?sk_ref=${ref}` });

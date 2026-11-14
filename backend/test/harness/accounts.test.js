@@ -69,7 +69,7 @@ async function signIn(email, ip) {
   ok('before payment: the report is still the preview and the PDF is refused', (await call(find('get', '/api/research/by-ref/:ref'), undefined, { headers: hA, params: { ref } })).body.brief.locked === true && (await call(find('get', '/r/:ref/pdf'), undefined, { headers: hA, params: { ref }, query: {} })).code === 403);
   ok('before payment: access is refused (402)', (await call(find('post', '/api/research/access'), { ref, purchaseId: co.body.purchaseId }, { headers: hA })).code === 402);
   const hook = find('post', '/api/payments/webhook');
-  const raw = Buffer.from(JSON.stringify({ id: 'evt_a1', type: 'payment.succeeded', data: { reportRef: ref, purchaseId: co.body.purchaseId, amount: co.body.amount } }));
+  const raw = Buffer.from(JSON.stringify({ id: 'evt_a1', type: 'payment.succeeded', data: { reportRef: ref, purchaseId: co.body.purchaseId, amount: co.body.amount, currency: co.body.currency } }));
   const wh = await call(hook, raw, { headers: { 'x-sk-provider': 'test', 'x-sk-signature': crypto.createHmac('sha256', 'whsec').update(raw).digest('hex') }, path: '/api/payments/webhook' });
   ok('the payment provider’s signed webhook settles the purchase with no session at all', wh.code === 200 && _db.purchases.find(p => p.id === co.body.purchaseId).status === 'paid');
 
@@ -112,7 +112,7 @@ async function signIn(email, ip) {
   const dco = await call(find('post', '/api/research/checkout'), { ref: dref, idempotencyKey: 'accounts-buyer-b-bbbbbbbbbbbb', quoteId: dq && dq.id, billingCountry: 'IN' }, { headers: hB });
   ok('buyer B can start a checkout on the investigated project', dco.code === 200 && Boolean(dco.body.purchaseId));
   _db.payerEmail = { [dco.body.purchaseId]: 'buyer-b@example.com' };
-  const draw = Buffer.from(JSON.stringify({ id: 'evt_b1', type: 'payment.succeeded', data: { reportRef: dref, purchaseId: dco.body.purchaseId, amount: dco.body.amount } }));
+  const draw = Buffer.from(JSON.stringify({ id: 'evt_b1', type: 'payment.succeeded', data: { reportRef: dref, purchaseId: dco.body.purchaseId, amount: dco.body.amount, currency: dco.body.currency } }));
   const dwh = await call(find('post', '/api/payments/webhook'), draw, { headers: { 'x-sk-provider': 'test', 'x-sk-signature': crypto.createHmac('sha256', 'whsec').update(draw).digest('hex') }, path: '/api/payments/webhook' });
   ok('the webhook settles it', dwh.code === 200 && _db.purchases.find(p => p.id === dco.body.purchaseId).status === 'paid');
   let sentToBuyer; for (let i = 0; i < 100 && !sentToBuyer; i++) { sentToBuyer = MAILS.find(m => String(m.text || '').includes('/r/' + dref)); if (!sentToBuyer) await sleep(50); }

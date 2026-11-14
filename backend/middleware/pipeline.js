@@ -50,7 +50,8 @@ module.exports.install = function install(app, c) {
   // production. Comma-separate multiple origins in ALLOWED_ORIGINS. Wide-open
   // CORS is one of the easiest ways a competitor's script scrapes this API
   // directly from a browser — don't leave it at "*".
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+  const ORIGINS = require('../lib/origins');
+  const allowedOrigins = ORIGINS.allowedOrigins(process.env), configuredOrigins = ORIGINS.configured(process.env);
   app.use(cors({
     credentials: true,
     origin: (origin, cb) => {
@@ -60,7 +61,7 @@ module.exports.install = function install(app, c) {
       // exact risk the comment above warns about. Now an empty list is only
       // tolerated when NODE_ENV is "development" or "test"; anywhere else, and
       // in production, a browser from another website is refused.
-      if (allowedOrigins.length === 0 && ['development', 'test'].includes(process.env.NODE_ENV)) return cb(null, true);
+      if (configuredOrigins.length === 0 && ['development', 'test'].includes(process.env.NODE_ENV)) return cb(null, true);
       cb(new Error('Origin not allowed'));
     }
   }));
