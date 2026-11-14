@@ -42,7 +42,7 @@ nextUtcMidnight(now)           -> ISO string
 2. **Failed sweep** (the `.catch` after `job.inv.sweep(...)`): `job.status = "failed"`, `job.failReason = "engines_unavailable"`, `job.previewFailedAt = now`, persisted with the job; `FP.failed++`; the SSE `error` event carries `reason` and `retryAt` (`liveEmit` and `publicEvent` pass them through).
 3. **Report call** (`GET /api/report/:ref`): when there is no dossier, look at the live job: a failed, unpaid job answers `200 { ok: true, ready: false, state: "unavailable", ref, phase: "failed", reason, retryAt, error }`; otherwise `202` as before with `state: "working"` added. A paid job that failed keeps its existing handling.
 4. **Counters** (`services/liveReports.js`): a small per-day object, reset when the UTC day changes, exposed on the container and added to `GET /api/admin/delivery` as `freePreview`.
-5. **Persistence**: `failReason` and `previewFailedAt` are added to the saved job; a restart keeps a failed preview failed. A search for the same project again already starts a new attempt (the failed job is skipped by the reuse test); a test pins it.
+5. **Persistence**: `failReason` and `previewFailedAt` are added to the saved job (visible in the saved file and to the operator). A search for the same project again already starts a new attempt (the failed job is skipped by the reuse test); a test pins it.
 
 ## 4. Security and privacy
 
@@ -55,6 +55,7 @@ No new personal data. `reason` and `retryAt` are not secrets. The public stream'
 | The counters object is missing (a test harness) | the call still answers; counting is skipped |
 | `retryAt` cannot be computed | omitted, never invented |
 | A failed job is reloaded after a restart with no `failReason` (saved before this change) | treated as `engines_unavailable` |
+| A failed preview after a restart | the saved job keeps `failReason`; the report itself (a brief with no dossier) is held in memory, so the report call then answers 404 "not found" and the buyer searches again, which starts a new attempt |
 
 ## 6. Testing
 

@@ -12,16 +12,18 @@ const { reportView } = require('../engine/reportView');
 const PAGES = require('../engine/reportPages');
 const PDF = require('../engine/pdf');
 const { registerBrief, pausedReason } = require('../engine/research');
+const PS = require('../engine/previewStates');
 const { adminAuth } = require('../middleware/adminAuth');
 const { ah } = require('../middleware/asyncHandler');
 const { stripPII } = require('../lib/pii');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
+  const { ACCOUNTS, FP, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
 
   const startsByUser = new Map(), userDailyCap = () => { const v = process.env.INVESTIGATE_PER_USER_DAILY; return v === undefined || v === '' ? 5 : Math.max(0, Math.floor(Number(v)) || 0); };
   const userStartsToday = id => { const today = new Date().toISOString().slice(0, 10), e = startsByUser.get(id); return e && e.day === today ? e.n : 0; };
   const countUserStart = id => { const today = new Date().toISOString().slice(0, 10), e = startsByUser.get(id); startsByUser.set(id, e && e.day === today ? { day: today, n: e.n + 1 } : { day: today, n: 1 }); if (startsByUser.size > 50000) for (const [k, v] of startsByUser) if (v.day !== today) startsByUser.delete(k); };
+  const refuse = (res, reason, opts) => { const r = PS.refusal(reason, opts); try { FP.refused(reason); } catch { /* counters are optional */ } return res.status(r.status).json(r.body); };
   const streamsByIp = new Map(), streamCap = (k, d) => { const v = Number(process.env[k]); return Number.isFinite(v) && v > 0 ? Math.floor(v) : d; };
 
   /* Which AI engine serves each agent, in what fail-over order, and what each did since the server started. Never shows a key. Admin only. */
@@ -85,7 +87,7 @@ module.exports = function register(app, c) {
     const query = String(b.query || '').trim(), location = String(b.location || '').trim().slice(0, 120), country = PRICING.cleanCode(b.country) || '';
     if (query.length < 3 || query.length > 120) return res.status(400).json({ ok: false, error: 'Name the project, in 3 to 120 characters.' });
     const paused = pausedReason(process.env, country.toLowerCase());
-    if (paused) return res.status(503).json({ ok: false, code: 'paused', error: paused });
+    if (paused) return refuse(res, 'paused', { text: paused });
     const key = DOSSIER_BRIEF.keyOf(query, location, country), seen = liveIndex.get(key);
     if (seen && Date.now() - seen.at < 30 * 24 * 3600 * 1000 && !['failed', 'interrupted'].includes((liveJobs.get(seen.ref) || {}).status) && (liveJobs.has(seen.ref) || await getByRefAsync(seen.ref))) {
       try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: true }); } catch {}
@@ -100,17 +102,19 @@ module.exports = function register(app, c) {
     }
     if (BOT.enabled(process.env)) { const v = BOT.verify(b.pow, process.env); if (!v.ok) return res.status(428).json({ ok: false, code: 'challenge', error: 'Please complete the quick check and try again.' }); }
     const who = ACCOUNTS.enabled && typeof ACCOUNTS.user === 'function' ? await ACCOUNTS.user(req) : null;
-    if (who && userDailyCap() > 0 && userStartsToday(who.id) >= userDailyCap()) return res.status(429).json({ ok: false, code: 'quota', error: 'You have reached today\'s limit of new investigations. Projects already investigated are still open to you.' });
+    if (who && userDailyCap() > 0 && userStartsToday(who.id) >= userDailyCap()) return refuse(res, 'quota');
     const today = new Date().toISOString().slice(0, 10);
     if (investigateDaily.day !== today) { investigateDaily.day = today; investigateDaily.count = 0; investigateDaily.byMarket = {}; }
-    if (investigateCap() <= 0 || investigateDaily.count >= investigateCap()) return res.status(503).json({ ok: false, code: 'paused', error: 'New investigations are paused for today. Projects already investigated are still available.' });
-    if (overDailyMax()) return res.status(503).json({ ok: false, code: 'paused', error: 'New investigations are paused for today. Projects already investigated are still available.' });
+    if (investigateCap() <= 0) return refuse(res, 'paused', { text: PS.PAUSED_TODAY });
+    if (investigateDaily.count >= investigateCap()) return refuse(res, 'daily_cap');
+    if (overDailyMax()) return refuse(res, 'daily_budget');
     const mk = country || '??';
-    if ((investigateDaily.byMarket[mk] || 0) >= marketCap()) return res.status(503).json({ ok: false, code: 'paused', error: 'New investigations in this market are paused for today. Projects already investigated are still available.' });
+    if ((investigateDaily.byMarket[mk] || 0) >= marketCap()) return refuse(res, 'market_cap');
     const running = [...liveJobs.values()].filter(j => j.status === 'sweeping' || j.status === 'completing').length;
-    if (running >= (Number(process.env.INVESTIGATE_CONCURRENCY) || 2) * 2) return res.status(429).json({ ok: false, error: 'Many investigations are running. Please try again in a few minutes.' });
+    if (running >= (Number(process.env.INVESTIGATE_CONCURRENCY) || 2) * 2) return refuse(res, 'busy');
     investigateDaily.count++; investigateDaily.byMarket[mk] = (investigateDaily.byMarket[mk] || 0) + 1;
     if (who) countUserStart(who.id);
+    try { FP.started(); } catch { /* counters are optional */ }
     const ref = DOSSIER_BRIEF.newRef(), input = { query, location, country, market: String(b.market || '').slice(0, 60) };
     ACCOUNTS.touch(req, ref);
     registerBrief(DOSSIER_BRIEF.briefOf({ ref, query, location, country, marketLabel: input.market, phase: 'starting' }));
@@ -119,7 +123,14 @@ module.exports = function register(app, c) {
     try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: false }); } catch {}   // the new search, in the shadow
     job.inv.sweep({ panel: previewPanel() })
       .then(() => { job.status = 'preview'; indexPreview(job, job.inv && job.inv.dossier); persistJob(job); makePreviewPdf(ref); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
-      .catch(e => { job.status = 'failed'; if ((liveIndex.get(key) || {}).ref === ref) liveIndex.delete(key); persistJob(job); console.error('[investigate] sweep failed for ' + ref + ':', e && e.message); liveEmit(job, { type: 'error', message: 'The investigation could not run just now. Please try again later.' }); });
+      .catch(e => {
+        const note = PS.failureNote('engines_unavailable');
+        job.status = 'failed'; job.failReason = note.reason; job.previewFailedAt = Date.now();
+        if ((liveIndex.get(key) || {}).ref === ref) liveIndex.delete(key);
+        try { FP.failed(); } catch { /* counters are optional */ }
+        persistJob(job); console.error('[investigate] sweep failed for ' + ref + ':', e && e.message);
+        liveEmit(job, { type: 'error', message: note.error, reason: note.reason, retryAt: note.retryAt });
+      });
     res.status(202).json({ ok: true, ref });
   }));
   app.get('/api/investigate/:ref/events', ACCOUNTS.guard, ah(async (req, res) => {
@@ -173,7 +184,14 @@ module.exports = function register(app, c) {
     const brief = await getByRefAsync(ref);
     if (!brief || brief.kind !== 'dossier') return res.status(404).json({ ok: false, error: 'That report was not found.' });
     res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
-    if (!brief.dossier) return res.status(202).json({ ok: true, ready: false, ref, phase: brief.phase || 'starting' });
+    if (!brief.dossier) {
+      const job = liveJobs.get(ref);
+      if (job && job.status === 'failed' && !job.paid) {
+        const note = PS.failureNote(job.failReason || 'engines_unavailable', { now: job.previewFailedAt || Date.now() });
+        return res.json({ ok: true, ready: false, state: 'unavailable', ref, phase: 'failed', ...note });
+      }
+      return res.status(202).json({ ok: true, ready: false, state: 'working', ref, phase: brief.phase || 'starting' });
+    }
     ACCOUNTS.touch(req, ref);
     const full = !paywallActive(process.env) || await fullAccess(req, ref, (req.query && req.query.t) || req.get('x-report-access'));
     const held = REVIEW.isHeld(brief);
