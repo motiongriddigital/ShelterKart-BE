@@ -302,5 +302,43 @@ function harness(over = {}, envOver = {}) {
     assert(lines.every(l => !/\d{6}/.test(l) && !/sk_session/.test(l)), lines.join('|'));
   });
 
+  console.log('sign-in hardening: one address, many addresses of the attacker');
+  await t('a code that is used in parallel signs in once; every other copy is refused', async () => {
+    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'race@example.com' } }); const code = h.codeOf();
+    const rs = await Promise.all(Array.from({ length: 20 }, (_, i) => h.call('post', '/api/auth/verify-code', { body: { email: 'race@example.com', code, termsAccepted: true }, ip: '9.9.9.' + i })));
+    assert.strictEqual(rs.filter(r => r.code === 200).length, 1, JSON.stringify(rs.map(r => r.code)));
+    assert(rs.every(r => [200, 400, 429].includes(r.code)), JSON.stringify(rs.map(r => r.code)));
+  });
+  await t('a signed-in user who is disabled keeps the code unused, and a returning user signs in once per code', async () => {
+    const h = harness(); await h.signIn('again@example.com'); h.clock.t += 61000;
+    await h.call('post', '/api/auth/request-code', { body: { email: 'again@example.com' } }); const code = h.codeOf();
+    const rs = await Promise.all(Array.from({ length: 8 }, () => h.call('post', '/api/auth/verify-code', { body: { email: 'again@example.com', code } })));
+    assert.strictEqual(rs.filter(r => r.code === 200).length, 1);
+  });
+  await t('requesting a new code does not reset the wrong-attempt count of the address, whatever the IP', async () => {
+    const h = harness(); let guesses = 0, locked = false;
+    for (let round = 0; round < 8 && !locked; round++) {
+      await h.call('post', '/api/auth/request-code', { body: { email: 'victim@example.com' }, ip: '7.7.' + round + '.1' });
+      h.clock.t += 61000;
+      for (let g = 0; g < 6; g++) {
+        const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'victim@example.com', code: '00000' + g }, ip: '8.8.' + round + '.' + g }); guesses++;
+        if (r.code === 429 && r.body.retryAfter === 3600) { locked = true; break; }
+      }
+    }
+    assert(locked, 'never locked');
+    assert(guesses <= 20, 'too many guesses before the lock: ' + guesses);
+    const real = (h.mails[h.mails.length - 1].text.match(/code is (\d{6})/) || [])[1];
+    const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'victim@example.com', code: real, termsAccepted: true }, ip: '5.5.5.5' });
+    assert.strictEqual(r.code, 429);
+    h.clock.t += 3601000;
+    await h.call('post', '/api/auth/request-code', { body: { email: 'victim@example.com' } });
+    const ok = await h.call('post', '/api/auth/verify-code', { body: { email: 'victim@example.com', code: h.codeOf(), termsAccepted: true } });
+    assert.strictEqual(ok.code, 200);
+  });
+  await t('a normal user is not slowed: three sign-ins in an hour all work', async () => {
+    const h = harness();
+    for (let i = 0; i < 3; i++) { const { r } = await h.signIn('normal@example.com'); assert.strictEqual(r.code, 200); h.clock.t += 61000; }
+  });
+
   console.log(`\n${passed} passed, ${failed} failed`); process.exit(failed ? 1 : 0);
 })();

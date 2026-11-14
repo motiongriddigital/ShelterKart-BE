@@ -120,6 +120,21 @@ async function signIn(email, ip) {
   ok('its link is the plain report page: no access token in it', Boolean(sentToBuyer) && sentToBuyer.text.includes('https://shelterkart.test/r/' + dref) && !/[?&]t=/.test(sentToBuyer.text));
   ok('no one else is e-mailed the report', MAILS.filter(m => String(m.text || '').includes('/r/' + dref)).every(m => m.to[0] === 'buyer-b@example.com'));
 
+  console.log('a signed-in account has a daily allowance of new investigations');
+  process.env.INVESTIGATE_PER_USER_DAILY = '2';
+  const Q = await signIn('quota@example.com'), hQ = { cookie: Q.cookie };
+  const q1 = await call(find('post', '/api/investigate'), { query: 'Quota Tower One', country: 'IN', market: 'India' }, { headers: hQ, path: '/api/investigate' });
+  const q2 = await call(find('post', '/api/investigate'), { query: 'Quota Tower Two', country: 'IN', market: 'India' }, { headers: hQ, path: '/api/investigate' });
+  const q3 = await call(find('post', '/api/investigate'), { query: 'Quota Tower Three', country: 'IN', market: 'India' }, { headers: hQ, path: '/api/investigate' });
+  ok('two new investigations start', q1.code === 202 && q2.code === 202);
+  ok('the third is refused with 429 quota before any AI is asked', q3.code === 429 && q3.body.code === 'quota');
+  const q4 = await call(find('post', '/api/investigate'), { query: 'Quota Tower One', country: 'IN', market: 'India' }, { headers: hQ, path: '/api/investigate' });
+  ok('a project already investigated is still reachable (reuse costs nothing)', q4.code === 200 && q4.body.reused === true);
+  const other = await signIn('quota-other@example.com');
+  const q5 = await call(find('post', '/api/investigate'), { query: 'Quota Tower Four', country: 'IN', market: 'India' }, { headers: { cookie: other.cookie }, path: '/api/investigate' });
+  ok('another account is not affected', q5.code === 202);
+  delete process.env.INVESTIGATE_PER_USER_DAILY;
+
   console.log('signing out');
   await call(find('post', '/api/auth/logout'), {}, { headers: hA });
   ok('after sign-out the same cookie is refused', (await call(find('get', '/api/me'), undefined, { headers: hA })).code === 401);
