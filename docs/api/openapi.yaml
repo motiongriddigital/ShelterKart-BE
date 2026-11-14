@@ -419,6 +419,7 @@ paths:
                   description: Required unless the idempotency key was already used for a pending purchase.
                 billingCountry: {type: string, description: ISO 3166 alpha-2 code. Required unless the idempotency key was already used.}
                 buyerKind: {type: string, enum: [individual, business], description: 'Anything other than "business" is treated as individual.'}
+                returnTo: {type: string, description: 'Optional, for the Merchant of Record route only: the report page the buyer comes back to after the hosted checkout, success or cancel. Only `/r/<this report''s reference>` is accepted; anything else is ignored and the documented return address `PUBLIC_BASE_URL/?sk_ref=...` is used.'}
                 taxId: {type: string, description: 'Kept for the invoice, not validated, and changes no tax. Cleaned to at most 20 letters and digits.'}
                 lang: {type: string, description: 'Reader language, recorded on the `checkout_started` event only.'}
       responses:

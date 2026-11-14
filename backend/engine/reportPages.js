@@ -129,9 +129,9 @@ const SCRIPT = `(function () {
     post('/api/investigate/' + encodeURIComponent(ref) + '/contact', { email: uf.email.value, phone: uf.phone.value })
       .then(function (c) { if (!c.ok) throw new Error(c.error); return post('/api/research/quote', { ref: ref, billingCountry: uf.country.value }); })
       .then(function (q) { if (!q.ok) throw new Error(q.error); quote = q.quote; msg.textContent = 'Price: ' + quote.currency + ' ' + quote.gross + '. Opening the payment window';
-        return post('/api/research/checkout', { ref: ref, idempotencyKey: key, quoteId: quote.id, billingCountry: uf.country.value }); })
-      .then(function (c) { if (!c.ok) throw new Error(c.error); co = c; return loadRzp(); })
-      .then(function () { new window.Razorpay({ key: co.razorpay.keyId, order_id: co.razorpay.orderId, amount: co.razorpay.amountSubunits, currency: co.currency, name: 'ShelterKart',
+        return post('/api/research/checkout', { ref: ref, idempotencyKey: key, quoteId: quote.id, billingCountry: uf.country.value, returnTo: '/r/' + ref }); })
+      .then(function (c) { if (!c.ok) throw new Error(c.error); co = c; return c.mor && c.mor.checkoutUrl ? 'mor' : loadRzp(); })
+      .then(function (via) { if (via === 'mor') { msg.textContent = 'Opening the secure checkout'; location.href = co.mor.checkoutUrl; return; } new window.Razorpay({ key: co.razorpay.keyId, order_id: co.razorpay.orderId, amount: co.razorpay.amountSubunits, currency: co.currency, name: 'ShelterKart',
         description: 'Due-diligence report ' + ref, prefill: { email: uf.email.value, contact: uf.phone.value },
         handler: function (resp) { msg.textContent = 'Confirming your payment';
           post('/api/research/razorpay/verify', { ref: ref, purchaseId: co.purchaseId, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature })

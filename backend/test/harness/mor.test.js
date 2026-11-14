@@ -69,6 +69,17 @@ const row = id => _db.purchases.find(p => p.id === id);
   const sSplit = dodo.created[dodo.created.length - 1];
   ok('with PAYMENT_RETURN_BASE set the buyer returns THERE (the website and the return address can differ), and the cancel address follows', cSplit.code === 200 && sSplit.body.return_url === 'https://pay.shelterkart.test/?sk_ref=' + encodeURIComponent(ref) + '&sk_purchase=' + cSplit.body.purchaseId && String(sSplit.body.cancel_url || '').startsWith('https://pay.shelterkart.test/?sk_ref='));
   delete process.env.PAYMENT_RETURN_BASE;
+  const qBack = (await quote('GB', 's-back')).quote.id;
+  const cBack = await call(co, { ref, idempotencyKey: 'mor-return-to-page-aaaaaa', quoteId: qBack, billingCountry: 'GB', returnTo: '/r/' + ref });
+  const sBack = dodo.created[dodo.created.length - 1];
+  ok('a page that asks to come back to its own report is sent back there, success and cancel', cBack.code === 200 && sBack.body.return_url === 'https://shelterkart.test/r/' + ref && sBack.body.cancel_url === 'https://shelterkart.test/r/' + ref);
+  for (const [i, bad] of ['//evil.example/r/' + ref, 'https://evil.example/', '/r/SK-AAAAAAAAAAAA', '/admin', '/r/' + ref + '/../../x', 42, {}].entries()) {
+    const qb = (await quote('GB', 's-bad' + i)).quote.id, cb = await call(co, { ref, idempotencyKey: 'mor-bad-return-' + i + '-aaaaaaaaa', quoteId: qb, billingCountry: 'GB', returnTo: bad });
+    const sb = dodo.created[dodo.created.length - 1];
+    ok('a return address that is not this report\u2019s own page is ignored and the documented one is used: ' + JSON.stringify(bad), cb.code === 200 && sb.body.return_url === 'https://shelterkart.test/?sk_ref=' + encodeURIComponent(ref) + '&sk_purchase=' + cb.body.purchaseId);
+  }
+  const PG = require('../../engine/reportPages').SCRIPT;
+  ok('the report page follows the merchant checkout address and asks to come back to its own report', /co\.mor\.checkoutUrl/.test(PG) && /returnTo: '\/r\/' \+ ref/.test(PG) && /co\.razorpay\.keyId/.test(PG));
   const p1 = row(c1.body.purchaseId);
   ok('the purchase is stored as the merchant\u2019s, pending, with no ShelterKart tax', p1.provider === 'mor' && p1.status === 'pending_payment' && p1.provider_order_id === s1.id && p1.tax_mode === 'merchant_of_record' && Number(p1.tax_amount) === 0);
   const cIN = await call(co, { ref, idempotencyKey: 'in-attempt-razorpay-aaaaaa', quoteId: qIN.quote.id, billingCountry: 'IN' });
