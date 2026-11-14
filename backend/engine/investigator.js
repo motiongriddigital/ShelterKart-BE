@@ -349,7 +349,7 @@ function createInvestigation({ query, location = '', market = '', country = '', 
     else if (!swept) await sweep();
     deadline = now() + B.minutes * 60000;   // the clock starts when the paid work starts, not at the preview
     const followRound = async label => {
-      state.leads = D.extractLeads(d.sections.flatMap(s => s.facts), state.botLeads, state.leads);
+      state.leads = D.extractLeads(d.sections.flatMap(s => s.facts), state.botLeads, state.leads, String(env.INVESTIGATE_LEAD_DEDUPE || '').toLowerCase() === 'off' ? null : { projectIds: state.project.ids, entities: state.entities, promoter: state.project.promoter_legal_name });
       let open = [...state.leads.values()].filter(l => l.state === 'open');
       if (B.rankLeads) open = open.map((l, i) => [l, i]).sort((a, b) => (LEAD_RANK[a[0].kind] ?? 5) - (LEAD_RANK[b[0].kind] ?? 5) || a[1] - b[1]).map(x => x[0]);
       open = open.slice(0, B.leadLimit ? Math.min(B.leadsPerRound, Math.max(0, B.leadLimit - followed)) : B.leadsPerRound);
