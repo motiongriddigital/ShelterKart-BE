@@ -8,12 +8,14 @@ const { alertOperator } = require('../engine/delivery');
 const { reportLink } = require('../engine/delivery');
 const { registerBrief, getByRef } = require('../engine/research');
 const { createPdfDocs } = require('../engine/pdfDocs');
+const PREVIEW_STATES = require('../engine/previewStates');
 const REVIEW = require('../engine/review');
 const { costedEngines, addStageCost } = require('../engine/jobCosts');
 const ROOT = require('path').resolve(__dirname, '..');
 
 module.exports = function setup(c) {
   const { ACCOUNTS, RESPONSES, pool, pricingData, tokenGrants } = c;
+  const FP = PREVIEW_STATES.createDayCounters();
   const PDFS = c.PDFS || createPdfDocs({ pdf: require('../engine/pdf'), env: process.env });
   const pdfCtx = ref => ({ link: reportLink(process.env, ref, '').replace(/\?t=$/, '') });
 
@@ -139,7 +141,7 @@ module.exports = function setup(c) {
     const saved = job.inv ? job.inv.exportState() : (job.saved || null);
     JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), purchaseId: job.purchaseId || null, contact: job.contact || null,
       costUsd: job.costUsd || 0, stageCosts: job.stageCosts || null, capUsd: job.capUsd == null ? null : job.capUsd, delivered: Boolean(job.delivered), createdAt: job.createdAt || Date.now(),
-      failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: job.updatedAt, saved });
+      failedAt: job.failedAt || null, failError: job.failError || null, failReason: job.failReason || null, previewFailedAt: job.previewFailedAt || null, updatedAt: job.updatedAt, saved });
     /* A job that is not working keeps only its saved state, not the whole running investigation, for as long as it is kept (30 days): an unpaid first look, a finished
        report, a failed one. A paid completion that needs it again rebuilds it from that state, exactly as after a restart. */
     if (job.inv && (job.status === 'done' || job.status === 'failed' || (job.status === 'preview' && !job.paid))) { job.saved = saved; job.inv = null; }
@@ -148,7 +150,7 @@ module.exports = function setup(c) {
   const ownsPurchase = async (req, purchaseId) => { const u = await ACCOUNTS.user(req); return Boolean(u) && (await pool.query(`SELECT 1 FROM report_purchases WHERE id=$1 AND user_id=$2`, [purchaseId, u.id])).rows.length > 0; };
   const grantOf = (ref, purchaseId) => (ACCOUNTS.enabled ? { ok: true, entitled: true } : { ok: true, token: issueToken(ref, process.env.ACCESS_TOKEN_SECRET, 30, Date.now(), purchaseId) });
   const investigateCap = () => { const v = process.env.INVESTIGATE_DAILY_CAP; return v === undefined || v === '' ? 100 : Number(v); };
-  const publicEvent = e => ({ type: e.type, stage: e.stage, phase: e.phase, counts: e.counts, ...(e.stage === 'sweep' || e.type === 'error' ? { message: e.message } : {}) });
+  const publicEvent = e => ({ type: e.type, stage: e.stage, phase: e.phase, counts: e.counts, ...(e.stage === 'sweep' || e.type === 'error' ? { message: e.message } : {}), ...(e.type === 'error' && e.reason ? { reason: e.reason, ...(e.retryAt ? { retryAt: e.retryAt } : {}) } : {}) });
   function saveLiveDossier(job, d) {
     d.ref = job.ref;
     const prev = getByRef(job.ref) || {};
@@ -161,7 +163,7 @@ module.exports = function setup(c) {
     return PDFS.ensure(brief, { kind: 'preview', ctx: pdfCtx(ref), held: REVIEW.isHeld(brief), background: true }).catch(() => null);
   }
   function liveEmit(job, ev) {
-    const slim = { type: ev.type, stage: ev.stage, round: ev.round, message: ev.message, phase: ev.dossier && ev.dossier.phase, counts: ev.dossier && ev.dossier.counts };
+    const slim = { type: ev.type, stage: ev.stage, round: ev.round, message: ev.message, phase: ev.dossier && ev.dossier.phase, counts: ev.dossier && ev.dossier.counts, ...(ev.reason ? { reason: ev.reason } : {}), ...(ev.retryAt ? { retryAt: ev.retryAt } : {}) };
     job.events.push({ at: Date.now(), ...slim }); if (job.events.length > 200) job.events.shift();
     if (ev.dossier) saveLiveDossier(job, ev.dossier);
     if (ev.dossier || ev.type === 'done' || ev.type === 'error') persistJob(job);
@@ -267,5 +269,5 @@ module.exports = function setup(c) {
   setInterval(pdfCleanup, 24 * 3600 * 1000).unref();
   setImmediate(pdfCleanup);
   setImmediate(() => { for (const job of liveJobs.values()) if (job.paid && job.status !== 'done' && job.status !== 'failed' && !job.completing) { try { completeLive(job); } catch (e) { console.error('[investigate] could not resume ' + job.ref + ':', e && e.message); } } });
-  Object.assign(c, { DELIVERY, PDFS, makePreviewPdf, pdfCtx, indexPreview, previewTwin, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
+  Object.assign(c, { DELIVERY, FP, PDFS, makePreviewPdf, pdfCtx, indexPreview, previewTwin, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
 };

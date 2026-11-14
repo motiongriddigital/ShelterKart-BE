@@ -732,21 +732,23 @@ paths:
                   code: {type: string, const: challenge}
                   error: {type: string}
         '429':
-          description: 'Either `researchLimiter` (JSON message "Too many new searches from this connection. Please try again in an hour.") or too many investigations running ("Many investigations are running. Please try again in a few minutes.").'
+          description: 'Either `researchLimiter` (JSON message "Too many new searches from this connection. Please try again in an hour."), or, with `code` `busy` or `quota` and a `reason` and `retryAt`, too many investigations running or this account''s daily allowance used. Original text: too many investigations running ("Many investigations are running. Please try again in a few minutes.").'
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
         '503':
-          description: '`code: paused`: research is paused for the market, the daily cap, the per-market cap or the AI daily maximum is reached.'
+          description: '`code: paused`: research is paused for the market, the daily cap, the per-market cap or the AI daily maximum is reached. `reason` says which (`paused`, `daily_cap`, `daily_budget`, `market_cap`); `retryAt` is the next UTC midnight for the daily ones and absent for an operator pause.'
           content:
             application/json:
               schema:
                 type: object
-                required: [ok, code, error]
+                required: [ok, code, reason, error]
                 properties:
                   ok: {type: boolean, const: false}
                   code: {type: string, const: paused}
+                  reason: {type: string, enum: [paused, daily_cap, daily_budget, market_cap]}
                   error: {type: string}
+                  retryAt: {type: string, format: date-time, description: 'A hint, not a promise.'}
   /api/investigate/{ref}/events:
     get:
       operationId: streamInvestigationEvents
@@ -881,7 +883,8 @@ paths:
         - {$ref: '#/components/parameters/TokenQuery'}
       responses:
         '200':
-          description: The report view.
+          description: |
+            The report view. A free preview whose first sweep failed also answers 200, with `ready: false` and `state: unavailable` instead of a report: `{ ok, ready: false, state: "unavailable", ref, phase: "failed", reason: "engines_unavailable", error, retryAt }`. Stop polling on it and offer to search again (a new start call begins a fresh attempt). `retryAt` is a hint. A failed preview whose saved report was lost in a restart answers 404.
           content:
             application/json:
               schema:
@@ -899,10 +902,11 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [ok, ready, ref, phase]
+                required: [ok, ready, state, ref, phase]
                 properties:
                   ok: {type: boolean, const: true}
                   ready: {type: boolean, const: false}
+                  state: {type: string, const: working}
                   ref: {$ref: '#/components/schemas/ReportRef'}
                   phase: {type: string, example: starting}
         '400':
