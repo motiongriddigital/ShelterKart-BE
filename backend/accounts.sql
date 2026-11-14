@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS users (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email_live ON users (lower(email)) WHERE deleted_at IS NULL;
 
+-- Optional password (scrypt, peppered). Sign-in by e-mail code keeps working with or without it.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_set_at TIMESTAMPTZ;
+
 CREATE TABLE IF NOT EXISTS auth_codes (
   id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   email_lower TEXT NOT NULL,

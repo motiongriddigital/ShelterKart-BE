@@ -9,7 +9,7 @@ function userFromRow(r) {
   return {
     id: r.id, email: r.email, emailVerifiedAt: r.email_verified_at, displayName: r.display_name, country: r.country, language: r.language,
     phone: r.phone, phoneConsentAt: r.phone_consent_at, termsVersion: r.terms_version, privacyVersion: r.privacy_version,
-    termsAcceptedAt: r.terms_accepted_at, createdAt: r.created_at, lastLoginAt: r.last_login_at, disabledAt: r.disabled_at, deletedAt: r.deleted_at,
+    termsAcceptedAt: r.terms_accepted_at, createdAt: r.created_at, lastLoginAt: r.last_login_at, disabledAt: r.disabled_at, deletedAt: r.deleted_at, hasPassword: Boolean(r.has_password),
   };
 }
 
@@ -18,7 +18,8 @@ function banFromRow(r) {
   return { id: r.id, kind: r.kind, target: r.target, reason: r.reason, createdAt: new Date(r.created_at), expiresAt: r.expires_at ? new Date(r.expires_at) : null, createdBy: r.created_by, liftedAt: r.lifted_at ? new Date(r.lifted_at) : null, liftedBy: r.lifted_by };
 }
 
-const USER_COLS = 'id, email, email_verified_at, display_name, country, language, phone, phone_consent_at, terms_version, privacy_version, terms_accepted_at, created_at, last_login_at, disabled_at, deleted_at';
+const USER_COLS = 'id, email, email_verified_at, display_name, country, language, phone, phone_consent_at, terms_version, privacy_version, terms_accepted_at, created_at, last_login_at, disabled_at, deleted_at, (password_hash IS NOT NULL) AS has_password';
+const userColsOf = alias => USER_COLS.split(', ').map(c => (c.startsWith('(') ? c.replace('password_hash', alias + '.password_hash') : alias + '.' + c)).join(', ');
 const PATCH_COLS = { displayName: 'display_name', country: 'country', language: 'language', phone: 'phone', phoneConsentAt: 'phone_consent_at' };
 
 function makePgStore(pool) {
@@ -66,6 +67,8 @@ function makePgStore(pool) {
     async markLogin(userId, now) {
       await pool.query(`UPDATE users SET email_verified_at=COALESCE(email_verified_at,$2), last_login_at=$2 WHERE id=$1`, [userId, iso(now)]);
     },
+    async passwordHashOf(userId) { const r = one(await pool.query(`SELECT password_hash FROM users WHERE id=$1 AND deleted_at IS NULL`, [userId])); return r ? r.password_hash : null; },
+    async setPassword(userId, hash, now) { await pool.query(`UPDATE users SET password_hash=$2, password_set_at=$3 WHERE id=$1 AND deleted_at IS NULL`, [userId, hash, iso(now)]); },
     async updateUser(userId, patch) {
       const sets = [], vals = [userId];
       for (const [k, col] of Object.entries(PATCH_COLS)) if (k in patch) { vals.push(patch[k] instanceof Date ? iso(patch[k]) : patch[k]); sets.push(`${col}=$${vals.length}`); }
@@ -78,7 +81,7 @@ function makePgStore(pool) {
     },
     async sessionByHash(tokenHash, now) {
       const r = one(await pool.query(
-        `SELECT s.created_at AS s_created, s.last_seen_at AS s_seen, s.expires_at AS s_expires, ${USER_COLS.split(', ').map(c => 'u.' + c).join(', ')}
+        `SELECT s.created_at AS s_created, s.last_seen_at AS s_seen, s.expires_at AS s_expires, ${userColsOf('u')}
            FROM sessions s JOIN users u ON u.id = s.user_id
           WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at > $2 AND u.deleted_at IS NULL`, [tokenHash, iso(now)]));
       return r ? { createdAt: new Date(r.s_created), lastSeenAt: new Date(r.s_seen), expiresAt: new Date(r.s_expires), user: userFromRow(r) } : null;
@@ -106,7 +109,7 @@ function makePgStore(pool) {
       if (u) await pool.query(`DELETE FROM auth_events WHERE email_lower=$1 OR user_id=$2`, [u.e, userId]); else await pool.query(`DELETE FROM auth_events WHERE user_id=$1`, [userId]);
       await pool.query(
         `UPDATE users SET email='deleted-'||id::text||'@deleted.invalid', display_name=NULL, country=NULL, language=NULL, phone=NULL, phone_consent_at=NULL,
-                          terms_version=NULL, privacy_version=NULL, terms_accepted_at=NULL, deleted_at=$2 WHERE id=$1`, [userId, iso(now)]);
+                          terms_version=NULL, privacy_version=NULL, terms_accepted_at=NULL, password_hash=NULL, password_set_at=NULL, deleted_at=$2 WHERE id=$1`, [userId, iso(now)]);
     },
     async purge(now) {
       const a = await pool.query(`DELETE FROM auth_codes WHERE created_at < $1`, [new Date(iso(now).getTime() - 24 * 3600 * 1000)]);
@@ -143,7 +146,7 @@ function makePgStore(pool) {
     async listUsersAdmin({ q, limit, offset }) {
       const like = q ? '%' + q.toLowerCase().replace(/[%_]/g, '') + '%' : null;
       return (await pool.query(
-        `SELECT ${USER_COLS.split(', ').map(c => 'u.' + c).join(', ')},
+        `SELECT ${userColsOf('u')},
                 (SELECT COUNT(*)::int FROM sessions s WHERE s.user_id=u.id AND s.revoked_at IS NULL AND s.expires_at > now()) AS active_sessions
            FROM users u WHERE u.deleted_at IS NULL AND ($1::text IS NULL OR lower(u.email) LIKE $1 OR lower(COALESCE(u.display_name,'')) LIKE $1)
           ORDER BY COALESCE(u.last_login_at, u.created_at) DESC LIMIT $2 OFFSET $3`, [like, limit, offset]))
@@ -178,7 +181,7 @@ function makePgStore(pool) {
 }
 
 function makeMemoryStore() {
-  const users = new Map(), codes = [], sessions = new Map(), opened = new Map(), auditLog = [], events = [], bans = [];
+  const users = new Map(), passwords = new Map(), codes = [], sessions = new Map(), opened = new Map(), auditLog = [], events = [], bans = [];
   const live = () => [...users.values()].filter(u => !u.deletedAt);
   const copy = u => (u ? { ...u } : null);
   return {
@@ -205,10 +208,12 @@ function makeMemoryStore() {
     async userById(id) { const u = users.get(id); return u && !u.deletedAt ? copy(u) : null; },
     async createUser({ email, language, country, termsVersion, privacyVersion, now }) {
       const u = { id: crypto.randomUUID(), email, emailVerifiedAt: null, displayName: null, country: country || null, language: language || null, phone: null, phoneConsentAt: null,
-        termsVersion, privacyVersion, termsAcceptedAt: iso(now), createdAt: iso(now), lastLoginAt: null, disabledAt: null, deletedAt: null };
+        termsVersion, privacyVersion, termsAcceptedAt: iso(now), createdAt: iso(now), lastLoginAt: null, disabledAt: null, deletedAt: null, hasPassword: false };
       users.set(u.id, u); return copy(u);
     },
     async markLogin(userId, now) { const u = users.get(userId); if (u) { u.emailVerifiedAt = u.emailVerifiedAt || iso(now); u.lastLoginAt = iso(now); } },
+    async passwordHashOf(userId) { const u = users.get(userId); return u && !u.deletedAt ? (passwords.get(userId) || null) : null; },
+    async setPassword(userId, hash) { const u = users.get(userId); if (!u || u.deletedAt) return; passwords.set(userId, hash); u.hasPassword = true; },
     async updateUser(userId, patch) {
       const u = users.get(userId); if (!u || u.deletedAt) return null;
       for (const k of Object.keys(PATCH_COLS)) if (k in patch) u[k] = patch[k];
@@ -243,7 +248,7 @@ function makeMemoryStore() {
       for (const k of [...opened.keys()]) if (k.startsWith(userId + '|')) opened.delete(k);
       for (let i = codes.length - 1; i >= 0; i--) if (codes[i].emailLower === u.email.toLowerCase()) codes.splice(i, 1);
       for (let i = events.length - 1; i >= 0; i--) if (events[i].userId === userId || events[i].emailLower === u.email.toLowerCase()) events.splice(i, 1);
-      Object.assign(u, { email: `deleted-${u.id}@deleted.invalid`, displayName: null, country: null, language: null, phone: null, phoneConsentAt: null, termsVersion: null, privacyVersion: null, termsAcceptedAt: null, deletedAt: iso(now) });
+      Object.assign(u, { email: `deleted-${u.id}@deleted.invalid`, displayName: null, country: null, language: null, phone: null, phoneConsentAt: null, termsVersion: null, privacyVersion: null, termsAcceptedAt: null, hasPassword: false, deletedAt: iso(now) }); passwords.delete(userId);
     },
     async purge(now) {
       const n = iso(now).getTime(); let c = 0, s = 0;

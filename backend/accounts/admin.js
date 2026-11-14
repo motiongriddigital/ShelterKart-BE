@@ -17,6 +17,7 @@ function summaryOf(n = {}) {
     codesRequested: n.code_requested || 0,
     signIns: n.login_ok || 0,
     wrongCodes: n.code_wrong || 0,
+    wrongPasswords: n.password_wrong || 0,
     locked: n.code_locked || 0,
     expiredCodes: n.code_expired || 0,
     cooldownHits: n.cooldown || 0,

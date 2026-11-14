@@ -87,4 +87,49 @@ function cleanBanTarget(kind, raw) {
   return Number.isInteger(n) && n >= 8 && n <= 32 ? t : '';
 }
 
-module.exports = { ipMatches, cleanBanTarget, normEmail, newCode, hashCode, hashIp, sameHash, newToken, hashToken, TOKEN_RE, parseCookies, cookieName, sessionCookie, clearedCookie, safeNext, b64u };
+const PASSWORD_MIN = 12, PASSWORD_MAX = 128;
+const SCRYPT_DEFAULT = { N: 32768, r: 8, p: 3 };
+const SCRYPT_CEILING = { N: 131072, r: 16, p: 8 };
+const COMMON_PASSWORDS = new Set(['password', 'password1', 'password12', 'password123', 'password1234', '1234567890', '12345678910', 'qwertyuiop', 'qwerty12345', 'iloveyou123', 'letmein1234', 'welcome1234', 'admin12345', 'abcdefghij', '0123456789', 'shelterkart', 'shelterkart1', 'shelterkart123']);
+
+/** Why a password is not acceptable, or null if it is. Length is counted in characters; the rest stops the obvious. */
+function passwordProblem(raw, email) {
+  if (typeof raw !== 'string') return 'Enter a password.';
+  const chars = [...raw].length;
+  if (chars < PASSWORD_MIN) return `Use at least ${PASSWORD_MIN} characters.`;
+  if (chars > PASSWORD_MAX || Buffer.byteLength(raw, 'utf8') > PASSWORD_MAX * 4) return `Use at most ${PASSWORD_MAX} characters.`;
+  const low = raw.toLowerCase(), mail = String(email || '').toLowerCase();
+  if (/^(.)\1+$/u.test(raw)) return 'Choose a password that is not one repeated character.';
+  if (COMMON_PASSWORDS.has(low)) return 'That password is too common. Choose another.';
+  if (mail && (low === mail || low === mail.split('@')[0])) return 'The password cannot be your e-mail address.';
+  return null;
+}
+
+const scryptAsync = (secret, salt, { N, r, p }) => new Promise((resolve, reject) => crypto.scrypt(secret, salt, 64, { N, r, p, maxmem: 160 * N * r }, (e, key) => (e ? reject(e) : resolve(key))));
+const prehash = (pepper, password) => crypto.createHmac('sha256', pepper).update(String(password)).digest();
+
+/** A stored form of the password: scrypt$N$r$p$salt$hash. The pepper is mixed in first, so a copy of the database alone cannot be attacked offline. */
+async function hashPassword(pepper, password, params = SCRYPT_DEFAULT) {
+  const salt = crypto.randomBytes(16), key = await scryptAsync(prehash(pepper, password), salt, params);
+  return ['scrypt', params.N, params.r, params.p, b64u(salt), b64u(key)].join('$');
+}
+
+function parseStored(stored) {
+  const parts = String(stored || '').split('$');
+  if (parts.length !== 6 || parts[0] !== 'scrypt') return null;
+  const [N, r, p] = parts.slice(1, 4).map(Number);
+  if (![N, r, p].every(Number.isInteger) || N < 2 || (N & (N - 1)) !== 0 || N > SCRYPT_CEILING.N || r < 1 || r > SCRYPT_CEILING.r || p < 1 || p > SCRYPT_CEILING.p) return null;
+  const pad = x => Buffer.from(x.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+  return { N, r, p, salt: pad(parts[4]), key: pad(parts[5]) };
+}
+
+let dummyStored = null;
+/** True only for the right password. With no stored form it still does the same work, so a missing account takes as long as a wrong password. */
+async function verifyPassword(pepper, password, stored) {
+  let parsed = parseStored(stored);
+  if (!parsed) { dummyStored = dummyStored || hashPassword('dummy-pepper', 'dummy-password'); parsed = parseStored(await dummyStored); await scryptAsync(prehash(pepper, password), parsed.salt, parsed); return false; }
+  const key = await scryptAsync(prehash(pepper, password), parsed.salt, parsed);
+  return key.length === parsed.key.length && crypto.timingSafeEqual(key, parsed.key);
+}
+
+module.exports = { passwordProblem, hashPassword, verifyPassword, PASSWORD_MIN, PASSWORD_MAX, ipMatches, cleanBanTarget, normEmail, newCode, hashCode, hashIp, sameHash, newToken, hashToken, TOKEN_RE, parseCookies, cookieName, sessionCookie, clearedCookie, safeNext, b64u };
