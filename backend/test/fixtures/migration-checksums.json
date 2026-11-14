@@ -18,5 +18,6 @@
  "backups.sql": "0ad79c301fcacce161f73d983ca4812787e5aed00e12ce5e21fdec4ebe03d9a8",
  "fk_indexes.sql": "616c8ca0cc5bdba00be936bf681894dcce39da0e5486ffbfff838d33d6a7d581",
  "bulk_registers.sql": "bd076798976be4d2d42b285dd887d8dcd91a66de446d750f155bdaef1567192a",
- "accounts_password.sql": "789ff0b0aa14ec9ce1c377d598096b4a13d761a5b4c9b5f59f21f7f8bd54bf71"
+ "accounts_password.sql": "789ff0b0aa14ec9ce1c377d598096b4a13d761a5b4c9b5f59f21f7f8bd54bf71",
+ "auth_codes_password.sql": "4bf8f602f48513e81351595756a3367a1d400840e4c1b61b1bd7dcb9471a5762"
 }

@@ -19,7 +19,6 @@ function settings(env = process.env) {
     codeMinutes: num(env.AUTH_CODE_MINUTES, 10, 1, 60),
     codeAttempts: num(env.AUTH_CODE_ATTEMPTS, 5, 1, 20),
     addressAttemptsPerHour: num(env.AUTH_ADDRESS_ATTEMPTS_PER_HOUR, 15, 3, 200),
-    passwordFailsPerHour: num(env.AUTH_PASSWORD_FAILS_PER_HOUR, 10, 3, 200),
     csrf: ['off', 'report', 'on'].includes(String(env.ACCOUNTS_CSRF || '').toLowerCase()) ? String(env.ACCOUNTS_CSRF).toLowerCase() : 'report',
     searchGate: String(env.ACCOUNTS_SEARCH_GATE || 'view').toLowerCase() === 'start' ? 'start' : 'view',
     termsVersion: String(env.TERMS_VERSION || '2026-11'),
