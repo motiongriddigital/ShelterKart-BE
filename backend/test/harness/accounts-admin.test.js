@@ -31,8 +31,8 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
 
 async function signIn(email, ip) {
   const ua = { 'user-agent': 'Mozilla/5.0 (Macintosh)' };
-  const rc = await call(find('post', '/api/auth/request-code'), { email }, { headers: ua });
-  const vc = await call(find('post', '/api/auth/verify-code'), { email, code: rc.body.devCode, termsAccepted: true }, { headers: ua });
+  const rc = await call(find('post', '/api/auth/request-code'), { email, password: 'harness test password 1', termsAccepted: true }, { headers: ua });
+  const vc = await call(find('post', '/api/auth/verify-code'), { email, code: rc.body.devCode }, { headers: ua });
   return { cookie: (vc.cookies[0] || '').split(';')[0], user: vc.body.user };
 }
 
@@ -50,9 +50,9 @@ const admin = (m, p, body, o = {}) => call(find(m, p), body, { headers: ADMIN, p
 
   console.log('sign-in activity is counted');
   const email = 'tracked@example.com';
-  const rc = await call(find('post', '/api/auth/request-code'), { email }, { headers: UA });
+  const rc = await call(find('post', '/api/auth/request-code'), { email, password: 'harness test password 1', termsAccepted: true }, { headers: UA });
   ok('a code request is answered', rc.code === 202 && rc.body.devCode);
-  const again = await call(find('post', '/api/auth/request-code'), { email }, { headers: UA });
+  const again = await call(find('post', '/api/auth/request-code'), { email, password: 'harness test password 1', termsAccepted: true }, { headers: UA });
   ok('asking again at once hits the cooldown (429)', again.code === 429 && again.body.code === 'cooldown');
   const w1 = await call(find('post', '/api/auth/verify-code'), { email, code: '000000', termsAccepted: true }, { headers: UA });
   const w2 = await call(find('post', '/api/auth/verify-code'), { email, code: '111111', termsAccepted: true }, { headers: UA });
@@ -74,7 +74,7 @@ const admin = (m, p, body, o = {}) => call(find(m, p), body, { headers: ADMIN, p
 
   console.log('locking a code');
   const other = 'locked@example.com';
-  const rc2 = await call(find('post', '/api/auth/request-code'), { email: other }, { headers: UA });
+  const rc2 = await call(find('post', '/api/auth/request-code'), { email: other, password: 'harness test password 1', termsAccepted: true }, { headers: UA });
   for (let i = 0; i < 6; i++) await call(find('post', '/api/auth/verify-code'), { email: other, code: '123456', termsAccepted: true }, { headers: UA });
   const sum = await admin('get', '/api/admin/auth/summary', undefined, { query: { hours: '24' } });
   ok('the summary counts the lock and the wrong codes across everyone', sum.body.summary.locked === 1 && sum.body.summary.wrongCodes >= 7 && rc2.code === 202);
@@ -97,12 +97,12 @@ const admin = (m, p, body, o = {}) => call(find(m, p), body, { headers: ADMIN, p
   const ban = await admin('post', '/api/admin/bans', { kind: 'account', target: 'Ban-Me@Example.com', reason: 'chargeback and abuse', days: 7 });
   ok('the ban is created, with its end date', ban.code === 200 && ban.body.ban.active === true && ban.body.ban.expiresAt && ban.body.ban.target === 'ban-me@example.com');
   ok('banning ends its sessions', (await call(find('get', '/api/me'), undefined, { headers: { cookie: signed } })).code === 401);
-  const blocked = await call(find('post', '/api/auth/request-code'), { email: 'ban-me@example.com' }, { headers: UA });
+  const blocked = await call(find('post', '/api/auth/request-code'), { email: 'ban-me@example.com', password: 'harness test password 1' }, { headers: UA });
   ok('a banned account cannot ask for a code (403 account_banned)', blocked.code === 403 && blocked.body.code === 'account_banned');
   ok('the same ban twice is refused', (await admin('post', '/api/admin/bans', { kind: 'account', target: 'ban-me@example.com', reason: 'chargeback and abuse' })).code === 409);
   const lift = await admin('post', '/api/admin/bans/:id/lift', {}, { params: { id: ban.body.ban.id } });
   ok('lifting the ban works', lift.code === 200 && lift.body.ban.active === false);
-  const after = await call(find('post', '/api/auth/request-code'), { email: 'ban-me@example.com' }, { headers: UA });
+  const after = await call(find('post', '/api/auth/request-code'), { email: 'ban-me@example.com', password: 'harness test password 1' }, { headers: UA });
   ok('afterwards the address is no longer blocked (the cooldown answers instead)', after.code === 429 && after.body.code === 'cooldown');
   ok('the active list no longer has it, the full list does', !(await admin('get', '/api/admin/bans')).body.bans.some(b => b.target === 'ban-me@example.com') && (await admin('get', '/api/admin/bans', undefined, { query: { status: 'all' } })).body.bans.some(b => b.target === 'ban-me@example.com'));
 
@@ -111,9 +111,9 @@ const admin = (m, p, body, o = {}) => call(find(m, p), body, { headers: ADMIN, p
   ok('the operator cannot ban the address in use', (await admin('post', '/api/admin/bans', { kind: 'ip', target: '3.3.3.0/24', reason: 'would lock me out' })).body.code === 'self_ban');
   const ipBan = await admin('post', '/api/admin/bans', { kind: 'ip', target: '9.9.9.0/24', reason: 'automated searches from this range' });
   ok('a range is banned', ipBan.code === 200 && ipBan.body.ban.target === '9.9.9.0/24');
-  const fromBanned = await call(find('post', '/api/auth/request-code'), { email: 'x@example.com' }, { headers: UA, ip: '9.9.9.77' });
+  const fromBanned = await call(find('post', '/api/auth/request-code'), { email: 'x@example.com', password: 'harness test password 1', termsAccepted: true }, { headers: UA, ip: '9.9.9.77' });
   ok('a request from inside the range is refused (403 ip_banned)', fromBanned.code === 403 && fromBanned.body.code === 'ip_banned');
-  const fromOutside = await call(find('post', '/api/auth/request-code'), { email: 'y@example.com' }, { headers: UA, ip: '9.9.10.1' });
+  const fromOutside = await call(find('post', '/api/auth/request-code'), { email: 'y@example.com', password: 'harness test password 1', termsAccepted: true }, { headers: UA, ip: '9.9.10.1' });
   ok('a request from outside it is not', fromOutside.code === 202);
   ok('the refusal is counted as a blocked attempt', (await admin('get', '/api/admin/auth/summary')).body.summary.blocked >= 2);
 
@@ -134,5 +134,5 @@ const admin = (m, p, body, o = {}) => call(find(m, p), body, { headers: ADMIN, p
   ok('a refused ban from a session leaves the session alive and raises no error', refusedIp.code === 400 && ERRS.length === 0 && (await call(find('get', '/api/me'), undefined, { headers: { cookie: own2.cookie } })).code === 200);
   const banHash = await admin('post', '/api/admin/sessions/:id/ban-ip', { reason: 'abuse seen on this session', days: 3 }, { params: { id: mine2.id } });
   ok('an address is banned from its session, by hash', banHash.code === 200 && /^hash:[0-9a-f]{12}$/.test(banHash.body.ban.target));
-  ok('the banned address is refused from then on', (await call(find('post', '/api/auth/request-code'), { email: 'z@example.com' }, { headers: UA })).body.code === 'ip_banned' && own2.cookie);
+  ok('the banned address is refused from then on', (await call(find('post', '/api/auth/request-code'), { email: 'z@example.com', password: 'harness test password 1', termsAccepted: true }, { headers: UA })).body.code === 'ip_banned' && own2.cookie);
 })();

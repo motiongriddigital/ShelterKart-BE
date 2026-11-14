@@ -26,9 +26,9 @@ function makePgStore(pool) {
   const one = r => r.rows[0] || null;
   return {
     kind: 'postgres',
-    async createCode({ emailLower, codeHash, expiresAt, ipHash }) {
+    async createCode({ emailLower, codeHash, expiresAt, ipHash, passwordHash }) {
       await pool.query(`UPDATE auth_codes SET consumed_at=now() WHERE email_lower=$1 AND consumed_at IS NULL`, [emailLower]);
-      await pool.query(`INSERT INTO auth_codes (email_lower, code_hash, expires_at, ip_hash) VALUES ($1,$2,$3,$4)`, [emailLower, codeHash, iso(expiresAt), ipHash || null]);
+      await pool.query(`INSERT INTO auth_codes (email_lower, code_hash, expires_at, ip_hash, password_hash) VALUES ($1,$2,$3,$4,$5)`, [emailLower, codeHash, iso(expiresAt), ipHash || null, passwordHash || null]);
     },
     async lastCodeAt(emailLower, ipHash) {
       const r = one(await pool.query(`SELECT created_at FROM auth_codes WHERE email_lower=$1 AND ($2::text IS NULL OR ip_hash=$2) ORDER BY created_at DESC LIMIT 1`, [emailLower, ipHash || null]));
@@ -43,8 +43,8 @@ function makePgStore(pool) {
       return r ? Number(r.n) : 0;
     },
     async latestOpenCode(emailLower, now) {
-      const r = one(await pool.query(`SELECT id, code_hash, attempts FROM auth_codes WHERE email_lower=$1 AND consumed_at IS NULL AND expires_at > $2 ORDER BY created_at DESC LIMIT 1`, [emailLower, iso(now)]));
-      return r ? { id: r.id, codeHash: r.code_hash, attempts: Number(r.attempts) } : null;
+      const r = one(await pool.query(`SELECT id, code_hash, attempts, password_hash FROM auth_codes WHERE email_lower=$1 AND consumed_at IS NULL AND expires_at > $2 ORDER BY created_at DESC LIMIT 1`, [emailLower, iso(now)]));
+      return r ? { id: r.id, codeHash: r.code_hash, attempts: Number(r.attempts), passwordHash: r.password_hash } : null;
     },
     async bumpAttempts(id) {
       const r = one(await pool.query(`UPDATE auth_codes SET attempts=attempts+1 WHERE id=$1 RETURNING attempts`, [id]));
@@ -187,9 +187,9 @@ function makeMemoryStore() {
   return {
     kind: 'memory',
     _users: users, _codes: codes, _sessions: sessions, _audit: auditLog, _events: events, _bans: bans,
-    async createCode({ emailLower, codeHash, expiresAt, ipHash, now = new Date() }) {
+    async createCode({ emailLower, codeHash, expiresAt, ipHash, passwordHash, now = new Date() }) {
       for (const c of codes) if (c.emailLower === emailLower && !c.consumedAt) c.consumedAt = now;
-      codes.push({ id: crypto.randomUUID(), emailLower, codeHash, attempts: 0, expiresAt: iso(expiresAt), consumedAt: null, ipHash: ipHash || null, createdAt: now });
+      codes.push({ id: crypto.randomUUID(), emailLower, codeHash, attempts: 0, expiresAt: iso(expiresAt), consumedAt: null, ipHash: ipHash || null, passwordHash: passwordHash || null, createdAt: now });
     },
     async lastCodeAt(emailLower, ipHash) { const l = codes.filter(c => c.emailLower === emailLower && (!ipHash || c.ipHash === ipHash)).map(c => c.createdAt.getTime()); return l.length ? new Date(Math.max(...l)) : null; },
     async lastCodeState(emailLower, now) {
@@ -199,7 +199,7 @@ function makeMemoryStore() {
     async countCodesSince(emailLower, since, ipHash) { return codes.filter(c => c.emailLower === emailLower && c.createdAt >= iso(since) && (!ipHash || c.ipHash === ipHash)).length; },
     async latestOpenCode(emailLower, now) {
       const l = codes.filter(c => c.emailLower === emailLower && !c.consumedAt && c.expiresAt > iso(now)).sort((a, b) => b.createdAt - a.createdAt)[0];
-      return l ? { id: l.id, codeHash: l.codeHash, attempts: l.attempts } : null;
+      return l ? { id: l.id, codeHash: l.codeHash, attempts: l.attempts, passwordHash: l.passwordHash } : null;
     },
     async bumpAttempts(id) { const c = codes.find(x => x.id === id); if (!c) return 0; c.attempts++; return c.attempts; },
     async consumeCode(id) { const c = codes.find(x => x.id === id); if (!c || c.consumedAt) return false; c.consumedAt = new Date(); return true; },

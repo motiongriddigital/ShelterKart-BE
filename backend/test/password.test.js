@@ -1,5 +1,6 @@
 'use strict';
-/** Password sign-in on top of the e-mail code: the rules, setting it, signing in with it, locking it, resetting it, and what must never leak. */
+/** A password held against a sign-in code: the rules, requiring one (and consent) at request-code, applying it at verify-code
+ * only when it actually changed, resetting it, and what must never leak. */
 const assert = require('assert');
 const S = require('../accounts/secrets');
 const { createAccounts } = require('../accounts');
@@ -33,9 +34,10 @@ function harness(over = {}, envOver = {}) {
   }
   const codeOf = () => (mails[mails.length - 1].text.match(/code is (\d{6})/) || [])[1];
   const cookieOf = r => { const c = (r.cookies || [])[0]; return c ? c.split(';')[0] : ''; };
-  async function signIn(email = 'buyer@example.com', extra = {}) {
-    await call('post', '/api/auth/request-code', { body: { email } });
-    const r = await call('post', '/api/auth/verify-code', { body: { email, code: codeOf(), termsAccepted: true, ...extra } });
+  /** A full sign-in with a password: request-code (password required, termsAccepted only matters for a new address), then verify. */
+  async function signIn(email = 'buyer@example.com', password = PW, extra = {}) {
+    await call('post', '/api/auth/request-code', { body: { email, password, termsAccepted: true, ...extra } });
+    const r = await call('post', '/api/auth/verify-code', { body: { email, code: codeOf() } });
     return { r, cookie: cookieOf(r) };
   }
   const guarded = async (cookie, mw = A.guard) => new Promise(resolve => {
@@ -46,9 +48,7 @@ function harness(over = {}, envOver = {}) {
   return { A, call, mails, alerts, clock, codeOf, cookieOf, signIn, guarded, bought, env };
 }
 
-
 const PW = 'correct horse battery', CHEAP = { N: 1024, r: 8, p: 1 };
-const login = (h, email, password, extra = {}) => h.call('post', '/api/auth/login', { body: { email, password }, ...extra });
 
 (async () => {
   console.log('the rules for a password');
@@ -69,142 +69,86 @@ const login = (h, email, password, extra = {}) => h.call('post', '/api/auth/logi
     for (const junk of ['', 'x', 'scrypt$1$8$1$aa$bb', 'scrypt$1024$8$99$aa$bb', 'scrypt$1000$8$1$aa$bb', 'scrypt$4294967296$8$1$aa$bb', 'bcrypt$1024$8$1$aa$bb']) assert.strictEqual(await S.verifyPassword(PEPPER, PW, junk), false, junk);
   });
 
-  console.log('the first sign-in, with a password');
-  await t('a new account made with a code can set its password in the same call, and then sees hasPassword', async () => {
-    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com' } });
-    const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code: h.codeOf(), termsAccepted: true, password: PW } });
+  console.log('request-code now requires a password, and consent for a new address');
+  await t('a missing or weak password is refused, before any code is created or sent', async () => {
+    const h = harness();
+    const missing = await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com', termsAccepted: true } });
+    assert.strictEqual(missing.code, 400); assert.strictEqual(missing.body.code, 'weak_password');
+    const weak = await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com', password: 'short', termsAccepted: true } });
+    assert.strictEqual(weak.code, 400); assert.strictEqual(weak.body.code, 'weak_password');
+    assert.strictEqual(h.mails.length, 0);
+    const ok = await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com', password: PW, termsAccepted: true } });
+    assert.strictEqual(ok.code, 202);
+  });
+  await t('a new address also needs consent; without it the code is not sent, and the same request with it works', async () => {
+    const h = harness();
+    const no = await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com', password: PW } });
+    assert.strictEqual(no.code, 400); assert.strictEqual(no.body.code, 'consent_required'); assert.strictEqual(h.mails.length, 0);
+    const yes = await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com', password: PW, termsAccepted: true } });
+    assert.strictEqual(yes.code, 202);
+  });
+  await t('a returning address needs the password but not the consent tick', async () => {
+    const h = harness(); await h.signIn('buyer@example.com'); h.clock.t += 61e3;
+    const r = await h.call('post', '/api/auth/request-code', { body: { email: 'buyer@example.com', password: PW } });
+    assert.strictEqual(r.code, 202);
+  });
+
+  console.log('applying the password at verify-code');
+  await t('a new account made with a code whose request carried a password is signed in and says so', async () => {
+    const h = harness();
+    const { r } = await h.signIn('new@example.com');
     assert.strictEqual(r.code, 200); assert.strictEqual(r.body.isNewUser, true); assert.strictEqual(r.body.passwordSet, true); assert.strictEqual(r.body.user.hasPassword, true);
     const me = await h.call('get', '/api/me', { headers: { cookie: h.cookieOf(r) } }); assert.strictEqual(me.body.user.hasPassword, true);
     assert(!JSON.stringify(r.body).includes(PW) && !JSON.stringify(r.body).includes('scrypt'));
   });
-  await t('a weak password is refused before the code is used up, so the person can try again with the same code', async () => {
-    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com' } });
-    const code = h.codeOf();
-    const weak = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code, termsAccepted: true, password: 'short' } });
-    assert.strictEqual(weak.code, 400); assert.strictEqual(weak.body.code, 'weak_password');
-    const ok = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code, termsAccepted: true, password: PW } });
-    assert.strictEqual(ok.code, 200);
-  });
-  await t('verify-code without a password behaves as before and sets none', async () => {
-    const h = harness(); const { r } = await h.signIn('plain@example.com');
-    assert.strictEqual(r.code, 200); assert.strictEqual(r.body.passwordSet, false); assert.strictEqual(r.body.user.hasPassword, false);
-  });
-  await t('an account made without one can set a password afterwards while signed in', async () => {
-    const h = harness(); const { cookie } = await h.signIn('later@example.com');
-    const no = await h.call('post', '/api/auth/password', { body: { password: PW } }); assert.strictEqual(no.code, 401);
-    const weak = await h.call('post', '/api/auth/password', { body: { password: 'short' }, headers: { cookie } }); assert.strictEqual(weak.body.code, 'weak_password');
-    const r = await h.call('post', '/api/auth/password', { body: { password: PW }, headers: { cookie } });
-    assert.strictEqual(r.code, 200); assert.strictEqual(r.body.hasPassword, true); assert.strictEqual(r.body.otherSessionsEnded, false);
-    assert.strictEqual((await login(h, 'later@example.com', PW)).code, 200);
-  });
-
-  console.log('the next sign-ins, with e-mail and password');
-  async function withPassword(email = 'buyer@example.com', over, envOver) {
-    const h = harness(over, envOver); await h.call('post', '/api/auth/request-code', { body: { email } });
-    const r = await h.call('post', '/api/auth/verify-code', { body: { email, code: h.codeOf(), termsAccepted: true, password: PW } });
-    assert.strictEqual(r.code, 200); h.mails.length = 0; return { h, first: r };
-  }
-  await t('the right password signs in with a session cookie and sends no e-mail', async () => {
-    const { h } = await withPassword();
-    const r = await login(h, 'Buyer@Example.com', PW);
-    assert.strictEqual(r.code, 200); assert.strictEqual(r.body.isNewUser, false); assert.strictEqual(r.body.user.email, 'buyer@example.com');
-    const cookie = h.cookieOf(r); assert(cookie.startsWith('sk_session=')); assert(r.cookies[0].includes('HttpOnly')); assert(r.cookies[0].includes('SameSite=Lax'));
-    assert.strictEqual(h.mails.length, 0);
-    assert.strictEqual((await h.call('get', '/api/me', { headers: { cookie } })).body.user.email, 'buyer@example.com');
-  });
-  await t('a wrong password, an unknown address and an account with no password all get the same answer', async () => {
-    const { h } = await withPassword(); await h.signIn('nopw@example.com');
-    const a = await login(h, 'buyer@example.com', 'wrong password!'), b = await login(h, 'ghost@example.com', PW), c = await login(h, 'nopw@example.com', PW);
-    for (const r of [a, b, c]) { assert.strictEqual(r.code, 401); assert.strictEqual(r.body.code, 'invalid_credentials'); assert.strictEqual(r.cookies.length, 0); }
-    assert.strictEqual(a.body.error, b.body.error); assert.strictEqual(b.body.error, c.body.error);
-    assert.deepStrictEqual(Object.keys(a.body).sort(), Object.keys(b.body).sort());
-  });
-  await t('malformed input is refused cleanly', async () => {
-    const { h } = await withPassword();
-    assert.strictEqual((await h.call('post', '/api/auth/login', { body: { email: 'nope', password: PW } })).body.code, 'invalid_email');
-    for (const pw of [undefined, null, '', 5, {}, [], 'x'.repeat(5000)]) assert.strictEqual((await login(h, 'buyer@example.com', pw)).code, 401, String(pw));
-    assert.strictEqual((await h.call('post', '/api/auth/login', { body: undefined })).code, 400);
-  });
-  await t('a disabled account cannot sign in with its password, and a banned address is stopped before any check', async () => {
-    const { h, first } = await withPassword();
-    await h.A.store.setDisabled(first.body.user.id, new Date());
-    const r = await login(h, 'buyer@example.com', PW); assert.strictEqual(r.code, 403); assert.strictEqual(r.body.code, 'account_disabled'); assert.strictEqual(r.cookies.length, 0);
-    const wrong = await login(h, 'buyer@example.com', 'wrong password!'); assert.strictEqual(wrong.code, 401);
-  });
-  await t('after 10 wrong passwords in an hour the address is locked even for the right password, and unlocks later; a code still works', async () => {
-    const { h } = await withPassword();
-    for (let i = 0; i < 10; i++) assert.strictEqual((await login(h, 'buyer@example.com', 'wrong password ' + i)).code, 401);
-    const locked = await login(h, 'buyer@example.com', PW); assert.strictEqual(locked.code, 429); assert.strictEqual(locked.body.code, 'too_many_attempts'); assert.strictEqual(locked.body.retryAfter, 3600);
-    h.clock.t += 61e3;
-    const { r } = await h.signIn('buyer@example.com'); assert.strictEqual(r.code, 200);
-    h.clock.t += 3600e3 + 1000;
-    assert.strictEqual((await login(h, 'buyer@example.com', PW)).code, 200);
-  });
-  await t('guessing against an address that has no account is counted and locked the same way', async () => {
+  await t('verify-code takes no password or consent field of its own: sending them there does nothing', async () => {
     const h = harness();
-    for (let i = 0; i < 10; i++) assert.strictEqual((await login(h, 'ghost@example.com', 'guess number ' + i)).code, 401);
-    assert.strictEqual((await login(h, 'ghost@example.com', 'guess number x')).code, 429);
+    await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com', password: PW, termsAccepted: true } });
+    const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code: h.codeOf(), termsAccepted: false, password: 'something else entirely' } });
+    assert.strictEqual(r.code, 200); assert.strictEqual(r.body.passwordSet, true); assert.strictEqual(r.body.user.hasPassword, true);
   });
-  await t('the lock is the setting, and one address locking does not lock another', async () => {
-    const { h } = await withPassword('buyer@example.com', {}, { AUTH_PASSWORD_FAILS_PER_HOUR: '3' }); await h.signIn('other@example.com');
-    for (let i = 0; i < 3; i++) await login(h, 'buyer@example.com', 'wrong password ' + i);
-    assert.strictEqual((await login(h, 'buyer@example.com', PW)).code, 429);
-    assert.strictEqual((await login(h, 'other@example.com', 'something else!')).code, 401);
-  });
-  await t('the quick check is asked for when it is on, as for the code request', async () => {
-    const gate = { on: false };
-    const { h } = await withPassword('buyer@example.com', { bot: { enabled: () => gate.on, verify: pow => ({ ok: pow === 'good' }) } }); gate.on = true;
-    assert.strictEqual((await login(h, 'buyer@example.com', PW)).code, 428);
-    const r = await h.call('post', '/api/auth/login', { body: { email: 'buyer@example.com', password: PW, pow: 'good' } }); assert.strictEqual(r.code, 200);
-  });
-  await t('failures and sign-ins are recorded without the password, and show in the admin counters', async () => {
-    const { h } = await withPassword(); await login(h, 'buyer@example.com', 'wrong password!'); await login(h, 'buyer@example.com', PW);
-    const kinds = h.A.store._events.map(e => e.kind); assert(kinds.includes('password_wrong')); assert(kinds.includes('login_ok')); assert(kinds.includes('password_set'));
-    assert(!JSON.stringify(h.A.store._events).includes(PW)); assert(!JSON.stringify(h.A.store._audit).includes(PW));
+  await t('a wrong code never applies the held password; the right code still can afterwards', async () => {
+    const h = harness();
+    await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com', password: PW, termsAccepted: true } });
+    const code = h.codeOf();
+    const bad = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code: code === '000000' ? '111111' : '000000' } });
+    assert.strictEqual(bad.code, 400);
+    const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code } });
+    assert.strictEqual(r.code, 200); assert.strictEqual(r.body.passwordSet, true);
   });
 
-  console.log('changing and resetting');
-  await t('changing needs the current password, ends the other sessions, and keeps this one', async () => {
-    const { h } = await withPassword(); const s1 = h.cookieOf(await login(h, 'buyer@example.com', PW)), s2 = h.cookieOf(await login(h, 'buyer@example.com', PW));
-    const noCur = await h.call('post', '/api/auth/password', { body: { password: 'brand new password' }, headers: { cookie: s1 } }); assert.strictEqual(noCur.code, 401);
-    const wrongCur = await h.call('post', '/api/auth/password', { body: { password: 'brand new password', currentPassword: 'nope nope nope' }, headers: { cookie: s1 } }); assert.strictEqual(wrongCur.code, 401);
-    const r = await h.call('post', '/api/auth/password', { body: { password: 'brand new password', currentPassword: PW }, headers: { cookie: s1 } });
-    assert.strictEqual(r.code, 200); assert.strictEqual(r.body.otherSessionsEnded, true);
-    assert.strictEqual((await h.call('get', '/api/me', { headers: { cookie: s2 } })).code, 401);
-    assert.strictEqual((await h.call('get', '/api/me', { headers: { cookie: h.cookieOf(r) } })).code, 200);
-    assert.strictEqual((await login(h, 'buyer@example.com', PW)).code, 401);
-    assert.strictEqual((await login(h, 'buyer@example.com', 'brand new password')).code, 200);
+  console.log('re-sending the current password is a no-op; a genuinely different one is a reset');
+  await t('a returning sign-in with the unchanged password changes nothing and ends no other session', async () => {
+    const h = harness();
+    const first = (await h.signIn('buyer@example.com')).r; const oldCookie = h.cookieOf(first);
+    h.clock.t += 61e3;
+    const { r: second } = await h.signIn('buyer@example.com');
+    assert.strictEqual(second.code, 200); assert.strictEqual(second.body.isNewUser, false); assert.strictEqual(second.body.passwordSet, false); assert.strictEqual(second.body.user.hasPassword, true);
+    assert.strictEqual((await h.call('get', '/api/me', { headers: { cookie: oldCookie } })).code, 200);
   });
-  await t('guessing the current password through the change form is counted against the same lock', async () => {
-    const { h } = await withPassword(); const s = h.cookieOf(await login(h, 'buyer@example.com', PW));
-    for (let i = 0; i < 10; i++) await h.call('post', '/api/auth/password', { body: { password: 'brand new password', currentPassword: 'guess ' + i + ' guess' }, headers: { cookie: s } });
-    const r = await h.call('post', '/api/auth/password', { body: { password: 'brand new password', currentPassword: PW }, headers: { cookie: s } }); assert.strictEqual(r.code, 429);
-  });
-  await t('forgot it: a code proves the address and sets a new password, and every old session ends', async () => {
-    const { h } = await withPassword(); const old = h.cookieOf(await login(h, 'buyer@example.com', PW)); h.clock.t += 61e3;
-    await h.call('post', '/api/auth/request-code', { body: { email: 'buyer@example.com' } });
-    const weak = await h.call('post', '/api/auth/verify-code', { body: { email: 'buyer@example.com', code: h.codeOf(), password: 'short' } }); assert.strictEqual(weak.body.code, 'weak_password');
-    const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'buyer@example.com', code: h.codeOf(), password: 'a fresh password!' } });
-    assert.strictEqual(r.code, 200); assert.strictEqual(r.body.passwordSet, true); assert.strictEqual(r.body.isNewUser, false);
-    assert.strictEqual((await h.call('get', '/api/me', { headers: { cookie: old } })).code, 401);
-    assert.strictEqual((await h.call('get', '/api/me', { headers: { cookie: h.cookieOf(r) } })).code, 200);
-    assert.strictEqual((await login(h, 'buyer@example.com', PW)).code, 401);
-    assert.strictEqual((await login(h, 'buyer@example.com', 'a fresh password!')).code, 200);
-  });
-  await t('a wrong code never sets or changes a password', async () => {
-    const { h } = await withPassword(); h.clock.t += 61e3; await h.call('post', '/api/auth/request-code', { body: { email: 'buyer@example.com' } });
-    const bad = await h.call('post', '/api/auth/verify-code', { body: { email: 'buyer@example.com', code: '000000', password: 'an attacker password' } }); assert.strictEqual(bad.code, 400);
-    assert.strictEqual((await login(h, 'buyer@example.com', 'an attacker password')).code, 401); assert.strictEqual((await login(h, 'buyer@example.com', PW)).code, 200);
+  await t('a second code requested with a genuinely different password replaces it on verify, and ends every other session', async () => {
+    const h = harness();
+    const first = (await h.signIn('buyer@example.com')).r; const oldCookie = h.cookieOf(first);
+    h.clock.t += 61e3;
+    const { r: second } = await h.signIn('buyer@example.com', 'a brand new password');
+    assert.strictEqual(second.code, 200); assert.strictEqual(second.body.isNewUser, false); assert.strictEqual(second.body.passwordSet, true);
+    assert.strictEqual((await h.call('get', '/api/me', { headers: { cookie: oldCookie } })).code, 401);
+    assert.strictEqual((await h.call('get', '/api/me', { headers: { cookie: h.cookieOf(second) } })).code, 200);
   });
 
   console.log('what must not leak');
   await t('the hash is in no response, not in the data export, and is gone when the account is deleted', async () => {
-    const { h } = await withPassword(); const r = await login(h, 'buyer@example.com', PW), cookie = h.cookieOf(r);
+    const h = harness();
+    const { r, cookie } = await h.signIn('buyer@example.com');
     const exp = await h.call('get', '/api/me/export', { headers: { cookie } }); assert(!JSON.stringify(exp.body).includes('scrypt'));
     const uid = r.body.user.id; assert((await h.A.store.passwordHashOf(uid)).startsWith('scrypt$'));
     const del = await h.call('delete', '/api/me', { body: { confirm: 'DELETE' }, headers: { cookie } }); assert.strictEqual(del.code, 200);
     assert.strictEqual(await h.A.store.passwordHashOf(uid), null);
-    assert.strictEqual((await login(h, 'buyer@example.com', PW)).code, 401);
+  });
+  await t('failures and sign-ins are recorded without the password, and show in the admin counters', async () => {
+    const h = harness(); await h.signIn('buyer@example.com');
+    const kinds = h.A.store._events.map(e => e.kind); assert(kinds.includes('login_ok')); assert(kinds.includes('password_set'));
+    assert(!JSON.stringify(h.A.store._events).includes(PW)); assert(!JSON.stringify(h.A.store._audit).includes(PW));
   });
   await t('with accounts off the routes are not mounted', async () => {
     const routes = []; const app = {}; for (const m of ['get', 'post', 'patch', 'delete']) app[m] = (p) => routes.push(p);

@@ -8,7 +8,7 @@ const { makeAccountStore } = require('../accounts/store');
 let passed = 0, failed = 0;
 async function t(name, fn) { try { await fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
 
-const PEPPER = 'p'.repeat(40), DAY = 86400000;
+const PEPPER = 'p'.repeat(40), DAY = 86400000, PW = 'a safe default password 1';
 function harness(over = {}, envOver = {}) {
   const env = { ACCOUNTS_ENABLED: 'on', AUTH_PEPPER: PEPPER, ACCOUNTS_ALLOW_MEMORY: 'true', NODE_ENV: 'test', ...envOver };
   const clock = { t: Date.parse('2026-11-03T10:00:00Z') }, mails = [], alerts = [], routes = [], bought = [];
@@ -21,6 +21,9 @@ function harness(over = {}, envOver = {}) {
   A.mount(app);
   const find = (m, p) => routes.find(r => r.method === m && r.path === p);
   async function call(m, p, { body, headers = {}, ip = '1.1.1.1' } = {}) {
+    // request-code now needs a password (and, for a new address, consent); default both so tests about other things
+    // (rate limits, proof of work, mail delivery...) don't each have to supply them.
+    if (m === 'post' && p === '/api/auth/request-code' && body) body = { password: PW, termsAccepted: true, ...body };
     const route = find(m, p); assert(route, 'no route ' + m + ' ' + p);
     const h = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
     return new Promise(resolve => {
@@ -35,8 +38,8 @@ function harness(over = {}, envOver = {}) {
   const codeOf = () => (mails[mails.length - 1].text.match(/code is (\d{6})/) || [])[1];
   const cookieOf = r => { const c = (r.cookies || [])[0]; return c ? c.split(';')[0] : ''; };
   async function signIn(email = 'buyer@example.com', extra = {}) {
-    await call('post', '/api/auth/request-code', { body: { email } });
-    const r = await call('post', '/api/auth/verify-code', { body: { email, code: codeOf(), termsAccepted: true, ...extra } });
+    await call('post', '/api/auth/request-code', { body: { email, ...extra } });
+    const r = await call('post', '/api/auth/verify-code', { body: { email, code: codeOf() } });
     return { r, cookie: cookieOf(r) };
   }
   const guarded = async (cookie, mw = A.guard) => new Promise(resolve => {
@@ -163,15 +166,17 @@ function harness(over = {}, envOver = {}) {
     const u = [...h.A.store._users.values()][0]; assert.strictEqual(u.termsVersion, '2026-11'); assert(u.emailVerifiedAt && u.lastLoginAt);
     assert(h.A.store._audit.some(a => a.action === 'auth.login'));
   });
-  await t('a new address must accept the terms: without it the code is not used up, so ticking the box and trying again works', async () => {
-    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com' } }); const code = h.codeOf();
-    const no = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code } });
-    assert.strictEqual(no.code, 400); assert.strictEqual(no.body.code, 'consent_required'); assert.strictEqual(h.A.store._users.size, 0);
-    const yes = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code, termsAccepted: true } }); assert.strictEqual(yes.code, 200);
+  await t('a new address must accept the terms at request-code: without it no code is sent, so ticking the box and trying again works', async () => {
+    const h = harness();
+    const no = await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com', termsAccepted: false } });
+    assert.strictEqual(no.code, 400); assert.strictEqual(no.body.code, 'consent_required'); assert.strictEqual(h.mails.length, 0); assert.strictEqual(h.A.store._users.size, 0);
+    const yes = await h.call('post', '/api/auth/request-code', { body: { email: 'new@example.com' } }); assert.strictEqual(yes.code, 202);
+    const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'new@example.com', code: h.codeOf() } }); assert.strictEqual(r.code, 200);
   });
-  await t('a returning person needs no consent tick and is not marked new', async () => {
+  await t('a returning person needs no consent tick at request-code, and is not marked new', async () => {
     const h = harness(); await h.signIn('a@example.com'); h.clock.t += 61000;
-    await h.call('post', '/api/auth/request-code', { body: { email: 'A@example.com' } });
+    const again = await h.call('post', '/api/auth/request-code', { body: { email: 'A@example.com', termsAccepted: false } });
+    assert.strictEqual(again.code, 202);
     const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'a@example.com', code: h.codeOf() } });
     assert.strictEqual(r.code, 200); assert.strictEqual(r.body.isNewUser, false); assert.strictEqual(h.A.store._users.size, 1); assert.strictEqual(h.A.store._sessions.size, 2);
   });

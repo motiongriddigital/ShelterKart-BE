@@ -4274,6 +4274,15 @@ paths:
         Sends a six-digit code to the address. The reply is the same whether or not the address has an account. One code a minute and five an hour per address;
         20 requests an hour per IP address. When the proof-of-work guard is on, the body must carry `pow`. A new code replaces the previous one.
         With `ACCOUNTS_DEV_ECHO=on` outside production the reply also carries `devCode`.
+
+        `password` is required on every call, including a plain returning sign-in: a returning person sends the password already on the account. It is checked and
+        hashed before any code is created or sent; one that breaks the rules answers 400 `weak_password`. If it matches the account's current password, nothing is
+        held against this code and `POST /api/auth/verify-code` changes nothing and ends no session - re-sending the same password is a no-op, not a reset. Anything
+        else (no account yet, no password yet, or a genuinely different one) is held against the code and applied on verify: set on a new account, or replaced,
+        ending every other session, on an existing one.
+
+        A new address (no existing account) also needs `termsAccepted: true`; without it the answer is 400 `consent_required` and no code is sent. An existing address
+        does not need it.
       security: []
       requestBody:
         required: true
@@ -4281,10 +4290,12 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email]
+              required: [email, password]
               additionalProperties: false
               properties:
                 email: {type: string, description: 'Checked by the route: an invalid or over-long address answers 400 `invalid_email`.'}
+                password: {type: string, description: '12 to 128 characters, not one repeated character, not a very common password, not the e-mail address.'}
+                termsAccepted: {type: boolean, description: 'Required (must be true) when the address has no existing account.'}
                 language: {type: string, description: 'Optional, for later use.'}
                 pow: {type: object, description: 'The solved proof of work, as for POST /api/investigate.'}
       responses:
@@ -4299,7 +4310,7 @@ paths:
                   cooldownSeconds: {type: integer, example: 60}
                   codeLength: {type: integer, example: 6}
                   devCode: {type: string, description: 'Only with ACCOUNTS_DEV_ECHO outside production.'}
-        '400': {description: 'code `invalid_email`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '400': {description: 'code `invalid_email`, `weak_password` or `consent_required`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
         '428': {description: 'code `challenge`: complete the proof of work and repeat.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
         '429': {description: 'code `cooldown` or `rate_limited`, with `retryAfter` seconds.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
   /api/auth/verify-code:
@@ -4308,11 +4319,11 @@ paths:
       tags: [Accounts]
       summary: Sign in with the code
       description: |
-        A right code starts a session and sets the session cookie. A new address is created at the first success and then needs `termsAccepted: true`;
-        without it the answer is 400 `consent_required` and the code stays valid. A code allows five wrong tries.
+        A right code starts a session and sets the session cookie. A new address is created at the first success (consent for this was already checked by
+        `POST /api/auth/request-code`). A code allows five wrong tries.
 
-        Send `password` as well to set the account's password in the same call (a new account) or to set a new one after forgetting it (an existing account: the code proves the e-mail address,
-        every other session of the account ends, and the reply carries `passwordSet: true`). A password that breaks the rules answers 400 `weak_password` before the code is used, so the same code can be tried again.
+        The password sent with the matching `POST /api/auth/request-code` call is applied here: set on a new account, or replaced (ending every other session)
+        on an existing one. The reply carries `passwordSet: true` when that happened.
       security: []
       requestBody:
         required: true
@@ -4325,9 +4336,7 @@ paths:
               properties:
                 email: {type: string}
                 code: {type: string, description: 'Six digits. A wrong or malformed code is counted as a try and answers 400 `invalid_code`, so the format is not checked here.'}
-                termsAccepted: {type: boolean}
-                language: {type: string}
-                password: {type: string, description: 'Optional. 12 to 128 characters, not one repeated character, not a very common password, not the e-mail address.'}
+                language: {type: string, description: 'Set on the account only when it is created here (new address).'}
       responses:
         '200':
           description: Signed in. `Set-Cookie` carries the session.
@@ -4342,86 +4351,8 @@ paths:
                   isNewUser: {type: boolean}
                   passwordSet: {type: boolean, description: 'True when this call set or replaced the password.'}
                   user: {$ref: '#/components/schemas/User'}
-        '400': {description: 'code `invalid_code` (with `attemptsLeft` when known), `consent_required` or `weak_password`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '400': {description: 'code `invalid_code`, with `attemptsLeft` when known.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
         '403': {description: 'code `account_disabled`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '429': {description: 'code `too_many_attempts` or `rate_limited`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-  /api/auth/login:
-    post:
-      operationId: signInWithPassword
-      tags: [Accounts]
-      summary: Sign in with e-mail and password
-      description: |
-        For an account that has set a password. Nothing is e-mailed. A right password starts a session and sets the session cookie, as `POST /api/auth/verify-code` does.
-        A wrong password, an unknown address and an account with no password all answer the same 401 `invalid_credentials`, so the answer does not reveal which addresses have accounts;
-        the page should offer "e-mail me a code instead" next to it. After 10 wrong passwords for one address within an hour (`AUTH_PASSWORD_FAILS_PER_HOUR`) the address answers 429 `too_many_attempts`
-        for password sign-in, even for the right password; sign-in by code is not affected. 30 requests an hour per IP address. When the proof-of-work guard is on, the body must carry `pow`.
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, password]
-              additionalProperties: false
-              properties:
-                email: {type: string}
-                password: {type: string}
-                pow: {type: object, description: 'The solved proof of work, as for POST /api/auth/request-code.'}
-      responses:
-        '200':
-          description: Signed in. `Set-Cookie` carries the session.
-          headers:
-            Set-Cookie: {schema: {type: string}, description: 'As for POST /api/auth/verify-code.'}
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok: {type: boolean}
-                  isNewUser: {type: boolean, description: Always false here.}
-                  passwordSet: {type: boolean, description: Always false here.}
-                  user: {$ref: '#/components/schemas/User'}
-        '400': {description: 'code `invalid_email`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '401': {description: 'code `invalid_credentials`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '403': {description: 'code `account_disabled`, `account_banned` or `ip_banned`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '428': {description: 'code `challenge`: complete the proof of work and repeat.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '429': {description: 'code `too_many_attempts` or `rate_limited`, with `retryAfter` seconds.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-  /api/auth/password:
-    post:
-      operationId: setPassword
-      tags: [Accounts]
-      summary: Set or change the password
-      description: |
-        For a signed-in account. With no password yet (an account made by code only), `password` alone sets one. With a password already, `currentPassword` is also needed; a change ends every other session
-        of the account and replaces this one's cookie. Wrong current passwords count against the same hourly limit as wrong sign-in passwords. To reset a forgotten password, sign in by code and send `password`
-        to `POST /api/auth/verify-code`.
-      security: [{sessionCookie: []}]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [password]
-              additionalProperties: false
-              properties:
-                password: {type: string, description: 'The new password: 12 to 128 characters, not one repeated character, not a very common password, not the e-mail address.'}
-                currentPassword: {type: string, description: 'Needed when the account already has a password.'}
-      responses:
-        '200':
-          description: Saved.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  ok: {type: boolean}
-                  hasPassword: {type: boolean}
-                  otherSessionsEnded: {type: boolean, description: 'True when an existing password was changed.'}
-        '400': {description: 'code `weak_password`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '401': {description: 'code `invalid_credentials` (wrong current password) or `auth_required`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
-        '403': {$ref: '#/components/responses/CsrfRefused'}
         '429': {description: 'code `too_many_attempts` or `rate_limited`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
   /api/auth/logout:
     post:

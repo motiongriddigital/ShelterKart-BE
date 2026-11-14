@@ -34,8 +34,6 @@
 {"method":"get","path":"/api/admin/analytics","handlers":2},
 {"method":"post","path":"/api/auth/request-code","handlers":2},
 {"method":"post","path":"/api/auth/verify-code","handlers":2},
-{"method":"post","path":"/api/auth/login","handlers":2},
-{"method":"post","path":"/api/auth/password","handlers":3},
 {"method":"post","path":"/api/auth/logout","handlers":3},
 {"method":"post","path":"/api/auth/logout-all","handlers":3},
 {"method":"get","path":"/api/auth/session","handlers":2},
