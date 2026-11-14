@@ -116,12 +116,12 @@ module.exports = function setup(c) {
   /* The Merchant of Record's hosted checkout for a purchase. The buyer is sent to the merchant, pays there (the merchant adds and
      collects any tax, included in the total), and comes back to ?sk_ref=...&sk_purchase=..., where the page confirms the payment.
      A session is single-use, so a retry gets a fresh one for the same pending purchase. */
-  function startMor(quote, purchaseId, billingCountry) {
+  function startMor(quote, purchaseId, billingCountry, back = null) {
     const base = require('../lib/origins').returnBase(process.env);
     if (!base) throw new Error('PUBLIC_BASE_URL (or PAYMENT_RETURN_BASE) is not set: the merchant checkout needs a return address');
     const ref = encodeURIComponent(quote.ref);
     return PAYMENTS.PROVIDERS.mor.createCheckout(quote, { purchaseId, env: process.env, billingCountry,
-      productId: (pricingData.morProducts || {})[quote.currency], returnUrl: `${base}/?sk_ref=${ref}&sk_purchase=${encodeURIComponent(purchaseId)}`, cancelUrl: `${base}/?sk_ref=${ref}` });
+      productId: (pricingData.morProducts || {})[quote.currency], returnUrl: back ? `${base}${back}` : `${base}/?sk_ref=${ref}&sk_purchase=${encodeURIComponent(purchaseId)}`, cancelUrl: back ? `${base}${back}` : `${base}/?sk_ref=${ref}` });
   }
 
   /* Settle a pending merchant purchase from the merchant's OWN records, not from anything the browser or a webhook claimed:

@@ -12,7 +12,7 @@ const OUT={project:{name:'Hubtown Celeste',location:'Mumbai',developer:'Hubtown 
   conflicts:[{topic:'Possession date',versions:[{value:'Dec 2027',src:1},{value:'Jul 2029',src:2}]}],gaps:[]};
 const MAILS = []; let _o=0; globalThis.fetch = async (url, o) => { const mk = c => ({ ok:true, status:200, json: async()=>c });
   if (url === 'https://api.resend.com/emails') { MAILS.push(JSON.parse(o.body)); return mk({ id:'em_' + MAILS.length }); } if (url === 'https://api.razorpay.com/v1/orders') { const q = JSON.parse(o.body); return mk({ id:'order_A'+(++_o), amount:q.amount, currency:q.currency, status:'created' }); } const b = JSON.parse(o.body);
-  if (b.tools) return mk({stop_reason:'end_turn',content:[{type:'server_tool_use',name:'web_search'},{type:'web_search_tool_result',content:RET.map(([u,t])=>({url:u,title:t}))},{type:'text',text:JSON.stringify(OUT)}]});
+  if (b.tools) return mk({stop_reason:'end_turn',content:[{type:'server_tool_use',name:'web_search'},{type:'web_search_tool_result',content:RET.map(([u,t])=>({url:u,title:t}))},{type:'text',text:JSON.stringify(/due-diligence investigator/.test(JSON.stringify(b.messages)) ? { ...OUT, questions:[{question:'Please share the registered agreement for sale.',why:'It matters.',to:'legal team',when:'before signing',good:'The document.',not_accepted:'A verbal answer.'}] } : OUT)}]});
   return mk({content:[{type:'text',text:'{"reading":[{"observation":"Dates differ.","based_on":["f1"],"question":"Which?"}],"questions":[]}'}]}); };
 const app = require(require('path').join(__dirname, '..', '..', 'server.js'));
 const { _db } = require('pg');
@@ -52,17 +52,18 @@ const rawOf = r => (Buffer.isBuffer(r.body) ? r.body : Buffer.from(String(r.body
   ok('the search starts', start.code === 202 && Boolean(start.body.ref));
   const ref = start.body.ref;
   let view; for (let i = 0; i < 150; i++) { view = await send('/api/report/:ref', hA, { ref }); if (view.body && view.body.ready && view.body.pdf && view.body.pdf.ready) break; await sleep(40); }
-  ok('the report call says a free preview PDF is ready, with its address and name', view.body.pdf && view.body.pdf.kind === 'preview' && view.body.pdf.ready === true && view.body.pdf.url === `/r/${ref}/preview.pdf` && /^ShelterKart-Preview-/.test(view.body.pdf.filename) && view.body.pdf.bytes > 0);
+  ok('the report call says a free preview PDF is ready, with its address and name', view.body.pdf && view.body.pdf.kind === 'preview' && view.body.pdf.ready === true && view.body.pdf.url === `/r/${ref}/preview.pdf` && /^[A-Za-z0-9-]+_preview_\d{4}-\d{2}-\d{2}_[0-9A-F]{6}\.pdf$/.test(view.body.pdf.filename) && view.body.pdf.bytes > 0);
   ok('it was printed once, from the free page, with the preview footer', printed.length === 1 && /free preview/i.test(printed[0].footer) && /Free preview/.test(printed[0].html) && !/Every question, by stage/.test(printed[0].html));
   const printedBefore = printed.length;
 
   console.log('downloading it');
   const dl = await send('/r/:ref/preview.pdf', hA, { ref });
-  ok('a signed-in visitor gets the stored file at once, as a PDF download, private and not indexed', dl.code === 200 && rawOf(dl).slice(0, 4).toString() === '%PDF' && dl.headers['Content-Type'] === 'application/pdf' && /attachment; filename="ShelterKart-Preview-/.test(dl.headers['Content-Disposition']) && /private/.test(dl.headers['Cache-Control']) && /noindex/.test(dl.headers['X-Robots-Tag']) && Number(dl.headers['Content-Length']) === rawOf(dl).length);
+  ok('a visitor gets the stored file at once, as a PDF download, private and not indexed', dl.code === 200 && rawOf(dl).slice(0, 4).toString() === '%PDF' && dl.headers['Content-Type'] === 'application/pdf' && /attachment; filename="[A-Za-z0-9-]+_preview_\d{4}-\d{2}-\d{2}_[0-9A-F]{6}\.pdf"/.test(dl.headers['Content-Disposition']) && /private/.test(dl.headers['Cache-Control']) && /noindex/.test(dl.headers['X-Robots-Tag']) && Number(dl.headers['Content-Length']) === rawOf(dl).length);
   ok('the download did not print again', printed.length === printedBefore);
   const other = await send('/r/:ref/preview.pdf', hB, { ref });
   ok('another signed-in visitor gets the same stored file', other.code === 200 && printed.length === printedBefore);
-  ok('a visitor with no session is refused with 401', (await send('/r/:ref/preview.pdf', {}, { ref })).code === 401);
+  ok('a visitor with no session at all gets the free preview PDF too: no sign-in is needed to share or save it', await (async () => { const r = await send('/r/:ref/preview.pdf', {}, { ref }); return r.code === 200 && rawOf(r).slice(0, 4).toString() === '%PDF'; })());
+  ok('the full PDF is still refused without a session (401)', (await send('/r/:ref/pdf', {}, { ref })).code === 401);
   ok('a malformed or unknown reference is a 404', (await send('/r/:ref/preview.pdf', hA, { ref: 'nope' })).code === 404 && (await send('/r/:ref/preview.pdf', hA, { ref: 'SK-FFFFFFFFFFFF' })).code === 404);
 
   console.log('the full PDF stays paid');
@@ -91,13 +92,14 @@ const rawOf = r => (Buffer.isBuffer(r.body) ? r.body : Buffer.from(String(r.body
   ok('the webhook settles it', wh.code === 200 && _db.purchases.find(p => p.id === co.body.purchaseId).status === 'paid');
   let mail; for (let i = 0; i < 300 && !mail; i++) { mail = MAILS.find(m => String(m.text || '').includes('/r/' + ref)); if (!mail) await sleep(40); }
   ok('the report e-mail is sent', Boolean(mail));
+  ok('the e-mail carries the full PDF as an attachment named for the developer (or what was searched for when the developer is not known), and says so', Boolean(mail.attachments) && mail.attachments.length === 1 && /^Hubtown-Celeste_\d{4}-\d{2}-\d{2}_[0-9A-F]{6}\.pdf$/.test(mail.attachments[0].filename) && Buffer.from(mail.attachments[0].content, 'base64').slice(0, 4).toString() === '%PDF' && /The PDF is attached/.test(mail.text) && /\/r\/SK-[A-F0-9]{12}\/pdf/.test(mail.text));
   const fullPrints = printed.filter(p => /^ShelterKart report:/.test(p.footer || ''));
   ok('the full PDF was printed once, from the full report, before the e-mail went out', fullPrints.length === 1 && /Every question, by stage/.test(fullPrints[0].html) && /\/r\/SK-[A-F0-9]{12}\/pdf/.test(mail.text));
   const paidView = await send('/api/report/:ref', hA, { ref });
-  ok('the report call now offers the full PDF as ready', paidView.body.pdf.kind === 'full' && paidView.body.pdf.ready === true && paidView.body.pdf.url === `/r/${ref}/pdf` && /^ShelterKart-Report-/.test(paidView.body.pdf.filename));
+  ok('the report call now offers the full PDF as ready', paidView.body.pdf.kind === 'full' && paidView.body.pdf.ready === true && paidView.body.pdf.url === `/r/${ref}/pdf` && /^Hubtown-Celeste_\d{4}-\d{2}-\d{2}_[0-9A-F]{6}\.pdf$/.test(paidView.body.pdf.filename));
   const printsNow = printed.length;
   const fdl = await send('/r/:ref/pdf', hA, { ref });
-  ok('the paid buyer downloads the stored full PDF without another print', fdl.code === 200 && rawOf(fdl).slice(0, 4).toString() === '%PDF' && /ShelterKart-Report-/.test(fdl.headers['Content-Disposition']) && printed.length === printsNow);
+  ok('the paid buyer downloads the stored full PDF without another print', fdl.code === 200 && rawOf(fdl).slice(0, 4).toString() === '%PDF' && /attachment; filename="Hubtown-Celeste_\d{4}-\d{2}-\d{2}_[0-9A-F]{6}\.pdf"/.test(fdl.headers['Content-Disposition']) && printed.length === printsNow);
   ok('another buyer still cannot have it', (await send('/r/:ref/pdf', hB, { ref })).code === 403);
   const prev2 = await send('/r/:ref/preview.pdf', hA, { ref });
   ok('the paid buyer can still download the free preview PDF', prev2.code === 200);

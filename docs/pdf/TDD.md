@@ -94,7 +94,7 @@ createPdfDocs({ pdf, store, env, log, now }) -> {
 
 `GET /r/:ref/pdf`: as today, but a visitor who is not entitled gets 403 `{ ok: false, code: 'payment_required', error, previewPdf }`; an invalid or expired token keeps the generic 403; entitled visitors get `serve(full)`. 423 when held.
 
-Both set `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="ShelterKart-Preview-<Name>.pdf"` or `ShelterKart-Report-<Name>.pdf` (the existing name rule), `Content-Length`, `Cache-Control: private, no-store`, `X-Robots-Tag: noindex, nofollow`. Stored files are read with a stream so a large file is not held in memory.
+Both set `Content-Type: application/pdf`, `Content-Disposition: attachment; filename="<Name>_preview_<date>_<code>.pdf"` or `<Developer>_<date>_<code>.pdf` (the file-name rule in SHARING.md), `Content-Length`, `Cache-Control: private, no-store`, `X-Robots-Tag: noindex, nofollow`. Stored files are read with a stream so a large file is not held in memory.
 
 `GET /api/report/:ref`: adds `pdf: describe(brief, { kind: full ? 'full' : 'preview' })` to the body (the same place as `held`). The OpenAPI schema `PropertyReport` gets an optional `pdf` object.
 
@@ -123,7 +123,7 @@ A directory is per instance. With several instances a request to an instance tha
 - The free PDF is built from the free fields only (3.2). A test prints a dossier whose paid fields hold sentinel strings and asserts none appears in the preview HTML and, in one real-Chromium test, in the extracted text of the PDF.
 - Paths: `ref` and `kind` are validated by regex before use; files are never served by a static route; the directory is 0700.
 - A report that is held (`REVIEW.isHeld`) has no PDF and the routes answer 423.
-- Access follows the report page: sign-in wall, entitlement for the full one. The key (a hash) is never shown to the visitor.
+- Access: the free preview PDF is public (it holds only the free view); the full one needs the sign-in wall and entitlement. The key (a hash) is never shown to the visitor.
 - Timing: `describe` does no printing, so the report call cannot be used to start prints.
 - Cost: a print takes CPU, not AI money. The number of prints is bounded by the number of investigations (daily caps) plus on-demand requests (rate limited by `researchLimiter`).
 

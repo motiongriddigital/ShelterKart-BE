@@ -27,8 +27,8 @@ Requirement by requirement. "Test" names the file; every guard below was also br
 | FR-8, FR-9 | single-flight; background yields to downloads | `pdfdocs` (ten requests, one print; queue skip counted) |
 | FR-10 | content-keyed storage, old file replaced | `pdfdocs`, `pdfstore` |
 | FR-11 | full stored only when complete | `pdfdocs` (two prints while completing, stored once complete) |
-| FR-12, FR-13 | free route for any signed-in visitor; full route entitled only, 403 `payment_required` with `previewPdf`; bad token keeps the generic 403 | `pdf-routes` |
-| FR-14, FR-15 | headers; sign-in wall (401 without a session) | `pdf-routes` |
+| FR-12, FR-13 | free route for anyone, no sign-in (changed 2026-11-14, see SHARING.md); full route entitled only, 403 `payment_required` with `previewPdf`; bad token keeps the generic 403 | `pdf-routes` |
+| FR-14, FR-15 | headers; the full PDF still needs a session (401), the free one does not | `pdf-routes` |
 | FR-16 | `pdf` block (kind, ready, url, filename, bytes, generatedAt, reason) | `pdf-routes`, `pdfdocs` describe |
 | FR-17 to FR-19 | retention 7 days for previews; files removed with the report (admin purge); clean-up of orphans | `pdfstore` prune, `pdf-routes` (purge removes the files and the routes answer 404) |
 | NFR-2 | printer guards unchanged (JavaScript off, network refused) | `pdf.test.js` (existing) and `pdfreal.test.js` hostile title |

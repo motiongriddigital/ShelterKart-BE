@@ -14,8 +14,9 @@ module.exports = function create(c) {
 
   async function start(req) {
     if (!paywallActive(process.env)) return { status: 503, body: { ok: false, error: 'Payments are not enabled yet.' } };
-    const { ref, idempotencyKey, quoteId, billingCountry, buyerKind, taxId } = req.body || {};
+    const { ref, idempotencyKey, quoteId, billingCountry, buyerKind, taxId, returnTo } = req.body || {};
     if (!REF_RE.test(String(ref || ''))) return { status: 400, body: { ok: false, error: 'Unknown report reference.' } };
+    const back = returnTo === `/r/${ref}` ? returnTo : null;
     if (!IDEMPOTENCY_KEY_RE.test(String(idempotencyKey || '')))
       return { status: 400, body: { ok: false, error: 'Missing or invalid idempotency key.' } };
 
@@ -46,7 +47,7 @@ module.exports = function create(c) {
         const q0 = await pricingStore.getQuote(row.quote_id);
         if (!q0) return { status: 409, body: { ok: false, error: 'This checkout attempt has already been used. Please start again.' } };
         try {
-          const o = await startMor(q0, row.id, row.billing_country || q0.buyer.country);
+          const o = await startMor(q0, row.id, row.billing_country || q0.buyer.country, back);
           await pool.query(`UPDATE report_purchases SET provider_order_id=$2 WHERE id=$1`, [row.id, o.orderId]);
           return { status: 200, body: { ok: true, purchaseId: row.id, amount: Number(row.amount), currency: row.currency, quoteId: q0.id, mor: { checkoutUrl: o.checkoutUrl } } };
         } catch (e) { console.error('[checkout] merchant session failed', e.message); return { status: 503, body: { ok: false, error: 'Payment could not be started right now. Please try again in a moment.' } }; }
@@ -125,7 +126,7 @@ module.exports = function create(c) {
     let order;
     try {
       // The amount is the quote's gross total, set on the server -- never anything the browser sent.
-      order = adapter.id === 'mor' ? await startMor(quote, purchaseId, billing) : await adapter.createCheckout(quote, { purchaseId, env: process.env, billingCountry: billing });
+      order = adapter.id === 'mor' ? await startMor(quote, purchaseId, billing, back) : await adapter.createCheckout(quote, { purchaseId, env: process.env, billingCountry: billing });
     } catch (e) {
       console.error('[checkout] provider order failed', e.message);
       return { status: 503, body: { ok: false, error: 'Payment could not be started right now. Please try again in a moment.' } };

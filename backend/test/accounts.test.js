@@ -17,7 +17,7 @@ function harness(over = {}, envOver = {}) {
     alert: async (s, x) => { alerts.push({ s, x }); }, mailConfigured: true,
     entitled: async (id, ref) => bought.some(p => p.userId === id && p.ref === ref && p.status === 'paid'),
     purchasesOf: async id => bought.filter(p => p.userId === id).map(p => ({ ref: p.ref, amount: p.amount, currency: p.currency, status: p.status, createdAt: new Date(clock.t) })),
-    briefInfo: async ref => ({ projectName: 'Project ' + ref, market: 'in' }), ...over });
+    briefInfo: async ref => ({ projectName: 'Project ' + ref, market: 'in', pdfFilename: 'Dev_' + ref + '.pdf', previewPdfFilename: 'Dev_preview_' + ref + '.pdf' }), ...over });
   A.mount(app);
   const find = (m, p) => routes.find(r => r.method === m && r.path === p);
   async function call(m, p, { body, headers = {}, ip = '1.1.1.1' } = {}) {
@@ -260,6 +260,9 @@ function harness(over = {}, envOver = {}) {
     assert.deepStrictEqual(r.body.reports.map(x => x.ref).sort(), ['SK-AAAAAAAAAAAA', 'SK-BBBBBBBBBBBB']);
     const paid = r.body.reports.find(x => x.ref === 'SK-AAAAAAAAAAAA'); assert.deepStrictEqual([paid.paid, paid.amount, paid.currency, paid.projectName], [true, 3100, 'INR', 'Project SK-AAAAAAAAAAAA']);
     assert.strictEqual(r.body.reports.find(x => x.ref === 'SK-BBBBBBBBBBBB').paid, false);
+    assert.deepStrictEqual(paid.pdf, { url: '/r/SK-AAAAAAAAAAAA/pdf', filename: 'Dev_SK-AAAAAAAAAAAA.pdf' });
+    assert.deepStrictEqual(paid.previewPdf, { url: '/r/SK-AAAAAAAAAAAA/preview.pdf', filename: 'Dev_preview_SK-AAAAAAAAAAAA.pdf' });
+    const unpaid = r.body.reports.find(x => x.ref === 'SK-BBBBBBBBBBBB'); assert.strictEqual(unpaid.pdf, null); assert.strictEqual(unpaid.previewPdf.url, '/r/SK-BBBBBBBBBBBB/preview.pdf');
     const rb = await h.call('get', '/api/me/reports', { headers: { cookie: b.cookie } }); assert.deepStrictEqual(rb.body.reports.map(x => x.ref), ['SK-CCCCCCCCCCCC']);
   });
   await t('entitlement: a signed-in user with a paid purchase is entitled; a refund, another user, or no session is not', async () => {

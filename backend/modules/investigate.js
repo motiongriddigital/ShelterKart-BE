@@ -122,7 +122,7 @@ module.exports = function register(app, c) {
     const job = newLiveJob(ref, input); job.key = key;
     try { SEARCH.observeInvestigate({ query: stripPII(query), location: stripPII(location), market: SEARCH.marketOfCountry(country), reused: false }); } catch {}   // the new search, in the shadow
     job.inv.sweep({ panel: previewPanel() })
-      .then(() => { job.status = 'preview'; indexPreview(job, job.inv && job.inv.dossier); persistJob(job); makePreviewPdf(ref); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
+      .then(() => { if (emptyFirstLook(job.inv && job.inv.dossier)) throw new Error('the first look found nothing'); job.status = 'preview'; indexPreview(job, job.inv && job.inv.dossier); persistJob(job); makePreviewPdf(ref); if (job.paid) completeLive(job); getByRefAsync(ref).then(b => SEARCH.afterInvestigation(b, SEARCH.marketOfCountry(country))).catch(() => {}); })
       .catch(e => {
         const note = PS.failureNote('engines_unavailable');
         job.status = 'failed'; job.failReason = note.reason; job.previewFailedAt = Date.now();
@@ -184,12 +184,12 @@ module.exports = function register(app, c) {
     const brief = await getByRefAsync(ref);
     if (!brief || brief.kind !== 'dossier') return res.status(404).json({ ok: false, error: 'That report was not found.' });
     res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+    const failedJob = liveJobs.get(ref);
+    if (failedJob && failedJob.status === 'failed' && !failedJob.paid && (failedJob.previewFailedAt || !brief.dossier)) {
+      const note = PS.failureNote(failedJob.failReason || 'engines_unavailable', { now: failedJob.previewFailedAt || Date.now() });
+      return res.json({ ok: true, ready: false, state: 'unavailable', ref, phase: 'failed', ...note });
+    }
     if (!brief.dossier) {
-      const job = liveJobs.get(ref);
-      if (job && job.status === 'failed' && !job.paid) {
-        const note = PS.failureNote(job.failReason || 'engines_unavailable', { now: job.previewFailedAt || Date.now() });
-        return res.json({ ok: true, ready: false, state: 'unavailable', ref, phase: 'failed', ...note });
-      }
       return res.status(202).json({ ok: true, ready: false, state: 'working', ref, phase: brief.phase || 'starting' });
     }
     ACCOUNTS.touch(req, ref);
@@ -197,6 +197,7 @@ module.exports = function register(app, c) {
     const held = REVIEW.isHeld(brief);
     res.json({ ok: true, ready: true, held, report: reportView(brief.dossier, { locked: !full, ref }), pdf: PDFS.describe(brief, { kind: full ? 'full' : 'preview', ctx: pdfCtx(ref), held }) });
   }));
+  const emptyFirstLook = d => !d || !d.counts || !((d.counts.facts || 0) > 0 || (d.counts.questions || 0) > 0);
   const sendPdf = async (res, out, name, extra = {}) => {
     const buf = out.buffer || await require('fs').promises.readFile(out.path);
     res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${name}"`, 'Content-Length': String(buf.length), 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', ...extra });
@@ -215,7 +216,7 @@ module.exports = function register(app, c) {
       throw e;
     }
   };
-  app.get('/r/:ref/preview.pdf', ACCOUNTS.guard, ah(async (req, res) => {
+  app.get('/r/:ref/preview.pdf', ah(async (req, res) => {
     const ref = String(req.params.ref || '');
     const brief = REF_RE.test(ref) ? await getByRefAsync(ref) : null;
     if (!brief || brief.kind !== 'dossier' || !brief.dossier) return res.status(404).json({ ok: false, error: 'That report was not found.' });

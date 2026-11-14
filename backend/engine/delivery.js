@@ -13,9 +13,9 @@
 const PUBLIC = env => require('../lib/origins').linkBase(env);
 const DELAYS = [60e3, 5 * 60e3, 30 * 60e3];
 
-function messageOf({ project, link, pdfLink }) {
+function messageOf({ project, link, pdfLink, attached = false }) {
   const subject = `Your ShelterKart report: ${project}`;
-  const text = `Your ShelterKart due-diligence report on ${project} is ready.\n\nRead it and download the PDF: ${link}\n${pdfLink ? `PDF: ${pdfLink}\n` : ''}\nThe questions are grouped by the team at the developer who should answer them. Keep this link: the page is refreshed if we find something new.\n\nResearch, not advice. ShelterKart is paid only by buyers.`;
+  const text = `Your ShelterKart due-diligence report on ${project} is ready.\n\nRead it and download the PDF: ${link}\n${attached ? 'The PDF is attached to this e-mail.\n' : ''}${pdfLink ? `PDF: ${pdfLink}\n` : ''}\nThe questions are grouped by the team at the developer who should answer them. Keep this link: the page is refreshed if we find something new.\n\nResearch, not advice. ShelterKart is paid only by buyers.`;
   const html = `<p>Your ShelterKart due-diligence report on <b>${esc(project)}</b> is ready.</p><p><a href="${esc(link)}">Read the report and download the PDF</a></p><p>The questions are grouped by the team at the developer who should answer them. Keep this link: the page is refreshed if we find something new.</p><p style="color:#52657F;font-size:13px">Research, not advice. ShelterKart is paid only by buyers.</p>`;
   return { subject, text, html };
 }
@@ -24,18 +24,18 @@ const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 const EMAIL = {
   resend: {
     configured: env => Boolean(env.RESEND_API_KEY && env.DELIVERY_FROM),
-    async send({ to, msg }, { env, fetchImpl }) {
+    async send({ to, msg, attachment }, { env, fetchImpl }) {
       const r = await fetchImpl('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: env.DELIVERY_FROM, to: [to], subject: msg.subject, html: msg.html, text: msg.text }) });
+        body: JSON.stringify({ from: env.DELIVERY_FROM, to: [to], subject: msg.subject, html: msg.html, text: msg.text, ...(attachment ? { attachments: [{ filename: attachment.filename, content: attachment.content }] } : {}) }) });
       if (!r.ok) throw new Error(`Resend answered ${r.status}`);
       const j = await r.json().catch(() => ({})); return { id: j.id || '' };
     },
   },
   postmark: {
     configured: env => Boolean(env.POSTMARK_SERVER_TOKEN && env.DELIVERY_FROM),
-    async send({ to, msg }, { env, fetchImpl }) {
+    async send({ to, msg, attachment }, { env, fetchImpl }) {
       const r = await fetchImpl('https://api.postmarkapp.com/email', { method: 'POST', headers: { 'X-Postmark-Server-Token': env.POSTMARK_SERVER_TOKEN, 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ From: env.DELIVERY_FROM, To: to, Subject: msg.subject, HtmlBody: msg.html, TextBody: msg.text, MessageStream: env.POSTMARK_STREAM || 'outbound' }) });
+        body: JSON.stringify({ From: env.DELIVERY_FROM, To: to, Subject: msg.subject, HtmlBody: msg.html, TextBody: msg.text, MessageStream: env.POSTMARK_STREAM || 'outbound', ...(attachment ? { Attachments: [{ Name: attachment.filename, Content: attachment.content, ContentType: 'application/pdf' }] } : {}) }) });
       if (!r.ok) throw new Error(`Postmark answered ${r.status}`);
       const j = await r.json().catch(() => ({})); return { id: j.MessageID || '' };
     },
@@ -44,9 +44,9 @@ const EMAIL = {
 const sender = from => { const m = /^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/.exec(String(from || '')); return m && m[1] ? { name: m[1], email: m[2].trim() } : { email: m ? m[2].trim() : String(from || '').trim() }; };
 EMAIL.brevo = {
   configured: env => Boolean(env.BREVO_API_KEY && env.DELIVERY_FROM),
-  async send({ to, msg }, { env, fetchImpl }) {
+  async send({ to, msg, attachment }, { env, fetchImpl }) {
     const r = await fetchImpl('https://api.brevo.com/v3/smtp/email', { method: 'POST', headers: { 'api-key': env.BREVO_API_KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ sender: sender(env.DELIVERY_FROM), to: [{ email: to }], subject: msg.subject, htmlContent: msg.html, textContent: msg.text }) });
+      body: JSON.stringify({ sender: sender(env.DELIVERY_FROM), to: [{ email: to }], subject: msg.subject, htmlContent: msg.html, textContent: msg.text, ...(attachment ? { attachment: [{ name: attachment.filename, content: attachment.content }] } : {}) }) });
     if (!r.ok) throw new Error(`Brevo answered ${r.status}`);
     const j = await r.json().catch(() => ({})); return { id: j.messageId || '' };
   },
@@ -84,7 +84,7 @@ function createDelivery({ env = process.env, fetchImpl = globalThis.fetch, onGiv
     const run = async () => {
       try {
         let out;
-        if (ch === 'email') out = await EMAIL[job.emailProvider].send({ to: job.email, msg: job.msg }, { env, fetchImpl });
+        if (ch === 'email') out = await EMAIL[job.emailProvider].send({ to: job.email, msg: job.msg, attachment: job.attachment }, { env, fetchImpl });
         else out = await WHATSAPP.send({ to: job.phone, project: job.project, link: job.link }, { env, fetchImpl });
         log.push({ ref: job.ref, channel: ch, to: mask(ch, ch === 'email' ? job.email : job.phone), ok: true, id: out.id, attempt: n + 1, at: new Date().toISOString() });
         failed.delete(key);
@@ -103,8 +103,8 @@ function createDelivery({ env = process.env, fetchImpl = globalThis.fetch, onGiv
   }
   return {
     /** Queue a report for a buyer. Returns which channels were queued and why any were not. */
-    send({ ref, project, email, phone, link, pdfLink }) {
-      const job = { ref, project, email, phone, link, pdfLink, msg: messageOf({ project, link, pdfLink }), emailProvider: emailProvider(env) };
+    send({ ref, project, email, phone, link, pdfLink, attachment = null }) {
+      const job = { ref, project, email, phone, link, pdfLink, attachment, msg: messageOf({ project, link, pdfLink, attached: Boolean(attachment) }), emailProvider: emailProvider(env) };
       const queued = [], skipped = [], runs = [];
       if (email) { if (job.emailProvider) { queued.push('email'); runs.push(attempt(job, 'email', 0)); } else skipped.push({ channel: 'email', reason: 'no e-mail provider is set up' }); }
       if (phone) { if (WHATSAPP.configured(env)) { queued.push('whatsapp'); runs.push(attempt(job, 'whatsapp', 0)); } else skipped.push({ channel: 'whatsapp', reason: 'WhatsApp is not set up' }); }
@@ -150,4 +150,13 @@ async function sendEmail(env, { to, subject, text }, fetchImpl = globalThis.fetc
   catch (e) { console.error('[email] could not send:', e && e.message); return false; }
 }
 
-module.exports = { createDelivery, reportLink, messageOf, emailProvider, alertOperator, sendEmail };
+/** The paid PDF as an e-mail attachment, or null: switched off (DELIVERY_ATTACH_PDF=off), nothing printed, unreadable, or larger than DELIVERY_ATTACH_MAX_BYTES (the e-mail then carries the link only). */
+async function pdfAttachment(out, { env = process.env, filename, readFile = p => require('fs').promises.readFile(p) } = {}) {
+  if (!out || String(env.DELIVERY_ATTACH_PDF || 'on').toLowerCase() === 'off') return null;
+  try {
+    const buf = out.buffer || await readFile(out.path), max = Number(env.DELIVERY_ATTACH_MAX_BYTES) || 3000000;
+    return buf.length <= max ? { filename, content: buf.toString('base64'), bytes: buf.length } : null;
+  } catch { return null; }
+}
+
+module.exports = { pdfAttachment, createDelivery, reportLink, messageOf, emailProvider, alertOperator, sendEmail };
