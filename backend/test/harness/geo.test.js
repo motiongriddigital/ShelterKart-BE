@@ -31,8 +31,8 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
 
 async function signInFrom(email, headers, ip) {
   const h = { 'user-agent': 'Mozilla/5.0 (Macintosh)', ...headers };
-  const rc = await call(find('post', '/api/auth/request-code'), { email }, { headers: h, ip });
-  const vc = await call(find('post', '/api/auth/verify-code'), { email, code: rc.body.devCode, termsAccepted: true }, { headers: h, ip });
+  const rc = await call(find('post', '/api/auth/request-code'), { email, password: 'harness test password 1', termsAccepted: true }, { headers: h, ip });
+  const vc = await call(find('post', '/api/auth/verify-code'), { email, code: rc.body.devCode }, { headers: h, ip });
   return { code: vc.code, user: vc.body.user, cookie: (vc.cookies[0] || '').split(';')[0] };
 }
 const ADMIN = { authorization: 'Basic ' + Buffer.from('a:b').toString('base64') };

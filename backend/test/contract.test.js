@@ -40,7 +40,7 @@ async function serve(env, opts = {}) {
   console.log('report');
   await t('a valid request passes and is not counted', async () => {
     const s = await serve({ API_VALIDATION: 'report' });
-    const r = await s.call('POST', '/api/auth/request-code', { email: 'a@b.co' });
+    const r = await s.call('POST', '/api/auth/request-code', { email: 'a@b.co', password: 'a safe default password 1', termsAccepted: true });
     assert.strictEqual(r.status, 200); assert.strictEqual(s.contract.stats().mismatches.length, 0); s.close();
   });
   await t('an invalid request still reaches the route, unchanged, and is counted and logged once', async () => {
@@ -77,7 +77,7 @@ async function serve(env, opts = {}) {
   });
   await t('a valid request passes an enforced prefix', async () => {
     const s = await serve({ API_VALIDATION: 'enforce', API_VALIDATION_ENFORCE: '/api/auth' });
-    assert.strictEqual((await s.call('POST', '/api/auth/request-code', { email: 'a@b.co' })).status, 200); s.close();
+    assert.strictEqual((await s.call('POST', '/api/auth/request-code', { email: 'a@b.co', password: 'a safe default password 1', termsAccepted: true })).status, 200); s.close();
   });
   await t('outside the enforced prefixes the same mistake is only reported', async () => {
     const s = await serve({ API_VALIDATION: 'enforce', API_VALIDATION_ENFORCE: '/api/me' });
@@ -93,7 +93,7 @@ async function serve(env, opts = {}) {
   const W1 = { API_VALIDATION: 'enforce', API_VALIDATION_ENFORCE: '/api/auth,/api/me' };
   await t('shapes the frontend sends today pass', async () => {
     const s = await serve(W1);
-    const ok = [['POST', '/api/auth/request-code', { email: 'a@b.co', language: 'en', pow: { n: 1 } }], ['POST', '/api/auth/verify-code', { email: 'a@b.co', code: '123456', termsAccepted: true }],
+    const ok = [['POST', '/api/auth/request-code', { email: 'a@b.co', password: 'a safe default password 1', termsAccepted: true, language: 'en', pow: { n: 1 } }], ['POST', '/api/auth/verify-code', { email: 'a@b.co', code: '123456' }],
       ['PATCH', '/api/me', { displayName: 'A', country: 'IN', language: 'en', phone: '+911234567', whatsappConsent: true }], ['PATCH', '/api/me', { displayName: null, country: '' }], ['DELETE', '/api/me', { confirm: 'DELETE' }]];
     for (const [m, p, b] of ok) assert.strictEqual((await s.call(m, p, b)).status, 200, `${m} ${p} ${JSON.stringify(b)}`); s.close();
   });
@@ -106,7 +106,7 @@ async function serve(env, opts = {}) {
   });
   await t('rules the route reports with its own code are left to the route', async () => {
     const s = await serve(W1);
-    const pass = [['POST', '/api/auth/request-code', { email: 'not-an-address' }], ['POST', '/api/auth/verify-code', { email: 'a@b.co', code: '12' }], ['PATCH', '/api/me', { country: 'India' }], ['PATCH', '/api/me', { phone: 'abc' }], ['DELETE', '/api/me', { confirm: 'nope' }]];
+    const pass = [['POST', '/api/auth/request-code', { email: 'not-an-address', password: 'a safe default password 1', termsAccepted: true }], ['POST', '/api/auth/verify-code', { email: 'a@b.co', code: '12' }], ['PATCH', '/api/me', { country: 'India' }], ['PATCH', '/api/me', { phone: 'abc' }], ['DELETE', '/api/me', { confirm: 'nope' }]];
     for (const [m, p, b] of pass) assert.strictEqual((await s.call(m, p, b)).status, 200, `${m} ${p} ${JSON.stringify(b)}`); s.close();
   });
 

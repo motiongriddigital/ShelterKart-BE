@@ -147,8 +147,10 @@ function createAccounts(deps = {}) {
     app.post('/api/auth/request-code', limCode, wrap(async (req, res) => {
       const b = req.body || {}, email = S.normEmail(b.email);
       if (!email) return fail(res, 400, 'invalid_email', 'Enter a valid e-mail address.');
-      const wantsPassword = b.password !== undefined && b.password !== null && b.password !== '';
-      if (wantsPassword) { const why = S.passwordProblem(b.password, email); if (why) return fail(res, 400, 'weak_password', why); }
+      const passwordWhy = S.passwordProblem(b.password, email);
+      if (passwordWhy) return fail(res, 400, 'weak_password', passwordWhy);
+      const existing = await store.findUserByEmail(email);
+      if (!existing && b.termsAccepted !== true) { await ev('consent_required', { email, req }); return fail(res, 400, 'consent_required', 'Please accept the terms and the privacy notice to create your account.'); }
       if (await ipBanned(req)) { await ev('login_blocked_ip', { email, req, detail: 'request-code' }); return fail(res, 403, 'ip_banned', 'This address is blocked.'); }
       if (await accountBanned(email)) { await ev('login_blocked_account', { email, req, detail: 'request-code' }); return fail(res, 403, 'account_banned', 'This account is disabled. Write to us if you think that is a mistake.'); }
       if (bot.enabled(env)) {
@@ -168,7 +170,9 @@ function createAccounts(deps = {}) {
         return res.status(202).json(quiet);
       }
       const code = S.newCode();
-      const passwordHash = wantsPassword ? await S.hashPassword(cfg.pepper, b.password, passwordParams) : null;
+      const currentHash = existing ? await store.passwordHashOf(existing.id) : null;
+      const unchanged = currentHash ? await S.verifyPassword(cfg.pepper, b.password, currentHash) : false;
+      const passwordHash = unchanged ? null : await S.hashPassword(cfg.pepper, b.password, passwordParams);
       await store.createCode({ emailLower: email, codeHash: S.hashCode(cfg.pepper, email, code), expiresAt: new Date(t + cfg.codeMinutes * 60000), ipHash, passwordHash, now: at() });
       const sent = await mail({ to: email, subject: 'Your ShelterKart sign-in code',
         text: `Your ShelterKart sign-in code is ${code}\n\nIt works for ${cfg.codeMinutes} minutes. If you did not ask for it, ignore this e-mail: nobody can sign in without the code.` }).catch(() => false);
@@ -203,7 +207,6 @@ function createAccounts(deps = {}) {
         return fail(res, 400, 'invalid_code', 'That code is not right. Check the latest e-mail and try again.', { attemptsLeft: Math.max(0, cfg.codeAttempts - tries) });
       }
       let u = await store.findUserByEmail(email), isNewUser = false;
-      if (!u && b.termsAccepted !== true) { await ev('consent_required', { email, req }); return fail(res, 400, 'consent_required', 'Please accept the terms and the privacy notice to create your account.'); }
       if (u && u.disabledAt) { await ev('login_blocked_disabled', { email, userId: u.id, req }); return fail(res, 403, 'account_disabled', 'This account is disabled. Write to us if you think that is a mistake.'); }
       if (!await store.consumeCode(open.id)) return fail(res, 400, 'invalid_code', 'That code is not right or has expired. Ask for a new one.');
       if (!u) {

@@ -12,19 +12,20 @@ async function call(method, path, body) {
   return { status: r.status, json, headers: r.headers, set };
 }
 (async () => {
-  const email = 'smoke-' + Date.now() + '@example.com';
+  const email = 'smoke-' + Date.now() + '@example.com', pw0 = 'smoke test password 0';
   ok('a guarded route refuses a visitor with no session (401 auth_required)', (await call('POST', '/api/research/quote', {})).json.code === 'auth_required');
   ok('the search may start without a session (the wall is on the results)', (await call('POST', '/api/investigate', { query: 'xx' })).status !== 401);
   ok('a public route works with no session', (await call('GET', '/api/markets')).status === 200);
-  ok('a bad e-mail address is refused', (await call('POST', '/api/auth/request-code', { email: 'nope' })).json.code === 'invalid_email');
-  const rc = await call('POST', '/api/auth/request-code', { email });
+  ok('a bad e-mail address is refused', (await call('POST', '/api/auth/request-code', { email: 'nope', password: pw0, termsAccepted: true })).json.code === 'invalid_email');
+  ok('a missing password is refused before any code is sent', (await call('POST', '/api/auth/request-code', { email, termsAccepted: true })).json.code === 'weak_password');
+  const noConsent = await call('POST', '/api/auth/request-code', { email, password: pw0 });
+  ok('a new address must accept the terms before any code is sent', noConsent.json.code === 'consent_required');
+  const rc = await call('POST', '/api/auth/request-code', { email, password: pw0, termsAccepted: true });
   ok('a code is requested (202) and the dev echo returns it', rc.status === 202 && /^\d{6}$/.test(String(rc.json.devCode)));
-  ok('asking again at once is held back (cooldown)', (await call('POST', '/api/auth/request-code', { email })).json.code === 'cooldown');
-  ok('a wrong code is refused with the tries left', (await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode === '000000' ? '111111' : '000000', termsAccepted: true })).json.attemptsLeft === 4);
-  const noConsent = await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode });
-  ok('a new address must accept the terms; the code is kept', noConsent.json.code === 'consent_required');
-  const vc = await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode, termsAccepted: true });
-  ok('the right code signs in and sets an HttpOnly, SameSite=Lax cookie', vc.status === 200 && vc.json.isNewUser === true && /HttpOnly/.test(vc.set[0]) && /SameSite=Lax/.test(vc.set[0]));
+  ok('asking again at once is held back (cooldown)', (await call('POST', '/api/auth/request-code', { email, password: pw0 })).json.code === 'cooldown');
+  ok('a wrong code is refused with the tries left', (await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode === '000000' ? '111111' : '000000' })).json.attemptsLeft === 4);
+  const vc = await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode });
+  ok('the right code signs in and sets an HttpOnly, SameSite=Lax cookie', vc.status === 200 && vc.json.isNewUser === true && vc.json.passwordSet === true && /HttpOnly/.test(vc.set[0]) && /SameSite=Lax/.test(vc.set[0]));
   const me = await call('GET', '/api/me');
   ok('/api/me returns the user', me.status === 200 && me.json.user.email === email);
   ok('/api/me/reports answers with a list', Array.isArray((await call('GET', '/api/me/reports')).json.reports));
@@ -49,10 +50,10 @@ async function call(method, path, body) {
   ok('the session endpoint then answers anonymous, still 200', (await call('GET', '/api/auth/session')).json.authenticated === false);
   const email2 = 'smoke-pw-' + Date.now() + '@example.com', pw = 'smoke test password 1';
   jar.cookie = '';
-  const rcWeak = await call('POST', '/api/auth/request-code', { email: email2, password: 'short' });
+  const rcWeak = await call('POST', '/api/auth/request-code', { email: email2, password: 'short', termsAccepted: true });
   ok('a weak password is refused at request-code, before any code is sent', rcWeak.json.code === 'weak_password');
-  const rcPw = await call('POST', '/api/auth/request-code', { email: email2, password: pw });
-  const vcPw = await call('POST', '/api/auth/verify-code', { email: email2, code: rcPw.json.devCode, termsAccepted: true });
+  const rcPw = await call('POST', '/api/auth/request-code', { email: email2, password: pw, termsAccepted: true });
+  const vcPw = await call('POST', '/api/auth/verify-code', { email: email2, code: rcPw.json.devCode });
   ok('a new account made with a code whose request carried a password is signed in and says so', vcPw.status === 200 && vcPw.json.isNewUser === true && vcPw.json.passwordSet === true && vcPw.json.user.hasPassword === true);
   ok('the stored account reports hasPassword and never the hash', await (async () => { const m = await call('GET', '/api/me'); return m.status === 200 && m.json.user.hasPassword === true && !JSON.stringify(m.json).includes('scrypt'); })());
   const rc2 = await (async () => { const g = await fetch(base + '/api/health'); return g.status; })();

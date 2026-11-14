@@ -22,8 +22,8 @@ const ok = (label, c) => { if (!c) failures++; console.log((c ? '  ok   ' : '  F
 process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : '\nall passing'); if (failures) process.exitCode = 1; });
 async function signIn(email) {
   const ua = { 'user-agent': 'Mozilla/5.0 (Macintosh)' };
-  const rc = await call(find('post', '/api/auth/request-code'), { email }, { headers: ua });
-  const vc = await call(find('post', '/api/auth/verify-code'), { email, code: rc.body.devCode, termsAccepted: true }, { headers: ua });
+  const rc = await call(find('post', '/api/auth/request-code'), { email, password: 'harness test password 1', termsAccepted: true }, { headers: ua });
+  const vc = await call(find('post', '/api/auth/verify-code'), { email, code: rc.body.devCode }, { headers: ua });
   return { cookie: (vc.cookies[0] || '').split(';')[0], user: vc.body.user };
 }
 

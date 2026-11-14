@@ -31,8 +31,8 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
 const realNow = Date.now.bind(Date); let skew = 0; Date.now = () => realNow() + skew;
 const UA = { 'user-agent': 'Mozilla/5.0 (Macintosh)' };
 async function signIn(email) {
-  const rc = await call(find('post', '/api/auth/request-code'), { email }, { headers: UA });
-  const vc = await call(find('post', '/api/auth/verify-code'), { email, code: rc.body.devCode, termsAccepted: true }, { headers: UA });
+  const rc = await call(find('post', '/api/auth/request-code'), { email, password: 'harness test password 1', termsAccepted: true }, { headers: UA });
+  const vc = await call(find('post', '/api/auth/verify-code'), { email, code: rc.body.devCode }, { headers: UA });
   return { cookie: (vc.cookies[0] || '').split(';')[0], setCookie: vc.cookies[0] || '', user: vc.body.user };
 }
 const session = headers => call(find('get', '/api/auth/session'), undefined, { headers, path: '/api/auth/session' });
