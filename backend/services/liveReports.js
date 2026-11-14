@@ -121,9 +121,13 @@ module.exports = function setup(c) {
   }
   function persistJob(job) {
     job.updatedAt = Date.now();
+    const saved = job.inv ? job.inv.exportState() : (job.saved || null);
     JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), purchaseId: job.purchaseId || null, contact: job.contact || null,
       costUsd: job.costUsd || 0, stageCosts: job.stageCosts || null, capUsd: job.capUsd == null ? null : job.capUsd, delivered: Boolean(job.delivered), createdAt: job.createdAt || Date.now(),
-      failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: job.updatedAt, saved: job.inv ? job.inv.exportState() : (job.saved || null) });
+      failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: job.updatedAt, saved });
+    /* A job that is not working keeps only its saved state, not the whole running investigation, for as long as it is kept (30 days): an unpaid first look, a finished
+       report, a failed one. A paid completion that needs it again rebuilds it from that state, exactly as after a restart. */
+    if (job.inv && (job.status === 'done' || job.status === 'failed' || (job.status === 'preview' && !job.paid))) { job.saved = saved; job.inv = null; }
   }
   const fullAccess = (req, ref, token) => (ACCOUNTS.enabled ? ACCOUNTS.entitled(req, ref) : tokenGrants(token ? String(token) : '', ref));
   const ownsPurchase = async (req, purchaseId) => { const u = await ACCOUNTS.user(req); return Boolean(u) && (await pool.query(`SELECT 1 FROM report_purchases WHERE id=$1 AND user_id=$2`, [purchaseId, u.id])).rows.length > 0; };
