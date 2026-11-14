@@ -321,4 +321,51 @@ ${guideBox()}
 </main></body></html>`;
 }
 
-module.exports = { renderDossier, renderPreview, SECTIONS, esc, firstSentence, CSS, head };
+
+const PREVIEW_PDF_CSS = `
+.pv-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid var(--gold);padding-bottom:.5rem;margin-bottom:1.6rem}
+.pv-top .brand{font-family:'Fraunces',Georgia,serif;font-size:1.3rem;color:var(--gold-deep);margin:0}
+.pv-badge{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--ink);background:var(--gold-wash);border:1px solid var(--gold);padding:.25rem .6rem}
+.pv-open{border:2px solid var(--ink);padding:1rem 1.2rem;margin:1.6rem 0;break-inside:avoid}
+.pv-open .price{font-size:1.4rem;margin:.2rem 0}
+.pv-open .url{word-break:break-all;font-weight:600}
+`;
+
+/** The free PDF: the free view and nothing else, written for paper. It never reads sections, sources, reasoning, conflicts, checks, or a question after the third. */
+function renderPreviewPdf(d, { price = null, link = '' } = {}) {
+  const p = d.project || {}, name = p.name || d.query, c = d.counts || {};
+  const questions = d.questions || [], top = questions.slice(0, 3), rest = questions.slice(3);
+  const team = {}; for (const q of rest) team[q.to] = (team[q.to] || 0) + 1;
+  const teamList = Object.entries(team).sort((a, b) => b[1] - a[1]);
+  const where = [d.location, d.market].filter(Boolean).join(' \u00b7 ');
+  const out = head(`${name} \u2014 free preview`).replace('</style></head>', PREVIEW_PDF_CSS + '</style></head>');
+  return out + `
+<div class="pv-top"><p class="brand">ShelterKart</p><span class="pv-badge">Free preview</span></div>
+<section>
+  <h1 style="font-size:2.3rem;margin:.2rem 0 .3rem;letter-spacing:-.01em">${esc(name)}</h1>
+  <p class="meta">${esc(where)}${p.ids && p.ids.length ? (where ? ' \u00b7 ' : '') + esc(p.ids.join(', ')) : ''}</p>
+  <p class="meta">Research to ${esc(longDate(d.asOf))}${d.ref ? ' \u00b7 Reference ' + esc(d.ref) : ''}. A snapshot: public records and pages change.</p>
+  <p style="font-size:1.08rem;color:var(--ink-2);margin-top:1rem">We found ${c.facts || 0} things from ${c.sources || 0} sources and ${c.conflicts || 0} places where sources disagree, and turned them into ${c.questions || 0} questions for the developer's teams. Here is what stood out first.</p>
+</section>
+${(d.promises || []).length ? `<h2 style="margin-top:1.8rem">Where the marketing and the record part ways</h2><div class="prs">${d.promises.map(promiseCard).join('')}</div>` : ''}
+${top.length ? `<h2 class="pagebreak" style="margin-top:0;border-top:0;padding-top:0">Three questions to start with</h2>
+<p class="meta">Put these to the developer in writing. Each says who should answer and what a good answer looks like.</p>
+<ol class="plain">${top.map(q => question(q, { track: false })).join('')}</ol>` : ''}
+${rest.length ? `<div class="lock"><h3>${rest.length} more questions are in the full report</h3>
+<p>${teamList.map(([t, n]) => `${n} for ${esc(who(t))}`).join(', ')}. Each names the document that closes it.</p></div>` : ''}
+<div class="lock"><h3>What the full report adds</h3><ul>
+<li>All ${c.questions || 0} questions, by stage (before booking, signing, each payment and possession), with why each matters, a good answer, and what does not close it</li>
+<li>${c.inferences || 0} conclusions drawn by connecting the facts, with the reasoning shown step by step</li>
+<li>The ${c.conflicts || 0} disagreements between sources, side by side, and the numbers checked: areas, dates, price per sq ft and what a delay is worth</li>
+<li>Every one of the ${c.facts || 0} findings with a link to where it appears and a clear status</li>
+<li>A one-page tracker for answers and documents, and what to request where records are not online</li>
+<li>A PDF to keep, and a live page that is refreshed if we find something new</li></ul></div>
+<div class="pv-open"><h3 style="margin:0">Unlock the full report</h3>
+${price ? `<p class="price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
+<p>One payment. No subscription. Open the report page to unlock it and receive the full PDF:</p>
+<p class="url">${esc(link || ('/r/' + (d.ref || '')))}</p></div>
+<p class="notice">Research, not advice. This document states what public sources show and what to ask. It does not tell you whether to buy. ShelterKart is paid only by buyers; no developer can influence it.</p>
+</main></body></html>`;
+}
+
+module.exports = { renderDossier, renderPreview, renderPreviewPdf, SECTIONS, esc, firstSentence, CSS, head };
