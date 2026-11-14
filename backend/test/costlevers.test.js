@@ -34,7 +34,8 @@ const leadCalls = e => e.calls.filter(c => c.role === 'research' && /Lead: /.tes
   console.log('the defaults');
   await t('today\'s budget is unchanged', () => {
     assert.deepStrictEqual(INV.DEFAULT_BUDGET, { rounds: 4, leadsPerRound: 6, searches: 25, fetches: 12, leadSearches: 10, leadFetches: 6, maxTokens: 16000, minutes: 15, panel: 0, leadPanel: 2,
-      pauseRounds: 12, criticMaxTokens: 8000, questionMaxTokens: 12000, criticPanel: 2, questionPanel: 2, leadMaxTokens: 0, fetchMaxTokens: 0, rankLeads: false, leadLimit: 0 });
+      pauseRounds: 12, criticMaxTokens: 8000, questionMaxTokens: 12000, criticPanel: 2, questionPanel: 2, leadMaxTokens: 0, fetchMaxTokens: 0, rankLeads: false, leadLimit: 0,
+      previewMode: 'full', leanMaxTokens: 4000, deepSearches: 25, deepFetches: 12, deepPanel: 1 });
   });
   await t('no settings means no change', () => { assert.deepStrictEqual(INV.budgetFromEnv({}), {}); });
 
