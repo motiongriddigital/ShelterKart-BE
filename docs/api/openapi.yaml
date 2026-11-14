@@ -2080,6 +2080,110 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
         '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/refunds/pending:
+    get:
+      operationId: adminPendingRefunds
+      tags: [Admin]
+      summary: Refunds the payment provider never confirmed
+      description: |
+        A refund is recorded as pending before the provider is asked. One that timed out or lost its connection stays pending and its amount stays counted as refunded, so it cannot be refunded twice.
+        These are the rows an operator must check in the provider's dashboard and settle with `POST /api/admin/refunds/{id}/resolve`. Needs the database.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/modules/admin.js
+      responses:
+        '200':
+          description: The pending refunds, oldest first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, refunds]
+                properties:
+                  ok: {type: boolean, const: true}
+                  refunds:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, purchaseId, amount, currency, taxReversed, reason, createdAt]
+                      properties:
+                        id: {type: string}
+                        purchaseId: {type: string, format: uuid}
+                        reportRef: {type: [string, 'null']}
+                        amount: {type: number}
+                        currency: {type: string}
+                        taxReversed: {type: number}
+                        reason: {type: string}
+                        createdAt: {type: string, format: date-time}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
+  /api/admin/refunds/{id}/resolve:
+    post:
+      operationId: adminResolveRefund
+      tags: [Admin]
+      summary: Settle a refund the provider never confirmed
+      description: |
+        Use after checking the provider's dashboard. `refunded` means the money went back: the row is completed with the provider's reference, and the purchase status, net revenue, sales ledger and refund event are booked exactly as for any refund.
+        `not_refunded` means it did not: the held amount is released and the purchase can be refunded again.
+        A refund recorded less than five minutes ago may still be with the provider and is refused (`in_flight`). Writes an audit row on the purchase.
+      security:
+        - adminBasic: []
+      x-rate-limit: adminLimiter
+      x-source: backend/modules/admin.js
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, pattern: '^[0-9]{1,18}$'}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome]
+              properties:
+                outcome: {type: string, enum: [refunded, not_refunded]}
+                providerRef: {type: string, description: The provider's refund reference. Required when the outcome is `refunded`. Truncated to 100 characters.}
+                note: {type: string, description: Kept in the audit row. Truncated to 200 characters.}
+      responses:
+        '200':
+          description: Settled. A `refunded` answer carries the same fields as a new refund.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, outcome, purchaseId, amount, currency]
+                properties:
+                  ok: {type: boolean, const: true}
+                  outcome: {type: string, enum: [refunded, not_refunded]}
+                  purchaseId: {type: string, format: uuid}
+                  refundId: {description: The provider's reference when refunded, the row id when released.}
+                  amount: {type: number}
+                  currency: {type: string}
+                  taxReversed: {type: number}
+                  remaining: {type: number}
+                  full: {type: boolean}
+        '400':
+          description: '"Invalid refund id."'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/AdminUnauthorized'}
+        '403': {$ref: '#/components/responses/OriginNotAllowed'}
+        '409':
+          description: A rule refused it. `code` is `not_found`, `not_pending`, `in_flight`, `bad_outcome` or `provider_ref_required`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, code, error]
+                properties:
+                  ok: {type: boolean, const: false}
+                  code: {type: string, enum: [not_found, not_pending, in_flight, bad_outcome, provider_ref_required]}
+                  error: {type: string}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503': {$ref: '#/components/responses/AdminNotConfigured'}
   /api/admin/purge:
     post:
       operationId: adminPurge
