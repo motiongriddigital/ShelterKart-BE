@@ -101,7 +101,7 @@ function createPdfDocs({ pdf, store, env = process.env, log = console, now = () 
   }
 
   async function ensure(brief, { kind, ctx = {}, held = false, background = false } = {}) {
-    if (!auto() && background) return null;
+    if (!auto()) return null;
     const reason = reasonNow(brief, kind, held);
     if (reason && reason !== 'completing') return null;
     if (kind === 'full' && reason === 'completing') return null;

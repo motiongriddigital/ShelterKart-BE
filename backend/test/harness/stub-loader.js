@@ -5,6 +5,8 @@
 const Module = require('module'), path = require('path');
 // Saved investigations from tests go to a temporary folder, never into backend/data/live-jobs.
 if (!process.env.LIVE_JOBS_DIR) process.env.LIVE_JOBS_DIR = require('fs').mkdtempSync(path.join(require('os').tmpdir(), 'sk-test-jobs-'));
+// Report PDFs are printed by a real browser that stays open; the harness switches the automatic making off so no test leaves one running. The PDF route test turns it on.
+if (!process.env.PDF_AUTO) process.env.PDF_AUTO = 'off';
 const STUBS = new Set(['express', 'cors', 'helmet', 'pg', 'dotenv', 'express-rate-limit']);
 const orig = Module._resolveFilename;
 Module._resolveFilename = function (request, ...rest) {

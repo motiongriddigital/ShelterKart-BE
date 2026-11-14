@@ -150,6 +150,7 @@ const PAID = ['SENTINEL_QUESTION_FOUR', 'SENTINEL_QUESTION_FIVE', 'SENTINEL_WHY_
   await t('PDF_AUTO=off stops the background making and leaves on-demand serving alone', async () => {
     const { docs, calls, brief } = rig({ env: { PDF_AUTO: 'off' } });
     assert.strictEqual(await docs.ensure(brief(), { kind: 'preview', ctx: CTX, background: true }), null); assert.strictEqual(calls.length, 0);
+    assert.strictEqual(await docs.ensure(brief({}, { phase: 'complete' }), { kind: 'full' }), null); assert.strictEqual(calls.length, 0);
     assert((await docs.serve(brief(), { kind: 'preview', ctx: CTX })).bytes > 0); assert.strictEqual(calls.length, 1); assert.strictEqual(docs.stats().auto, false);
   });
   await t('describe says what a visitor can have, and never prints', async () => {

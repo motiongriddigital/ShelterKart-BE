@@ -4,6 +4,7 @@ const env = { ANTHROPIC_API_KEY:'k', AI_PERSONAL_DATA_ENGINES:'anthropic', PAYME
   RESEND_API_KEY:'re_test', DELIVERY_FROM:'ShelterKart <no-reply@shelterkart.test>', PUBLIC_BASE_URL:'https://shelterkart.test' };
 Object.assign(process.env, env, { ADMIN_USERNAME: 'a', ADMIN_PASSWORD: 'b' });
 const fs = require('fs'), os = require('os'), nodePath = require('path');
+process.env.PDF_AUTO = 'on';
 process.env.PDF_DIR = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'skpdf-harness-'));
 const RET=[['https://maharerait.maharashtra.gov.in/x','MahaRERA'],['https://a.com/1','A'],['https://b.com/2','B'],['https://c.com/3','C'],['https://d.com/4','D']];
 const OUT={project:{name:'Hubtown Celeste',location:'Mumbai',developer:'Hubtown Limited',ids:['P51900008925']},sources:RET.map(r=>r[0]),
