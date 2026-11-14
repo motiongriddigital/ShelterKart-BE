@@ -24,7 +24,7 @@ Two new routes and one new field. The two existing routes only gain optional inp
 | `POST /api/auth/verify-code` | Optional `password`. New account: sets it. Existing account: the reset path. Reply has `passwordSet`. |
 | `GET /api/me` | `user.hasPassword`. |
 
-The database change is two nullable columns on `users`: `password_hash` and `password_set_at`, added by the existing idempotent `accounts.sql`. Nothing is rewritten and no account is touched.
+The database change is two nullable columns on `users`: `password_hash` and `password_set_at`, added by a new migration, `accounts_password.sql`, so databases that already ran `accounts.sql` upgrade cleanly. Nothing is rewritten and no account is touched.
 
 ## Decisions taken, and why
 
