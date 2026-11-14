@@ -49,13 +49,16 @@ module.exports.install = function install(app, c) {
   // Locked-down CORS: only your real frontend origin(s) may call this API in
   // production. Comma-separate multiple origins in ALLOWED_ORIGINS. Wide-open
   // CORS is one of the easiest ways a competitor's script scrapes this API
-  // directly from a browser — don't leave it at "*".
+  // directly from a browser — don't leave it at "*". DEV_MODE=true overrides
+  // all of this for a local machine, allowing every origin; refused to boot
+  // in production (engine/configCheck.js via lib/origins.js: originProblems).
   const ORIGINS = require('../lib/origins');
-  const allowedOrigins = ORIGINS.allowedOrigins(process.env), configuredOrigins = ORIGINS.configured(process.env);
+  const allowedOrigins = ORIGINS.allowedOrigins(process.env), configuredOrigins = ORIGINS.configured(process.env), devModeOpen = ORIGINS.devModeOpen(process.env);
   app.use(cors({
     credentials: true,
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // server-to-server / curl / health checks
+      if (devModeOpen) return cb(null, true); // DEV_MODE: explicit, local-only override - every origin allowed
       if (allowedOrigins.includes(origin)) return cb(null, true);
       // Previously an EMPTY list allowed every origin -- failing open, the
       // exact risk the comment above warns about. Now an empty list is only

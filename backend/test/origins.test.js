@@ -64,6 +64,17 @@ function serve(env, port) {
     assert.deepStrictEqual(check({ ...GOOD, API_PUBLIC_URL: 'https://api.shelterkart.example', REPORT_LINK_BASE: 'https://app.shelterkart.example' }).errors, []);
   });
 
+  console.log('DEV_MODE: an explicit override, local machines only');
+  await t('on, off, and nonsense', () => {
+    for (const v of ['true', 'TRUE', 'on', '1']) assert.strictEqual(O.devModeOpen({ DEV_MODE: v }), true, v);
+    for (const v of [undefined, '', 'false', 'off', '0', 'yes']) assert.strictEqual(O.devModeOpen({ DEV_MODE: v }), false, String(v));
+  });
+  await t('it is a startup error in production, even with ALLOWED_ORIGINS set; elsewhere it is only a warning', () => {
+    assert.ok(check({ ...GOOD, DEV_MODE: 'true' }).errors.some(e => /DEV_MODE/.test(e)));
+    assert.deepStrictEqual(check(GOOD).errors, []);
+    const dev = check({ ...GOOD, NODE_ENV: 'development', DEV_MODE: 'true' }); assert.deepStrictEqual(dev.errors, []); assert.ok(dev.warnings.some(w => /DEV_MODE/.test(w)));
+  });
+
   console.log('the session cookie guard (CSRF)');
   await t('with the guard on, a state-changing call from the API\'s own origin passes without it being listed; a stranger gets 403', () => {
     const { createAccounts } = require('../accounts');
@@ -86,6 +97,14 @@ function serve(env, port) {
     const s = await serve({ NODE_ENV: 'development', API_PUBLIC_URL: 'https://api.shelterkart.example' }, 4872);
     assert.ok(s, 'the server did not start');
     try { assert.strictEqual((await s.get('https://anything.example')).status, 200); } finally { s.stop(); }
+  });
+  await t('DEV_MODE=true allows a stranger origin even when ALLOWED_ORIGINS is set to something else', async () => {
+    const s = await serve({ NODE_ENV: 'development', ALLOWED_ORIGINS: 'https://shelterkart.example', DEV_MODE: 'true' }, 4873);
+    assert.ok(s, 'the server did not start');
+    try {
+      const r = await s.get('https://anything.example');
+      assert.strictEqual(r.status, 200); assert.strictEqual(r.headers.get('access-control-allow-origin'), 'https://anything.example');
+    } finally { s.stop(); }
   });
   console.log(`\n${passed} passed, ${failed} failed`); process.exitCode = failed ? 1 : 0;
 })();
