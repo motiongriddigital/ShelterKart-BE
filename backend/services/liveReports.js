@@ -34,8 +34,20 @@ module.exports = function setup(c) {
   /* The same project under a different name: once a report is complete, its registration numbers point to it for 30 days.
      A later buyer of the same registered project gets that report, and its research is not paid for again. */
   const regIndex = new Map();       // registration number -> { ref, at }
+  const previewIndex = new Map();   // registration number -> { ref, at }: a first look already made for that registered project (the preview is reusable too)
   const regIdsOf = d => ((d && d.project && d.project.ids) || []).map(x => String(x).toUpperCase().replace(/[^A-Z0-9]/g, '')).filter(x => x.length >= 4);
   function indexFinished(job, d) { for (const id of regIdsOf(d)) regIndex.set(id, { ref: job.ref, at: Date.now() }); }
+  function indexPreview(job, d, at = Date.now()) { for (const id of regIdsOf(d)) previewIndex.set(id, { ref: job.ref, at }); }
+  /* A buyer who types a registration number that a first look already holds (and the project's name differently) gets that report instead of a second sweep.
+     The number must be at least 8 characters with a digit, so a short word or year in a name never matches. Failed and interrupted jobs are never reused. */
+  function previewTwin(query, location) {
+    const typed = String(query || '').toUpperCase().replace(/[^A-Z0-9]/g, '') + String(location || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    for (const idx of [previewIndex, regIndex]) for (const [id, hit] of idx) {
+      if (id.length < 8 || !/\d/.test(id) || !typed.includes(id) || Date.now() - hit.at > 30 * 24 * 3600 * 1000) continue;
+      const j = liveJobs.get(hit.ref); if (j && !['failed', 'interrupted'].includes(j.status)) return hit.ref;
+    }
+    return null;
+  }
   function finishedTwin(job) {
     const d = (job.inv && job.inv.dossier) || (job.saved && job.saved.dossier);
     for (const id of regIdsOf(d)) {
@@ -100,6 +112,7 @@ module.exports = function setup(c) {
     liveJobs.delete(ref); JOBS.remove(ref);
     for (const [k, v] of liveIndex) if (v.ref === ref) liveIndex.delete(k);
     for (const [k, v] of regIndex) if (v.ref === ref) regIndex.delete(k);
+    for (const [k, v] of previewIndex) if (v.ref === ref) previewIndex.delete(k);
   }
   function pruneLiveJobs(now = Date.now()) {
     let removed = 0;
@@ -108,9 +121,13 @@ module.exports = function setup(c) {
   }
   function persistJob(job) {
     job.updatedAt = Date.now();
+    const saved = job.inv ? job.inv.exportState() : (job.saved || null);
     JOBS.save({ ref: job.ref, input: job.input, key: job.key || null, status: job.status, paid: Boolean(job.paid), purchaseId: job.purchaseId || null, contact: job.contact || null,
       costUsd: job.costUsd || 0, stageCosts: job.stageCosts || null, capUsd: job.capUsd == null ? null : job.capUsd, delivered: Boolean(job.delivered), createdAt: job.createdAt || Date.now(),
-      failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: job.updatedAt, saved: job.inv ? job.inv.exportState() : (job.saved || null) });
+      failedAt: job.failedAt || null, failError: job.failError || null, updatedAt: job.updatedAt, saved });
+    /* A job that is not working keeps only its saved state, not the whole running investigation, for as long as it is kept (30 days): an unpaid first look, a finished
+       report, a failed one. A paid completion that needs it again rebuilds it from that state, exactly as after a restart. */
+    if (job.inv && (job.status === 'done' || job.status === 'failed' || (job.status === 'preview' && !job.paid))) { job.saved = saved; job.inv = null; }
   }
   const fullAccess = (req, ref, token) => (ACCOUNTS.enabled ? ACCOUNTS.entitled(req, ref) : tokenGrants(token ? String(token) : '', ref));
   const ownsPurchase = async (req, purchaseId) => { const u = await ACCOUNTS.user(req); return Boolean(u) && (await pool.query(`SELECT 1 FROM report_purchases WHERE id=$1 AND user_id=$2`, [purchaseId, u.id])).rows.length > 0; };
@@ -172,7 +189,7 @@ module.exports = function setup(c) {
       return;
     }
     job.completing = true; job.status = 'completing'; persistJob(job);
-    const run = job.swept === false ? job.inv.sweep({ panel: previewPanel() }).then(() => job.inv.complete()) : job.inv.complete();
+    const run = job.swept === false && job.inv.previewMode !== 'lean' ? job.inv.sweep({ panel: previewPanel() }).then(() => job.inv.complete()) : job.inv.complete();
     // The research is done, so the report is done: a delivery problem is logged and retried by the delivery layer,
     // and never turns a finished, paid report into a failed one.
     run.then(() => {
@@ -216,10 +233,11 @@ module.exports = function setup(c) {
     liveJobs.set(rec.ref, job);
     if (rec.key && rec.saved && rec.saved.swept && Date.now() - (rec.createdAt || 0) < 30 * 24 * 3600 * 1000) liveIndex.set(rec.key, { ref: rec.ref, at: rec.createdAt });
     if (rec.status === 'done' && rec.saved && rec.saved.dossier && Date.now() - (rec.updatedAt || 0) < 30 * 24 * 3600 * 1000) for (const id of regIdsOf(rec.saved.dossier)) regIndex.set(id, { ref: rec.ref, at: rec.updatedAt });
+    if (rec.status !== 'failed' && rec.saved && rec.saved.swept && rec.saved.dossier && Date.now() - (rec.updatedAt || 0) < 30 * 24 * 3600 * 1000) indexPreview(rec, rec.saved.dossier, rec.updatedAt);
     // Without a database the report store is in memory: put each saved report back, so buyers' links work after a restart.
     if (!process.env.DATABASE_URL && rec.saved && rec.saved.dossier) { try { saveLiveDossier(job, JSON.parse(JSON.stringify(rec.saved.dossier))); } catch (e) { console.error('[investigate] could not restore report ' + rec.ref + ':', e && e.message); } }
   }
   setInterval(() => { try { const n = pruneLiveJobs(); if (n) console.log('[jobs] removed ' + n + ' saved investigation' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[jobs] retention sweep failed:', e && e.message); } }, 6 * 3600 * 1000).unref();
   setImmediate(() => { for (const job of liveJobs.values()) if (job.paid && job.status !== 'done' && job.status !== 'failed' && !job.completing) { try { completeLive(job); } catch (e) { console.error('[investigate] could not resume ' + job.ref + ':', e && e.message); } } });
-  Object.assign(c, { DELIVERY, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
+  Object.assign(c, { DELIVERY, indexPreview, previewTwin, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
 };

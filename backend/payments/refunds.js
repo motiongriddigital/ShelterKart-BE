@@ -21,13 +21,13 @@ class RefundError extends Error { constructor(code, message) { super(message); t
    read the same remainder and both reach the provider. This is a lock inside this server, which is right while there is one instance (as the saved
    investigations already assume); several instances would need a database lock on the purchase row. */
 const queues = new Map();
-function refundPurchase(args) {
-  const key = String(args.purchaseId), run = (queues.get(key) || Promise.resolve()).then(() => refundOnce(args));
-  const tail = run.catch(() => {});
+function serial(key, fn) {
+  const run = (queues.get(key) || Promise.resolve()).then(fn), tail = run.catch(() => {});
   queues.set(key, tail);
   tail.then(() => { if (queues.get(key) === tail) queues.delete(key); });
   return run;
 }
+function refundPurchase(args) { return serial(String(args.purchaseId), () => refundOnce(args)); }
 
 async function refundOnce({ db, data, store, purchaseId, amount, reason = '', env = process.env, fetchImpl, now = new Date() }) {
   const r = await db.query(
@@ -58,12 +58,77 @@ async function refundOnce({ db, data, store, purchaseId, amount, reason = '', en
   }
   try { await store.settleRefund(hold, { providerRef: out.providerRef, status: out.status }); }
   catch (e) { console.error('[refund] the provider refunded purchase ' + p.id + ' (' + out.providerRef + ') but the record could not be completed:', e && e.message); }
+  return finishRefund({ db, data, store, p, amt, taxReversed, providerRef: out.providerRef, already, now, remaining });
+}
+
+async function finishRefund({ db, data, store, p, amt, taxReversed, providerRef, already, now, remaining }) {
+  const gross = Number(p.amount), minor = PRICING.minorOf(data, p.currency), m = Math.pow(10, minor);
+  const netPart = Math.round((amt - taxReversed) * m) / m, amountMinor = Math.round(amt * m);
   const full = Math.abs(already + amt - gross) < 1e-9;
   await db.query(`UPDATE report_purchases SET status=$2, net_revenue = COALESCE(net_revenue, 0) - $3 WHERE id=$1`, [p.id, full ? 'refunded' : 'paid', netPart]);
   // A sale the Merchant of Record made was never booked as ShelterKart's, so its refund is not reversed in ShelterKart's ledger either.
   if (p.provider !== 'mor') await PRICING.ledger.recordRefund({ data, store, country: p.buyer_country || 'IN', grossMinor: amountMinor, taxMinor: Math.round(taxReversed * m), currency: p.currency, now });
-  await store.addEvent('refund', { quoteId: p.quote_id, ref: p.report_ref, details: { purchaseId: p.id, amount: amt, currency: p.currency, taxReversed, full, providerRef: out.providerRef } });
-  return { refundId: out.providerRef, amount: amt, currency: p.currency, taxReversed, remaining: Math.round((remaining - amt) * m) / m, full };
+  await store.addEvent('refund', { quoteId: p.quote_id, ref: p.report_ref, details: { purchaseId: p.id, amount: amt, currency: p.currency, taxReversed, full, providerRef } });
+  return { refundId: providerRef, amount: amt, currency: p.currency, taxReversed, remaining: Math.round((remaining - amt) * m) / m, full };
 }
 
-module.exports = { refundPurchase, RefundError };
+const UNCONFIRMED_MIN_AGE_MS = 5 * 60 * 1000;
+
+function resolveRefund(args) {
+  return Promise.resolve(args.store.getRefund(args.refundId)).then(row => {
+    if (!row) throw new RefundError('not_found', 'Refund not found.');
+    return serial(String(row.purchaseId), () => resolveOnce(args));
+  });
+}
+
+async function resolveOnce({ db, data, store, refundId, outcome, providerRef, minAgeMs = UNCONFIRMED_MIN_AGE_MS, now = new Date() }) {
+  if (!['refunded', 'not_refunded'].includes(outcome)) throw new RefundError('bad_outcome', 'Outcome must be refunded or not_refunded.');
+  const row = await store.getRefund(refundId);
+  if (!row) throw new RefundError('not_found', 'Refund not found.');
+  if (row.status !== 'pending') throw new RefundError('not_pending', 'This refund is not waiting for an operator.');
+  if (row.createdAt && now.getTime() - new Date(row.createdAt).getTime() < minAgeMs) throw new RefundError('in_flight', 'This refund was recorded a moment ago and may still be with the provider.');
+  if (outcome === 'not_refunded') {
+    await store.releaseRefund(row.id);
+    return { refundId: row.id, purchaseId: row.purchaseId, outcome, amount: row.amount, currency: row.currency };
+  }
+  const ref = String(providerRef || '').trim().slice(0, 100);
+  if (!ref) throw new RefundError('provider_ref_required', 'Give the provider\'s refund reference from its dashboard.');
+  const r = await db.query(
+    `SELECT id, report_ref, amount, currency, status, provider, provider_payment_id, buyer_country, amount_net, tax_amount, net_revenue, quote_id FROM report_purchases WHERE id=$1`, [row.purchaseId]);
+  if (!r.rows.length) throw new RefundError('not_found', 'Purchase not found.');
+  const p = r.rows[0], minor = PRICING.minorOf(data, p.currency), m = Math.pow(10, minor);
+  const total = await store.refundedTotal(p.id), already = Math.round((total - row.amount) * m) / m;
+  await store.settleRefund(row.id, { providerRef: ref, status: 'processed' });
+  const out = await finishRefund({ db, data, store, p, amt: row.amount, taxReversed: row.taxReversed, providerRef: ref, already, now, remaining: Math.round((Number(p.amount) - already) * m) / m });
+  return { ...out, purchaseId: row.purchaseId, outcome };
+}
+
+/* A refund made at the provider (its dashboard, a bank dispute) reaches us as a webhook event. It is booked like our own: the refund row, the purchase's
+   status and net revenue, the ledger. It runs in the same per-purchase queue as our own refunds, so an event that arrives while our refund is still being
+   recorded waits and then finds it already booked. A refund of ours that the provider never confirmed (still pending) and has the same amount is settled by the event. */
+async function recordProviderRefund({ db, data, store, provider, paymentId, providerRef, amountMinor, currency, status = 'processed', now = new Date() }) {
+  const r = await db.query(
+    `SELECT id, report_ref, amount, currency, status, provider, provider_payment_id, buyer_country, amount_net, tax_amount, net_revenue, quote_id FROM report_purchases WHERE provider=$1 AND provider_payment_id=$2`, [provider, paymentId]);
+  if (!r.rows.length) return { outcome: 'unmatched' };
+  const p = r.rows[0];
+  return serial(String(p.id), async () => {
+    if (!providerRef) return { outcome: 'bad_amount', purchaseId: p.id };
+    if (await store.refundByProviderRef(providerRef)) return { outcome: 'already_recorded', purchaseId: p.id };
+    if (currency && String(currency).toUpperCase() !== p.currency) return { outcome: 'currency_mismatch', purchaseId: p.id };
+    const m = Math.pow(10, PRICING.minorOf(data, p.currency)), amt = Math.round(Number(amountMinor)) / m;
+    if (!(amt > 0)) return { outcome: 'bad_amount', purchaseId: p.id };
+    const pending = (await store.listPendingRefunds()).filter(x => String(x.purchaseId) === String(p.id));
+    const same = pending.find(x => Math.abs(x.amount - amt) < 1e-9);
+    if (same) { const out = await resolveOnce({ db, data, store, refundId: same.id, outcome: 'refunded', providerRef, minAgeMs: 0, now }); return { ...out, outcome: 'recorded', settledPending: true }; }
+    if (pending.length) return { outcome: 'in_flight', purchaseId: p.id };
+    const gross = Number(p.amount), already = await store.refundedTotal(p.id), remaining = Math.round((gross - already) * m) / m;
+    if (amt > remaining + 1e-9) return { outcome: 'exceeds', purchaseId: p.id, remaining };
+    const taxReversed = Math.round(Number(p.tax_amount || 0) * (amt / gross) * m) / m;
+    const hold = await store.reserveRefund({ purchaseId: p.id, amount: amt, currency: p.currency, taxReversed, reason: 'refunded at the provider' });
+    await store.settleRefund(hold, { providerRef, status });
+    const out = await finishRefund({ db, data, store, p, amt, taxReversed, providerRef, already, now, remaining });
+    return { outcome: 'recorded', ...out, purchaseId: p.id };
+  });
+}
+
+module.exports = { refundPurchase, resolveRefund, recordProviderRefund, RefundError, UNCONFIRMED_MIN_AGE_MS };

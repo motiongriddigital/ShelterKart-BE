@@ -10,6 +10,7 @@
  */
 const crypto = require('crypto'), os = require('os'), fs = require('fs'), path = require('path'), { execFile } = require('child_process'), lex = require('./lexicons'), K = require('./kb'), { numbers } = require('./checker'), { numbersLoose } = require('./numwords');
 const grounding = (() => { try { return require('../engine/grounding'); } catch { return null; } })();
+const egress = (() => { try { return require('../connectors/egress'); } catch { return null; } })();
 /** A short page that is really a human-verification or access-denied wall, not a source. */
 const BOT_WALL = /testing whether you are a human|verify (that )?you are (a )?human|are you a robot|captcha|checking your browser|just a moment\.\.\.|attention required|access denied|your support id is|unusual traffic|enable javascript and cookies/i;
 const DAY = 864e5, MAX_BYTES = 1500000, MAX_PDF_BYTES = 8000000, MAX_TEXT = 20000, CHUNK = 18000, OVERLAP = 1500, MAX_CHUNKS = 4, RECHECK_DAYS = 90, RENEW_WITHIN_DAYS = 21;
@@ -87,13 +88,27 @@ ${page.text.slice(0, MAX_TEXT)}
 PAGE>>>`;
 }
 
-function makeKeeper({ kb, store = null, engines, fetchImpl = globalThis.fetch, env = process.env, now = () => Date.now(), markets, topics, isOfficial = grounding ? grounding.isOfficial : () => false, discover = null, pdfToText = defaultPdfToText, log = () => {} } = {}) {
+function makeKeeper({ kb, store = null, engines, fetchImpl = (egress && egress.defaultFetch()) || globalThis.fetch, env = process.env, now = () => Date.now(), markets, topics, isOfficial = grounding ? grounding.isOfficial : () => false, discover = null, pdfToText = defaultPdfToText, log = () => {} } = {}) {
   const marketBy = code => markets.find(m => m.code === code), topicBy = id => topics.find(t => t.id === id);
   const seedsDoc = () => (store && store.meta.get('seeds')) || { markets: {} };
   const focusFor = (code, url) => (((seedsDoc().markets[code] || {}).focus || {})[url]) || [];
   const allowedHosts = code => ((seedsDoc().markets[code] || {}).allowedHosts || []).map(h => String(h).toLowerCase());
   const hostOk = (url, code) => { const h = hostOf(url); return Boolean(h) && (isOfficial(url) || allowedHosts(code).some(a => h === a || h.endsWith('.' + a))); };
   const sameProvider = () => { try { const w = engines.modelFor && engines.modelFor('adviser', env), c = engines.modelFor && engines.modelFor('verify', env); if (!w || !c) return null; return String(w.provider || w.engine || w) === String(c.provider || c.engine || c); } catch { return null; } };
+
+  /** The body of a response, read in pieces and abandoned the moment it passes the limit, so a huge or endless page is never held in memory (null = too large). */
+  async function readCapped(res, max) {
+    if (res.body && typeof res.body.getReader === 'function') {
+      const reader = res.body.getReader(), chunks = []; let n = 0;
+      for (;;) {
+        const { done, value } = await reader.read(); if (done) break;
+        n += value.length; if (n > max) { try { await reader.cancel(); } catch { /* already closed */ } return null; }
+        chunks.push(Buffer.from(value));
+      }
+      return Buffer.concat(chunks);
+    }
+    const buf = Buffer.from(await res.arrayBuffer()); return buf.length > max ? null : buf;
+  }
 
   /** Fetch ONE official page as plain text. Refuses http, unofficial hosts, redirects off the host, other file types and huge pages. */
   async function fetchPage(url, code) {
@@ -120,10 +135,10 @@ function makeKeeper({ kb, store = null, engines, fetchImpl = globalThis.fetch, e
     let html, text, title = '';
     if (isPdf) {
       if (!pdfToText) return { ok: false, reason: 'not_text' };
-      let buf; try { buf = Buffer.from(await res.arrayBuffer()); } catch { return { ok: false, reason: 'fetch_failed' }; } if (buf.length > MAX_PDF_BYTES) return { ok: false, reason: 'too_large' };
+      let buf; try { buf = await readCapped(res, MAX_PDF_BYTES); } catch { return { ok: false, reason: 'fetch_failed' }; } if (!buf) return { ok: false, reason: 'too_large' };
       const raw = await pdfToText(buf); if (!raw) return { ok: false, reason: 'pdf_unreadable' };
       text = String(raw).replace(/[ \t\f\v\u00a0]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim(); title = (text.split('\n').find(l => l.trim().length > 8) || '').trim().slice(0, 120);
-    } else { try { html = typeof res.arrayBuffer === 'function' ? decodeBody(await res.arrayBuffer(), ct) : await res.text(); } catch { return { ok: false, reason: 'fetch_failed' }; } if (html.length > MAX_BYTES) return { ok: false, reason: 'too_large' }; text = htmlToText(html); title = titleOf(html); }
+    } else { try { if (typeof res.arrayBuffer === 'function') { const buf = await readCapped(res, MAX_BYTES); if (!buf) return { ok: false, reason: 'too_large' }; html = decodeBody(buf, ct); } else html = await res.text(); } catch { return { ok: false, reason: 'fetch_failed' }; } if (html.length > MAX_BYTES) return { ok: false, reason: 'too_large' }; text = htmlToText(html); title = titleOf(html); }
     if (text.length < 200) return { ok: false, reason: 'no_text' };
     if (text.length < 2500 && BOT_WALL.test(text)) return { ok: false, reason: 'blocked_by_bot_check' };   // the Belgian federal finance page answers a fetch with a human-verification question
     return { ok: true, url: finalUrl, title, text, sha256: sha(text), fetchedAt: new Date(now()).toISOString(), pdf: isPdf };
