@@ -185,7 +185,7 @@ module.exports = function setup(c) {
       return;
     }
     job.completing = true; job.status = 'completing'; persistJob(job);
-    const run = job.swept === false ? job.inv.sweep({ panel: previewPanel() }).then(() => job.inv.complete()) : job.inv.complete();
+    const run = job.swept === false && job.inv.previewMode !== 'lean' ? job.inv.sweep({ panel: previewPanel() }).then(() => job.inv.complete()) : job.inv.complete();
     // The research is done, so the report is done: a delivery problem is logged and retried by the delivery layer,
     // and never turns a finished, paid report into a failed one.
     run.then(() => {
