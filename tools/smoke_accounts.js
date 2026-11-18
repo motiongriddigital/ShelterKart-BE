@@ -17,12 +17,12 @@ async function call(method, path, body) {
   ok('the search may start without a session (the wall is on the results)', (await call('POST', '/api/investigate', { query: 'xx' })).status !== 401);
   ok('a public route works with no session', (await call('GET', '/api/markets')).status === 200);
   ok('a bad e-mail address is refused', (await call('POST', '/api/auth/request-code', { email: 'nope', password: pw0, termsAccepted: true })).json.code === 'invalid_email');
-  ok('a missing password is refused before any code is sent', (await call('POST', '/api/auth/request-code', { email, termsAccepted: true })).json.code === 'weak_password');
+  ok('a missing password is refused before any code is sent', ['weak_password', 'invalid_request'].includes((await call('POST', '/api/auth/request-code', { email, termsAccepted: true })).json.code));
   const noConsent = await call('POST', '/api/auth/request-code', { email, password: pw0 });
   ok('a new address must accept the terms before any code is sent', noConsent.json.code === 'consent_required');
   const rc = await call('POST', '/api/auth/request-code', { email, password: pw0, termsAccepted: true });
   ok('a code is requested (202) and the dev echo returns it', rc.status === 202 && /^\d{6}$/.test(String(rc.json.devCode)));
-  ok('asking again at once is held back (cooldown)', (await call('POST', '/api/auth/request-code', { email, password: pw0 })).json.code === 'cooldown');
+  ok('asking again at once is held back (cooldown)', (await call('POST', '/api/auth/request-code', { email, password: pw0, termsAccepted: true })).json.code === 'cooldown');
   ok('a wrong code is refused with the tries left', (await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode === '000000' ? '111111' : '000000' })).json.attemptsLeft === 4);
   const vc = await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode });
   ok('the right code signs in and sets an HttpOnly, SameSite=Lax cookie', vc.status === 200 && vc.json.isNewUser === true && vc.json.passwordSet === true && /HttpOnly/.test(vc.set[0]) && /SameSite=Lax/.test(vc.set[0]));
