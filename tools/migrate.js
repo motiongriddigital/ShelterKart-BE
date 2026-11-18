@@ -6,6 +6,9 @@
  *   DATABASE_URL=postgres://... node tools/migrate.js          apply what is not yet applied
  *   node tools/migrate.js --dry-run                            list what would run, touch nothing
  *
+ * DATABASE_DIRECT_URL, when set, is used instead of DATABASE_URL: a managed host's connection pooler is the wrong place for DDL.
+ * On a Supabase database (the anon and authenticated roles exist) every public table also gets row level security and the API roles lose their rights.
+ *
  * Each file runs in its own transaction and is recorded in schema_migrations with a checksum. A file already applied
  * is skipped; a file whose contents CHANGED after being applied stops the run, because silently re-running or
  * ignoring an edited migration is how two environments drift apart. The 13 older .sql files are never run.
@@ -67,16 +70,41 @@ async function migrate(client, { dir = DIR, dryRun = false, log = () => {} } = {
   return result;
 }
 
-module.exports = { MIGRATIONS, plan, migrate, statements };
+const LOCKDOWN_SQL = `DO $lockdown$
+DECLARE t record;
+BEGIN
+  IF (SELECT count(*) FROM pg_roles WHERE rolname IN ('anon', 'authenticated')) = 2 THEN
+    FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+      EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t.tablename);
+    END LOOP;
+    REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+    REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;
+    REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC, anon, authenticated;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM anon, authenticated;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM anon, authenticated;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM PUBLIC, anon, authenticated;
+  END IF;
+END
+$lockdown$`;
+
+/** On a Supabase database the public tables are reachable through its Data API with the public key. Turn row level security on for every table and strip the API roles' rights, so only this server's own database login can read or write. A no-op on plain Postgres. Safe to run every time. */
+async function lockdown(client) {
+  const present = Number((await client.query(`SELECT count(*)::int AS n FROM pg_roles WHERE rolname IN ('anon', 'authenticated')`)).rows[0].n) === 2;
+  if (present) await client.query(LOCKDOWN_SQL);
+  return present;
+}
+
+module.exports = { MIGRATIONS, plan, migrate, statements, lockdown, LOCKDOWN_SQL };
 
 if (require.main === module) {
   const dryRun = process.argv.includes('--dry-run');
   (async () => {
-    if (!process.env.DATABASE_URL) { console.error('Set DATABASE_URL first.'); process.exit(2); }
+    if (!process.env.DATABASE_URL && !process.env.DATABASE_DIRECT_URL) { console.error('Set DATABASE_URL (or DATABASE_DIRECT_URL) first.'); process.exit(2); }
     const { Client } = require(path.join(DIR, 'node_modules', 'pg'));
-    const client = new Client({ connectionString: process.env.DATABASE_URL }); await client.connect();
+    const client = new Client(require('../backend/lib/dbConfig').directOptions(process.env)); await client.connect();
     try {
       const r = await migrate(client, { dryRun, log: console.log });
+      if (!dryRun && await lockdown(client)) console.log('row level security is on for every public table; the Data API roles have no rights');
       console.log(dryRun ? `${r.pending.length} would be applied, ${r.skipped.length} already applied.` : `${r.applied.length} applied, ${r.skipped.length} already applied. Next: node tools/seed_pricing.js`);
     } catch (e) { console.error(e.message); process.exitCode = 1; }
     finally { await client.end(); }

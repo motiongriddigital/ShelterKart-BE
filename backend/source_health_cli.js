@@ -20,7 +20,7 @@ async function main({ env = process.env, log = console.log } = {}) {
   const { CONNECTORS } = require('./engine/registry');
   const HEALTH = require('./engine/health');
 
-  const pool = env.DATABASE_URL ? new Pool({ connectionString: env.DATABASE_URL }) : null;
+  const pool = env.DATABASE_URL ? new Pool(require('./lib/dbConfig').poolOptions(env)) : null;
   const store = pool ? makePgStore(pool) : null;
   try {
     if (store) for (const h of await store.loadHealth()) HEALTH.loadHealth(h.market, h);

@@ -10,7 +10,7 @@ const specs = { lv: require('../backend/engine/bulk/latvia').spec };
   const country = process.argv[2], spec = specs[country];
   if (!spec) { console.error('usage: node tools/load_bulk_register.js <' + Object.keys(specs).join('|') + '> [--force]'); process.exit(2); }
   if (!process.env.DATABASE_URL) { console.error('DATABASE_URL is not set'); process.exit(2); }
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool(require('../backend/lib/dbConfig').directOptions(process.env));
   const allow = new Set(spec.hosts);
   const r = await loadBulk({ spec, pool, force: process.argv.includes('--force'), log: console.log,
     fetchFile: (url, { headers }) => guardedFetch(url, { allowSet: allow, headers, timeoutMs: 60000 }).then(x => x.response) });
