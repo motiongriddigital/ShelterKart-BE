@@ -4,6 +4,7 @@
 const assert = require('assert');
 const tavily = require('../custom/tavilyClient');
 const groq = require('../custom/groqClient');
+const gemini = require('../custom/geminiClient');
 const CUSTOM_REPORT = require('../custom/customReport');
 const { renderReportHtml } = require('../custom/reportHtml');
 let passed = 0, failed = 0;
@@ -95,6 +96,77 @@ const GROQ_REPLY = {
   await t('a non-JSON reply is a groq_bad_json error, not a crash', async () => {
     const fetchImpl = async () => okJson({ choices: [{ message: { content: 'not json' } }] });
     await assert.rejects(() => groq.format({ system: 's', user: 'u' }, { env: { GROQ_API_KEY: 'k' }, fetchImpl, sleep: noSleep }), e => e.code === 'groq_bad_json');
+  });
+
+  console.log('geminiClient');
+  await t('GEMINI_API_KEY missing is refused before any call', async () => {
+    await assert.rejects(() => gemini.format({ system: 's', user: 'u' }, { env: {} }), /GEMINI_API_KEY/);
+  });
+  await t('a good call parses the JSON content and sends responseMimeType json by default', async () => {
+    let sentUrl = null, sentBody = null;
+    const fetchImpl = async (url, opts) => { sentUrl = url; sentBody = JSON.parse(opts.body); return okJson({ candidates: [{ content: { parts: [{ text: JSON.stringify({ a: 1 }) }] } }] }); };
+    const r = await gemini.format({ system: 's', user: 'u' }, { env: { GEMINI_API_KEY: 'k' }, fetchImpl, sleep: noSleep });
+    assert.deepStrictEqual(r, { a: 1 });
+    assert.strictEqual(sentBody.generationConfig.responseMimeType, 'application/json');
+    assert(sentUrl.includes(gemini.DEFAULT_MODEL)); assert(sentUrl.includes('key=k'));
+  });
+  await t('GEMINI_MODEL overrides the default', async () => {
+    let sentUrl = null;
+    const fetchImpl = async (url) => { sentUrl = url; return okJson({ candidates: [{ content: { parts: [{ text: '{}' }] } }] }); };
+    await gemini.format({ system: 's', user: 'u' }, { env: { GEMINI_API_KEY: 'k', GEMINI_MODEL: 'other-model' }, fetchImpl, sleep: noSleep });
+    assert(sentUrl.includes('other-model'));
+  });
+  await t('a non-JSON reply is a gemini_bad_json error, not a crash', async () => {
+    const fetchImpl = async () => okJson({ candidates: [{ content: { parts: [{ text: 'not json' }] } }] });
+    await assert.rejects(() => gemini.format({ system: 's', user: 'u' }, { env: { GEMINI_API_KEY: 'k' }, fetchImpl, sleep: noSleep }), e => e.code === 'gemini_bad_json');
+  });
+  await t('one retry on 429, then success', async () => {
+    let n = 0;
+    const fetchImpl = async () => { n++; return n === 1 ? errRes(429) : okJson({ candidates: [{ content: { parts: [{ text: '{}' }] } }] }); };
+    await gemini.format({ system: 's', user: 'u' }, { env: { GEMINI_API_KEY: 'k' }, fetchImpl, sleep: noSleep });
+    assert.strictEqual(n, 2);
+  });
+
+  console.log('customReport: Groq-then-Gemini fallback');
+  await t('Groq failing falls back to Gemini and reports formattedBy "gemini"', async () => {
+    const fetchImpl = async (url) => {
+      if (url.includes('tavily')) return okJson({ results: SEARCH_RESULTS });
+      if (url.includes('groq')) return errRes(500, 'groq down');
+      return okJson({ candidates: [{ content: { parts: [{ text: JSON.stringify(GROQ_REPLY) }] } }] }); // gemini
+    };
+    const report = await CUSTOM_REPORT.generate({ query: 'Hubtown Celeste', tier: 'free' }, { env: { TAVILY_API_KEY: 'k', GROQ_API_KEY: 'k', GEMINI_API_KEY: 'k' }, fetchImpl, sleep: noSleep });
+    assert.strictEqual(report.formattedBy, 'gemini');
+    assert.strictEqual(report.keyFacts.length, 1, 'grounding still applies to the Gemini reply');
+  });
+  await t('Groq succeeding never calls Gemini, and formattedBy is "groq"', async () => {
+    let geminiCalled = false;
+    const fetchImpl = async (url) => {
+      if (url.includes('tavily')) return okJson({ results: SEARCH_RESULTS });
+      if (url.includes('generativelanguage')) { geminiCalled = true; return okJson({ candidates: [{ content: { parts: [{ text: '{}' }] } }] }); }
+      return okJson({ choices: [{ message: { content: JSON.stringify(GROQ_REPLY) } }] });
+    };
+    const report = await CUSTOM_REPORT.generate({ query: 'Hubtown Celeste', tier: 'free' }, { env: { TAVILY_API_KEY: 'k', GROQ_API_KEY: 'k', GEMINI_API_KEY: 'k' }, fetchImpl, sleep: noSleep });
+    assert.strictEqual(report.formattedBy, 'groq'); assert.strictEqual(geminiCalled, false);
+  });
+  await t('both Groq and Gemini failing surfaces the original Groq error code', async () => {
+    const fetchImpl = async (url) => {
+      if (url.includes('tavily')) return okJson({ results: SEARCH_RESULTS });
+      return errRes(500, 'down');
+    };
+    await assert.rejects(
+      () => CUSTOM_REPORT.generate({ query: 'x', tier: 'free' }, { env: { TAVILY_API_KEY: 'k', GROQ_API_KEY: 'k', GEMINI_API_KEY: 'k' }, fetchImpl, sleep: noSleep }),
+      e => e.code === 'groq_error' && e.geminiCode === 'gemini_error',
+    );
+  });
+  await t('Groq failing with no GEMINI_API_KEY set still surfaces the Groq error (fallback skipped cheaply)', async () => {
+    const fetchImpl = async (url) => {
+      if (url.includes('tavily')) return okJson({ results: SEARCH_RESULTS });
+      return errRes(500, 'down');
+    };
+    await assert.rejects(
+      () => CUSTOM_REPORT.generate({ query: 'x', tier: 'free' }, { env: { TAVILY_API_KEY: 'k', GROQ_API_KEY: 'k' }, fetchImpl, sleep: noSleep }),
+      e => e.code === 'groq_error' && e.geminiCode === 'gemini_unconfigured',
+    );
   });
 
   console.log('customReport: the full pipeline');

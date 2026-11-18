@@ -7,6 +7,7 @@
 const crypto = require('crypto');
 const tavily = require('./tavilyClient');
 const groq = require('./groqClient');
+const gemini = require('./geminiClient');
 const { buildPrompt, CAPS } = require('./reportPrompts');
 
 const newRef = () => 'CR-' + crypto.randomBytes(6).toString('hex').toUpperCase();
@@ -19,10 +20,33 @@ function searchQueryFor({ query, location, market }) {
 }
 
 /**
+ * Groq formats first; if Groq fails for ANY reason (quota, network, bad reply), Gemini retries the exact same
+ * system/user prompt as a fallback - same report either way, just a different model. If Gemini also fails, the
+ * original Groq error is what the caller sees (it's the primary provider, so its failure is the one worth reporting).
+ */
+async function formatWithFallback({ system, user, maxTokens }, deps) {
+  try {
+    const formatted = await groq.format({ system, user, maxTokens }, deps);
+    return { formatted, formatter: 'groq' };
+  } catch (groqErr) {
+    try {
+      const formatted = await gemini.format({ system, user, maxTokens }, deps);
+      return { formatted, formatter: 'gemini' };
+    } catch (geminiErr) {
+      throw Object.assign(
+        new Error(`Groq failed (${groqErr.code}: ${groqErr.message}); Gemini fallback also failed (${geminiErr.code}: ${geminiErr.message})`),
+        { code: groqErr.code, geminiCode: geminiErr.code }
+      );
+    }
+  }
+}
+
+/**
  * Both tiers return the same shape (keyFacts/differences/questions/pricing/sources) - 'paid' just searches deeper
- * and is allowed more of each (see reportPrompts.js's CAPS) so it costs more Groq/Tavily tokens for a richer report.
- * Anything Groq returns that isn't backed by a real URL from the search results is dropped, never kept as a guess.
- * Throws with .code set to tavily_* or groq_* on failure (see those clients) - the route maps these to a status.
+ * and is allowed more of each (see reportPrompts.js's CAPS) so it costs more tokens for a richer report.
+ * Anything the model returns that isn't backed by a real URL from the search results is dropped, never kept as a
+ * guess. Throws with .code set to tavily_* or groq_* (Gemini failing too doesn't change the error code - see
+ * formatWithFallback above) on failure - the route maps these to a status.
  */
 async function generate({ query, location, market, tier = 'free' } = {}, deps = {}) {
   if (!query || typeof query !== 'string' || !query.trim()) throw Object.assign(new Error('query is required'), { code: 'invalid_query' });
@@ -32,7 +56,7 @@ async function generate({ query, location, market, tier = 'free' } = {}, deps = 
 
   const { results } = await tavily.search({ query: searchQuery, searchDepth: wantsPaid ? 'advanced' : 'basic', maxResults: wantsPaid ? 8 : 5 }, deps);
   const { system, user } = buildPrompt({ query: searchQuery, tier: wantsPaid ? 'paid' : 'free', results });
-  const formatted = await groq.format({ system, user, maxTokens: wantsPaid ? 3200 : 2200 }, deps);
+  const { formatted, formatter } = await formatWithFallback({ system, user, maxTokens: wantsPaid ? 3200 : 2200 }, deps);
 
   const hasUrl = u => typeof u === 'string' && results.some(r => r.url === u);
   const groundedOrNull = u => (hasUrl(u) ? u : null);
@@ -92,6 +116,7 @@ async function generate({ query, location, market, tier = 'free' } = {}, deps = 
     ref: newRef(),
     tier: wantsPaid ? 'paid' : 'free',
     query: searchQuery,
+    formattedBy: formatter,
     summary: String(formatted.summary || ''),
     highlights: Array.isArray(formatted.highlights) ? formatted.highlights.map(String) : [],
     keyFacts,

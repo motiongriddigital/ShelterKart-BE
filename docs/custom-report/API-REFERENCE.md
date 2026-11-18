@@ -1,9 +1,15 @@
 # Custom report pipeline: API reference
 
-Tavily (search) + Groq (formatting), free tiers on both. Separate from `/api/research` and `/api/investigate` and
-their multi-engine panel — see `backend/custom/*` and `backend/modules/customResearch.js`. Reports live in memory
-only (24h TTL); PDF printing reuses the existing free, self-hosted Playwright printer (`engine/pdf.js`), no paid
-PDF service.
+Tavily (search) + Groq (formatting), with Gemini as an automatic fallback formatter whenever Groq fails. Separate
+from `/api/research` and `/api/investigate` and their multi-engine panel — see `backend/custom/*` and
+`backend/modules/customResearch.js`. Reports live in memory only (24h TTL); PDF printing reuses the existing free,
+self-hosted Playwright printer (`engine/pdf.js`), no paid PDF service.
+
+**Groq → Gemini fallback**: `GROQ_API_KEY` is the primary formatter. If `GEMINI_API_KEY` is also set and Groq
+fails for any reason (quota, network, bad reply), the exact same prompt is retried against Gemini instead — same
+schema, same grounding rules, just a different model producing the content. The response's `formattedBy` field
+says which one actually wrote the report (`"groq"` or `"gemini"`). If `GEMINI_API_KEY` isn't set, Groq failing
+fails the request as before (Gemini is skipped cheaply — it never makes a network call without a key).
 
 ## `POST /api/custom/research`
 Runs the search and generates the report in one call.
@@ -23,6 +29,7 @@ Runs the search and generates the report in one call.
   "ref": "CR-3F9A2B1C7E0D",
   "tier": "free",
   "query": "Hubtown Celeste Mumbai",
+  "formattedBy": "groq",
   "summary": "string",
   "highlights": ["string"],
   "keyFacts": [{ "label": "string", "value": "string", "sourceUrl": "https://..." }],
@@ -63,8 +70,11 @@ sources; `paid` — 6 keyFacts, 5 differences, 12 questions, 4 pricing, 10 sourc
 | 400 | `invalid_query` | `query` missing/empty |
 | 503 | `tavily_unconfigured` | `TAVILY_API_KEY` not set |
 | 502 | `tavily_unreachable` / `tavily_error` | network failure / Tavily returned an error after one retry |
-| 503 | `groq_unconfigured` | `GROQ_API_KEY` not set |
-| 502 | `groq_unreachable` / `groq_error` / `groq_empty` / `groq_bad_json` | network failure / Groq error / empty or non-JSON reply |
+| 503 | `groq_unconfigured` | `GROQ_API_KEY` not set, and Gemini wasn't able to take over (not configured, or also failed) |
+| 502 | `groq_unreachable` / `groq_error` / `groq_empty` / `groq_bad_json` | Groq failed this way, and Gemini wasn't able to take over (not configured, or also failed) |
+
+These are always the *Groq* error code — if both providers fail, Groq's is what's reported since it's the
+primary one. The `error` message also names Gemini's failure reason when a fallback attempt was made.
 
 ## `GET /api/custom/research/:ref`
 Re-fetches a previously generated report (e.g. after the PDF link is shared).
@@ -84,5 +94,6 @@ Renders the stored report as a PDF.
 ### Known limitations (v1, by design)
 - No sign-in/payment gating yet — `tier` is just a request parameter, not enforced by a purchase.
 - In-memory storage only — a server restart loses all generated reports.
-- Both Tavily and Groq are called on their free tiers; no retry beyond one attempt, so a sustained rate-limit
-  (free-tier quota) will surface as a `502`/`503` rather than queuing.
+- Tavily and Groq are called on their free tiers (Gemini may be on a paid plan); no retry beyond one attempt per
+  provider, so if Groq's free-tier quota is hit and Gemini isn't configured (or also fails), it surfaces as a
+  `502`/`503` rather than queuing.

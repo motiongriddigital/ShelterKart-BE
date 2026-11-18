@@ -15,6 +15,7 @@ async function call(method, path, body) {
   const free = await call('POST', '/api/custom/research', { query: 'Hubtown Celeste', location: 'Mumbai', tier: 'free' });
   ok('a free report is generated with the full schema', free.status === 200 && free.json.tier === 'free' && free.json.summary && Array.isArray(free.json.keyFacts) && Array.isArray(free.json.differences) && Array.isArray(free.json.questions));
   ok('the free report has a ref', /^CR-[0-9A-F]{12}$/.test(free.json && free.json.ref));
+  console.log('       formattedBy: ' + (free.json && free.json.formattedBy));
 
   const fetched = await call('GET', '/api/custom/research/' + free.json.ref);
   ok('the free report can be re-fetched by ref', fetched.status === 200 && fetched.json.ref === free.json.ref);
