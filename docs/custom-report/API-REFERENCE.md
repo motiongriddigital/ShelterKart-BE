@@ -14,7 +14,7 @@ Runs the search and generates the report in one call.
 | `query` | string | yes | Property, builder, or location name |
 | `location` | string | no | Appended to the search query |
 | `market` | string | no | Appended to the search query |
-| `tier` | `"free"` \| `"paid"` | no, default `"free"` | `free`: Tavily basic depth, 5 results, teaser only. `paid`: advanced depth, 8 results, full sections + sources |
+| `tier` | `"free"` \| `"paid"` | no, default `"free"` | Both tiers return the same fields below. `free`: Tavily basic depth, 5 results, smaller caps. `paid`: advanced depth, 8 results, higher caps (richer report) |
 
 **Response `200`**
 ```json
@@ -25,14 +25,37 @@ Runs the search and generates the report in one call.
   "query": "Hubtown Celeste Mumbai",
   "summary": "string",
   "highlights": ["string"],
-  "sections": [{ "heading": "string", "body": "string", "sourceUrls": ["https://..."] }],
-  "sources": [{ "title": "string", "url": "https://..." }],
+  "keyFacts": [{ "label": "string", "value": "string", "sourceUrl": "https://..." }],
+  "differences": [{
+    "title": "string",
+    "category": "string",
+    "sellerClaim": { "value": "string", "detail": "string", "sourceUrl": "https://... or null" },
+    "officialRecord": { "value": "string", "detail": "string", "sourceUrl": "https://..." },
+    "impact": "string"
+  }],
+  "questions": [{
+    "category": "string",
+    "question": "string",
+    "whyItMatters": "string",
+    "goodAnswer": "string",
+    "redFlag": "string",
+    "priority": "top" | "standard"
+  }],
+  "pricing": [{ "label": "string", "size": "string", "quotedPrice": "string", "benchmarkPrice": "string", "differenceNote": "string", "sourceUrl": "https://..." }],
+  "sources": [{ "name": "string", "detail": "string", "status": "confirmed" | "disagree" | "reported", "url": "https://..." }],
+  "counts": { "sourcesChecked": 5, "confirmedFacts": 1, "differencesFound": 2, "questionsToAsk": 4 },
   "searchedResultCount": 5,
   "generatedAt": "2026-11-18T10:00:00.000Z"
 }
 ```
-`sections`/`sources` are always `[]` for `tier: "free"`. Every URL in `sourceUrls`/`sources` is guaranteed to be a
-URL Tavily actually returned (anything Groq invents is dropped).
+Every `sourceUrl`/`url` in the response is guaranteed to be a URL Tavily actually returned for this query — a
+`differences` entry is dropped entirely if its `officialRecord.sourceUrl` isn't grounded this way (its
+`sellerClaim.sourceUrl` may legitimately be `null` — general marketing claims often aren't tied to one URL); a
+`keyFacts`/`pricing`/`sources` entry is dropped if its `sourceUrl`/`url` isn't grounded. `questions` need no
+grounding since they're the model's own analytical judgment, not factual claims. Caps per tier (array lengths,
+enforced server-side after the model replies): `free` — 4 keyFacts, 3 differences, 8 questions, 2 pricing, 6
+sources; `paid` — 6 keyFacts, 5 differences, 12 questions, 4 pricing, 10 sources. `counts` is computed from the
+(already-filtered) arrays, not asked of the model, so it can't drift from what's actually in the response.
 
 **Errors** — all `{ "ok": false, "code": "...", "error": "..." }`
 | Status | Code | When |

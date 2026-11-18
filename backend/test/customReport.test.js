@@ -17,9 +17,37 @@ const SEARCH_RESULTS = [
   { title: 'Hubtown Celeste - RERA page', url: 'https://maharerait.maharashtra.gov.in/project/celeste', content: 'Registered project, possession June 2029.' },
   { title: 'Hubtown Celeste news', url: 'https://example-news.com/celeste', content: 'Delay reported by buyers.' },
 ];
-const GROQ_REPLY = { summary: 'A registered project with a reported delay.', highlights: ['RERA registered', 'Possession delayed to 2029'],
-  sections: [{ heading: 'Legal & Registration', body: 'Registered under RERA.', sourceUrls: ['https://maharerait.maharashtra.gov.in/project/celeste'] }],
-  sources: [{ title: 'RERA page', url: 'https://maharerait.maharashtra.gov.in/project/celeste' }, { title: 'Made up', url: 'https://not-a-real-result.example' }] };
+const GROQ_REPLY = {
+  summary: 'A registered project with a reported delay.',
+  highlights: ['RERA registered', 'Possession delayed to 2029'],
+  keyFacts: [
+    { label: 'Registered entity', value: 'Nayan Real Estate Pvt Ltd', sourceUrl: 'https://maharerait.maharashtra.gov.in/project/celeste' },
+    { label: 'Made up fact', value: 'x', sourceUrl: 'https://not-a-real-result.example' },
+  ],
+  differences: [{
+    title: 'Timeline gap', category: 'Timeline',
+    sellerClaim: { value: 'Dec 2027', detail: 'Sales pitch', sourceUrl: null },
+    officialRecord: { value: 'June 2029', detail: 'RERA filing', sourceUrl: 'https://maharerait.maharashtra.gov.in/project/celeste' },
+    impact: 'No delay compensation until the registered date passes.',
+  }, {
+    title: 'Ungrounded difference', category: 'x',
+    sellerClaim: { value: 'x', detail: 'x', sourceUrl: null },
+    officialRecord: { value: 'x', detail: 'x', sourceUrl: 'https://not-a-real-result.example' },
+    impact: 'x',
+  }],
+  questions: [
+    { category: 'Legal', question: 'Which entity signs the agreement?', whyItMatters: 'Recourse', goodAnswer: 'A tripartite agreement', redFlag: '"Same thing"', priority: 'top' },
+    { category: 'Accounts', question: 'What is the registered possession date?', whyItMatters: 'Delay interest', goodAnswer: 'June 2029 stated', redFlag: 'Vague date', priority: 'bogus' },
+  ],
+  pricing: [
+    { label: '1 BHK', size: '330 sq ft', quotedPrice: '1.99 Cr', benchmarkPrice: '1.52 Cr', differenceNote: '+24.5%', sourceUrl: 'https://maharerait.maharashtra.gov.in/project/celeste' },
+    { label: 'Ungrounded', size: 'x', quotedPrice: 'x', benchmarkPrice: 'x', differenceNote: 'x', sourceUrl: 'https://not-a-real-result.example' },
+  ],
+  sources: [
+    { name: 'MahaRERA', detail: 'Registration record', status: 'confirmed', url: 'https://maharerait.maharashtra.gov.in/project/celeste' },
+    { name: 'Made up', detail: 'x', status: 'confirmed', url: 'https://not-a-real-result.example' },
+  ],
+};
 
 (async () => {
   console.log('tavilyClient');
@@ -70,7 +98,7 @@ const GROQ_REPLY = { summary: 'A registered project with a reported delay.', hig
   });
 
   console.log('customReport: the full pipeline');
-  await t('free tier: basic search depth, 5 results, and sections/sources stay empty even if Groq sent them', async () => {
+  await t('free tier: basic search depth, 5 results, full schema but ungrounded entries dropped', async () => {
     let tavilyBody = null;
     const fetchImpl = async (url, opts) => {
       if (url.includes('tavily')) { tavilyBody = JSON.parse(opts.body); return okJson({ results: SEARCH_RESULTS }); }
@@ -78,10 +106,26 @@ const GROQ_REPLY = { summary: 'A registered project with a reported delay.', hig
     };
     const report = await CUSTOM_REPORT.generate({ query: 'Hubtown Celeste', location: 'Mumbai', tier: 'free' }, { env: { TAVILY_API_KEY: 'k', GROQ_API_KEY: 'k' }, fetchImpl, sleep: noSleep });
     assert.strictEqual(tavilyBody.search_depth, 'basic'); assert.strictEqual(tavilyBody.max_results, 5);
-    assert.strictEqual(report.tier, 'free'); assert.strictEqual(report.sections.length, 0); assert.strictEqual(report.sources.length, 0);
-    assert.strictEqual(report.summary, GROQ_REPLY.summary); assert(/^CR-[0-9A-F]{12}$/.test(report.ref));
+    assert.strictEqual(report.tier, 'free'); assert.strictEqual(report.summary, GROQ_REPLY.summary); assert(/^CR-[0-9A-F]{12}$/.test(report.ref));
+
+    assert.strictEqual(report.keyFacts.length, 1, 'the ungrounded keyFact must be dropped');
+    assert.strictEqual(report.keyFacts[0].label, 'Registered entity');
+
+    assert.strictEqual(report.differences.length, 1, 'the difference whose officialRecord URL is not a real result must be dropped');
+    assert.strictEqual(report.differences[0].sellerClaim.sourceUrl, null);
+    assert.strictEqual(report.differences[0].officialRecord.sourceUrl, 'https://maharerait.maharashtra.gov.in/project/celeste');
+
+    assert.strictEqual(report.questions.length, 2, 'questions need no URL grounding');
+    assert.strictEqual(report.questions[0].priority, 'top');
+    assert.strictEqual(report.questions[1].priority, 'standard', 'an invalid priority value falls back to standard');
+
+    assert.strictEqual(report.pricing.length, 1, 'the ungrounded pricing row must be dropped');
+    assert.strictEqual(report.sources.length, 1, 'the made-up source URL must be dropped');
+    assert.strictEqual(report.sources[0].url, 'https://maharerait.maharashtra.gov.in/project/celeste');
+
+    assert.deepStrictEqual(report.counts, { sourcesChecked: 2, confirmedFacts: 1, differencesFound: 1, questionsToAsk: 2 });
   });
-  await t('paid tier: advanced search depth, 8 results, sections/sources kept only when their URL was in the search results', async () => {
+  await t('paid tier: advanced search depth, 8 results, higher caps', async () => {
     let tavilyBody = null;
     const fetchImpl = async (url, opts) => {
       if (url.includes('tavily')) { tavilyBody = JSON.parse(opts.body); return okJson({ results: SEARCH_RESULTS }); }
@@ -89,8 +133,17 @@ const GROQ_REPLY = { summary: 'A registered project with a reported delay.', hig
     };
     const report = await CUSTOM_REPORT.generate({ query: 'Hubtown Celeste', tier: 'paid' }, { env: { TAVILY_API_KEY: 'k', GROQ_API_KEY: 'k' }, fetchImpl, sleep: noSleep });
     assert.strictEqual(tavilyBody.search_depth, 'advanced'); assert.strictEqual(tavilyBody.max_results, 8);
-    assert.strictEqual(report.sections.length, 1); assert.strictEqual(report.sections[0].sourceUrls.length, 1);
-    assert.strictEqual(report.sources.length, 1, 'the made-up URL must be dropped'); assert.strictEqual(report.sources[0].url, 'https://maharerait.maharashtra.gov.in/project/celeste');
+    assert.strictEqual(report.tier, 'paid');
+    assert.strictEqual(report.keyFacts.length, 1); assert.strictEqual(report.differences.length, 1);
+  });
+  await t('an invalid source status falls back to "reported"', async () => {
+    const reply = { ...GROQ_REPLY, sources: [{ name: 'News', detail: 'x', status: 'bogus', url: 'https://maharerait.maharashtra.gov.in/project/celeste' }] };
+    const fetchImpl = async (url, opts) => {
+      if (url.includes('tavily')) return okJson({ results: SEARCH_RESULTS });
+      return okJson({ choices: [{ message: { content: JSON.stringify(reply) } }] });
+    };
+    const report = await CUSTOM_REPORT.generate({ query: 'x', tier: 'free' }, { env: { TAVILY_API_KEY: 'k', GROQ_API_KEY: 'k' }, fetchImpl, sleep: noSleep });
+    assert.strictEqual(report.sources[0].status, 'reported');
   });
   await t('a missing query is refused before any network call', async () => {
     let called = false;
@@ -100,14 +153,24 @@ const GROQ_REPLY = { summary: 'A registered project with a reported delay.', hig
   });
 
   console.log('reportHtml');
+  const BLANK_REPORT = { query: '', tier: 'free', summary: '', highlights: [], keyFacts: [], differences: [], questions: [], pricing: [], sources: [] };
   await t('every value is escaped, and the disclaimer names Tavily and Groq', async () => {
-    const html = renderReportHtml({ query: '<script>x</script>', tier: 'free', summary: 'ok & good', highlights: [], sections: [], sources: [] });
+    const html = renderReportHtml({ ...BLANK_REPORT, query: '<script>x</script>', summary: 'ok & good' });
     assert(!html.includes('<script>x</script>')); assert(html.includes('&lt;script&gt;'));
     assert(/Tavily/.test(html) && /Groq/.test(html));
   });
   await t('a non-http(s) "url" is shown as plain text, never as a link', async () => {
-    const html = renderReportHtml({ query: 'q', tier: 'paid', summary: 's', highlights: [], sections: [], sources: [{ title: 't', url: 'javascript:alert(1)' }] });
+    const html = renderReportHtml({ ...BLANK_REPORT, tier: 'paid', sources: [{ name: 't', detail: 'd', status: 'reported', url: 'javascript:alert(1)' }] });
     assert(!html.includes('<a href="javascript:'));
+  });
+  await t('differences, questions and pricing render their fields', async () => {
+    const html = renderReportHtml({
+      ...BLANK_REPORT,
+      differences: [{ title: 'Timeline gap', category: 'Timeline', sellerClaim: { value: 'Dec 2027', detail: 'pitch', sourceUrl: null }, officialRecord: { value: 'Jul 2028', detail: 'RERA', sourceUrl: 'https://example.com/r' }, impact: 'No penalty yet' }],
+      questions: [{ category: 'Legal', question: 'Who signs?', whyItMatters: 'Recourse', goodAnswer: 'Tripartite', redFlag: 'Vague', priority: 'top' }],
+      pricing: [{ label: '1 BHK', size: '330 sq ft', quotedPrice: '1.99 Cr', benchmarkPrice: '1.52 Cr', differenceNote: '+24.5%', sourceUrl: 'https://example.com/r' }],
+    });
+    assert(html.includes('Timeline gap')); assert(html.includes('Who signs?')); assert(html.includes('1.99 Cr'));
   });
 
   console.log(`\n${passed} passed, ${failed} failed`); process.exit(failed ? 1 : 0);

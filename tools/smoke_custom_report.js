@@ -13,14 +13,14 @@ async function call(method, path, body) {
   ok('a missing query is refused', (await call('POST', '/api/custom/research', {})).json.code === 'invalid_query');
 
   const free = await call('POST', '/api/custom/research', { query: 'Hubtown Celeste', location: 'Mumbai', tier: 'free' });
-  ok('a free report is generated with a summary and no sections', free.status === 200 && free.json.tier === 'free' && free.json.summary && free.json.sections.length === 0);
+  ok('a free report is generated with the full schema', free.status === 200 && free.json.tier === 'free' && free.json.summary && Array.isArray(free.json.keyFacts) && Array.isArray(free.json.differences) && Array.isArray(free.json.questions));
   ok('the free report has a ref', /^CR-[0-9A-F]{12}$/.test(free.json && free.json.ref));
 
   const fetched = await call('GET', '/api/custom/research/' + free.json.ref);
   ok('the free report can be re-fetched by ref', fetched.status === 200 && fetched.json.ref === free.json.ref);
 
   const paid = await call('POST', '/api/custom/research', { query: 'Hubtown Celeste', location: 'Mumbai', tier: 'paid' });
-  ok('a paid report is generated with sections', paid.status === 200 && paid.json.tier === 'paid' && Array.isArray(paid.json.sections));
+  ok('a paid report is generated with the same schema, higher caps', paid.status === 200 && paid.json.tier === 'paid' && Array.isArray(paid.json.keyFacts));
 
   const pdf = await fetch(base + '/api/custom/research/' + paid.json.ref + '/pdf');
   ok('the paid report prints as a PDF (or says plainly that printing is not installed)', pdf.status === 200 || pdf.status === 503);
