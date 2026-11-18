@@ -16,7 +16,7 @@ const { rateLimit } = require('../middleware/rateLimit');
 module.exports = function setup(c) {
   const TIMING = require('../engine/timing').createTiming();
   const CONTRACT = require('../engine/contract').createContract();
-  const pool = require('../engine/poolGuard').guardPool(new Pool({ connectionString: process.env.DATABASE_URL }));
+  const pool = require('../engine/poolGuard').guardPool(new Pool(require('../lib/dbConfig').poolOptions(process.env)));
   const ERRORLOG = createErrorLog({ pool: process.env.DATABASE_URL ? pool : null, enabled: String(process.env.ERROR_LOG || 'on').toLowerCase() !== 'off' });
   const ADMIN_AUDIT = require('../engine/adminAudit').createAdminAudit({ pool: process.env.DATABASE_URL ? pool : null });
   const auditAdmin = async (req, entry) => {
