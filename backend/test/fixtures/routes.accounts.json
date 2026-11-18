@@ -127,4 +127,7 @@
 {"method":"post","path":"/api/dispute","handlers":2},
 {"method":"post","path":"/api/developer-response","handlers":2},
 {"method":"get","path":"/api/developer-response/:reportRef","handlers":1},
+{"method":"post","path":"/api/custom/research","handlers":2},
+{"method":"get","path":"/api/custom/research/:ref","handlers":1},
+{"method":"get","path":"/api/custom/research/:ref/pdf","handlers":1},
 {"method":"use","path":"*","handlers":1}]
