@@ -5,7 +5,7 @@
  */
 const ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const RETRY_STATUS = new Set([429, 500, 502, 503]);
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
 const defaultSleep = ms => new Promise(r => setTimeout(r, ms));
 const waitMs = res => {
