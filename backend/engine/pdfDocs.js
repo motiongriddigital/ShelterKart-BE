@@ -3,7 +3,7 @@ const crypto = require('crypto');
 const H = require('./dossierHtml');
 const { createPdfStore, defaultDir } = require('./pdfStore');
 
-const TEMPLATE_VERSION = 'pdf-1';
+const TEMPLATE_VERSION = 'pdf-2';
 const LEGAL_END = /-(Private-Limited|Pvt-Ltd|Pvt-Limited|Limited|Ltd|LLP|LLC|Inc|Corp|Corporation|GmbH|PLC)$/i;
 const clean = s => {
   let n = String(s == null ? '' : s).replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -28,11 +28,7 @@ function freeView(d) {
     questions: qs.slice(0, 3).concat(qs.slice(3).map(q => ({ id: q.id, to: q.to, when: q.when }))) };
 }
 
-function stable(v) {
-  if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
-  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().filter(k => v[k] !== undefined).map(k => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';
-  return JSON.stringify(v === undefined ? null : v);
-}
+const { stable } = require('./dossier');
 
 function createPdfDocs({ pdf, store, env = process.env, log = console, now = () => Date.now() } = {}) {
   if (!pdf) throw new Error('a printer is needed');
