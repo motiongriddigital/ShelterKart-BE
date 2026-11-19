@@ -954,6 +954,43 @@ paths:
           content:
             text/html:
               schema: {type: string}
+  /r/{ref}/verify/{code}:
+    get:
+      operationId: verifyReportCopy
+      tags: [Pages]
+      summary: Check a copy of the full report against the report on file
+      description: |
+        The full report PDF carries a stamp: the reference, the research date and a 16-character fingerprint worked out from the whole content of the report. Opening this address answers one thing, whether the fingerprint matches the report we hold. It shows nothing else from the report, so it needs no sign-in: it is for a lawyer or a bank holding a copy. A copy that was edited, or a report corrected after the copy was made, answers `mismatch` (a normal answer, status 200). The page is HTML, `noindex`, `Cache-Control no-store`, and carries the result in the `X-Verify-Result` header: `match`, `mismatch`, `unknown` (no such report), `invalid` (bad reference or code) or `held` (a person is checking the report). Limited to 60 checks an hour per address.
+      security: []
+      x-source: backend/modules/investigate.js:verify
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {name: code, in: path, required: true, description: 'The fingerprint printed in the stamp, 16 hexadecimal characters.', schema: {type: string, pattern: '^[0-9a-fA-F]{16}$'}}
+      responses:
+        '200':
+          description: The result page (match or mismatch).
+          headers:
+            X-Verify-Result: {schema: {type: string, enum: [match, mismatch]}}
+          content:
+            text/html:
+              schema: {type: string}
+        '400':
+          description: The reference or the code is not valid.
+          content:
+            text/html:
+              schema: {type: string}
+        '404':
+          description: No report is held under that reference.
+          content:
+            text/html:
+              schema: {type: string}
+        '423':
+          description: The report is held for a person to check.
+          content:
+            text/html:
+              schema: {type: string}
+        '429':
+          description: Too many checks from this address.
   /r/{ref}/preview.pdf:
     get:
       operationId: getReportPreviewPdf
