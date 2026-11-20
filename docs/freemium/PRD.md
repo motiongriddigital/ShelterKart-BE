@@ -51,6 +51,7 @@ The client's rule is that the free preview runs on free AI and only paid reports
 | Reason | When | Start call | Time to retry |
 | --- | --- | --- | --- |
 | `engines_unavailable` | The preview sweep failed because every engine on the panel failed (outage, key, rate limit) | 202 at start; later seen in the report call and stream | a few minutes (`retryAt` = now + 5 min) |
+| `restarted` | The server restarted while the free search was running; settled at start-up | none at start; seen in the report call and stream | now |
 | `daily_budget` | `AI_DAILY_MAX_USD` reached | 503 | next UTC midnight |
 | `daily_cap` | the day's count of new investigations reached (`INVESTIGATE_DAILY_CAP`) | 503 | next UTC midnight |
 | `market_cap` | the market's share of the day reached | 503 | next UTC midnight |

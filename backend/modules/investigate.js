@@ -18,7 +18,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { stripPII } = require('../lib/pii');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, FP, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
+  const { ACCOUNTS, reportReadLimiter, FP, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
 
   const startsByUser = new Map(), userDailyCap = () => { const v = process.env.INVESTIGATE_PER_USER_DAILY; return v === undefined || v === '' ? 5 : Math.max(0, Math.floor(Number(v)) || 0); };
   const userStartsToday = id => { const today = new Date().toISOString().slice(0, 10), e = startsByUser.get(id); return e && e.day === today ? e.n : 0; };
@@ -142,6 +142,7 @@ module.exports = function register(app, c) {
     if (job && (job.listeners.size >= streamCap('EVENT_STREAMS_PER_JOB', 25) || mine >= streamCap('EVENT_STREAMS_PER_IP', 6))) return res.status(429).json({ ok: false, error: 'Too many progress streams are open. Close one and try again.' });
     res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     if (res.flushHeaders) res.flushHeaders();
+    if (job && job.status === 'failed' && !job.paid && !job.events.length && job.previewFailedAt) { const note = PS.failureNote(job.failReason || 'engines_unavailable', { now: job.previewFailedAt }); res.write(`event: error\ndata: ${JSON.stringify({ type: 'error', message: note.error, reason: note.reason, ...(note.retryAt ? { retryAt: note.retryAt } : {}) })}\n\n`); }
     for (const e of (job ? job.events : [])) res.write(`event: ${e.type}\ndata: ${JSON.stringify(full ? e : publicEvent(e))}\n\n`);
     const open = job && (job.status === 'sweeping' || (full && job.status === 'completing'));
     if (!open) return res.end();
@@ -178,14 +179,14 @@ module.exports = function register(app, c) {
     try { const f = PRICING.previewFee(pricingData, brief, buyer); price = { display: f.currency === 'INR' ? '₹' + Number(f.price).toLocaleString('en-IN') : `${f.currency} ${f.price}`, line: 'Set by the property\'s value and the depth of the research. The amount you pay is confirmed before payment.' }; } catch { price = null; }
     res.send(PAGES.previewPage(brief.dossier, { ref, price, country: buyer.country, held: REVIEW.isHeld(brief), payments: paywallActive(process.env), pdf: PDF.available() }));
   }));
-  app.get('/api/report/:ref', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
+  app.get('/api/report/:ref', ACCOUNTS.guard, reportReadLimiter, ah(async (req, res) => {
     const ref = String(req.params.ref || '');
     if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
     const brief = await getByRefAsync(ref);
-    if (!brief || brief.kind !== 'dossier') return res.status(404).json({ ok: false, error: 'That report was not found.' });
-    res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
     const failedJob = liveJobs.get(ref);
-    if (failedJob && failedJob.status === 'failed' && !failedJob.paid && (failedJob.previewFailedAt || !brief.dossier)) {
+    if ((!brief || brief.kind !== 'dossier') && !(failedJob && failedJob.status === 'failed' && !failedJob.paid && failedJob.previewFailedAt)) return res.status(404).json({ ok: false, error: 'That report was not found.' });
+    res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+    if (failedJob && failedJob.status === 'failed' && !failedJob.paid && (failedJob.previewFailedAt || !(brief && brief.dossier))) {
       const note = PS.failureNote(failedJob.failReason || 'engines_unavailable', { now: failedJob.previewFailedAt || Date.now() });
       return res.json({ ok: true, ready: false, state: 'unavailable', ref, phase: 'failed', ...note });
     }

@@ -133,13 +133,25 @@ function harness(over = {}, envOver = {}) {
     h.clock.t += 61000; assert.strictEqual((await h.call('post', '/api/auth/request-code', r('1.1.1.1'))).body.code, 'rate_limited');
     h.clock.t += 61000; assert.strictEqual((await h.call('post', '/api/auth/request-code', r('3.3.3.3'))).code, 202);
   });
-  await t('past twenty codes an hour for one address, requests are answered without mail while the last code is open, an operator is told once, and mail resumes when it expires', async () => {
-    const h = harness({}, { AUTH_CODE_MINUTES: '10' }); const ask = i => h.call('post', '/api/auth/request-code', { body: { email: 'a@example.com' }, ip: '10.0.0.' + i });
+  await t('past the hourly limit of codes for one address (set to twenty here), requests are answered without mail while the last code is open, an operator is told once, and mail resumes when it expires', async () => {
+    const h = harness({}, { AUTH_CODE_MINUTES: '10', AUTH_CODES_PER_ADDRESS_HOUR: '20' }); const ask = i => h.call('post', '/api/auth/request-code', { body: { email: 'a@example.com' }, ip: '10.0.0.' + i });
     for (let i = 0; i < 20; i++) { h.clock.t += 61000 * (i ? 1 : 0); assert.strictEqual((await ask(i)).code, 202); }
     assert.strictEqual(h.mails.length, 20); assert.strictEqual(h.alerts.length, 0);
     h.clock.t += 61000; assert.strictEqual((await ask(40)).code, 202); assert.strictEqual(h.mails.length, 20); assert.strictEqual(h.alerts.length, 1);
     h.clock.t += 61000; await ask(41); assert.strictEqual(h.mails.length, 20); assert.strictEqual(h.alerts.length, 1);
     h.clock.t += 11 * 60000; assert.strictEqual((await ask(42)).code, 202); assert.strictEqual(h.mails.length, 21);
+  });
+  await t('by default one address gets at most eight codes an hour whatever addresses ask, then quiet answers and one alert', async () => {
+    const h = harness({}, { AUTH_CODE_MINUTES: '10' }); const ask = i => h.call('post', '/api/auth/request-code', { body: { email: 'bomb@example.com' }, ip: '10.1.0.' + i });
+    for (let i = 0; i < 8; i++) { h.clock.t += i ? 61000 : 0; assert.strictEqual((await ask(i)).code, 202); }
+    assert.strictEqual(h.mails.length, 8); assert.strictEqual(h.alerts.length, 0);
+    h.clock.t += 61000; assert.strictEqual((await ask(50)).code, 202); assert.strictEqual(h.mails.length, 8); assert.strictEqual(h.alerts.length, 1); assert(/More than 8 codes/.test(h.alerts[0].x));
+    for (let i = 51; i < 80; i++) { h.clock.t += 61000; await ask(i); if (h.clock.t - Date.parse('2026-11-03T10:00:00Z') > 9 * 61000 + 9 * 60000) break; }
+    assert(h.mails.length <= 9, 'mails sent: ' + h.mails.length);
+  });
+  await t('the limit is set by AUTH_CODES_PER_ADDRESS_HOUR; a value out of range keeps the default', () => {
+    assert.strictEqual(C.settings({ AUTH_CODES_PER_ADDRESS_HOUR: '12' }).codesPerAddressHour, 12);
+    assert.strictEqual(C.settings({}).codesPerAddressHour, 8); assert.strictEqual(C.settings({ AUTH_CODES_PER_ADDRESS_HOUR: '1' }).codesPerAddressHour, 8);
   });
   await t('when the proof of work is on, a request without it is refused before any code exists', async () => {
     const bot = { enabled: () => true, verify: p => (p === 'good' ? { ok: true } : { ok: false, reason: 'missing' }) };
