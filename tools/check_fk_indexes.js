@@ -37,7 +37,7 @@ if (require.main === module) {
   (async () => {
     if (!process.env.DATABASE_URL) { console.error('Set DATABASE_URL first.'); process.exit(2); }
     const { Client } = require(path.join(__dirname, '..', 'backend', 'node_modules', 'pg'));
-    const client = new Client({ connectionString: process.env.DATABASE_URL }); await client.connect();
+    const client = new Client(require('../backend/lib/dbConfig').directOptions(process.env)); await client.connect();
     try {
       const r = await check(client);
       for (const k of r.stale) console.log(`note: allow-list entry ${k} now has an index; remove it`);

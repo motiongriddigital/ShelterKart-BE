@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
+const DB = require('../lib/dbConfig');
 
 const MAGIC = Buffer.from('SKBK1');
 const KEY_ID_RE = /^[A-Za-z0-9]{1,16}$/;
@@ -37,15 +38,21 @@ function readKeys(env) {
 }
 
 /** pg_dump reads the connection from PG* variables, so the password never appears in the process list. */
-function pgEnv(url) {
+function pgEnv(url, env = {}) {
   const u = new URL(url), e = { PGHOST: u.hostname, PGPORT: u.port || '5432', PGDATABASE: decodeURIComponent(u.pathname.slice(1)), PGUSER: decodeURIComponent(u.username), PGPASSWORD: decodeURIComponent(u.password) };
   const ssl = u.searchParams.get('sslmode'); if (ssl) e.PGSSLMODE = ssl;
+  if (env.DATABASE_SSL || !ssl) {
+    const mode = DB.sslMode(env, url);
+    if (mode === 'require') e.PGSSLMODE = 'require';
+    if (mode === 'verify') { e.PGSSLMODE = 'verify-full'; const ca = DB.caPath(env); if (ca) e.PGSSLROOTCERT = ca; }
+    if (mode === 'off' && env.DATABASE_SSL) e.PGSSLMODE = 'disable';
+  }
   return e;
 }
 
-function realDump(url) {
+function realDump(url, env = {}) {
   return () => {
-    const child = spawn('pg_dump', ['--format=custom', '--no-owner'], { env: { ...process.env, ...pgEnv(url) }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn('pg_dump', ['--format=custom', '--no-owner'], { env: { ...process.env, ...pgEnv(url, env) }, stdio: ['ignore', 'pipe', 'pipe'] });
     let err = '';
     child.stderr.on('data', d => { if (err.length < 2000) err += d; });
     const done = new Promise((resolve, reject) => { child.on('error', reject); child.on('close', code => (code === 0 ? resolve() : reject(new Error('pg_dump exited ' + code + (err ? ': ' + err : ''))))); });
@@ -97,7 +104,7 @@ function createBackups({ pool = null, env = process.env, now = () => Date.now(),
   const everyDays = Math.min(90, Math.max(1, Number(env.BACKUP_EVERY_DAYS) || 14));
   const keep = Math.min(100, Math.max(1, Number(env.BACKUP_KEEP) || 6));
   const dest = destination || folderDestination(env.BACKUP_DIR || path.join(__dirname, '..', '..', 'backups'));
-  const dumper = dump || (env.DATABASE_URL ? realDump(env.DATABASE_URL) : null);
+  const dumper = dump || (DB.directUrl(env) ? realDump(DB.directUrl(env), env) : null);
   const rec = records || (pool ? pgRecords(pool) : memoryRecords());
   const enabled = Boolean(active && dumper);
   let running = false, timer = null;

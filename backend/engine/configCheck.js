@@ -37,6 +37,15 @@ function check(env = process.env) {
     warnings.push('ACCOUNTS_CSRF is not "on": the cross-site request guard only reports and refuses nothing. Set ACCOUNTS_CSRF=on once the frontend sends its Origin.');
   if (production && ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'XAI_API_KEY', 'DEEPSEEK_API_KEY'].some(k => has(env, k)) && !(Number(env.AI_DAILY_MAX_USD) > 0))
     warnings.push('AI_DAILY_MAX_USD is not set: nothing but INVESTIGATE_DAILY_CAP limits what free previews spend on AI in a day. Set a dollar ceiling (new previews pause when it is passed) and AI_DAILY_ALERT_USD.');
+  if (production && has(env, 'DATABASE_URL')) {
+    const DB = require('../lib/dbConfig');
+    const managed = DB.MANAGED_HOST.test((() => { try { return new URL(env.DATABASE_URL).hostname; } catch (e) { return ''; } })());
+    if (managed && DB.kindOf(env.DATABASE_URL) === 'transaction-pooler' && !has(env, 'DATABASE_DIRECT_URL'))
+      warnings.push('DATABASE_URL is a connection pooler in transaction mode and DATABASE_DIRECT_URL is not set: migrations and database backups need a direct or session connection (DATABASE_DIRECT_URL).');
+    if (DB.sslMode(env) === 'off' && managed) errors.push('DATABASE_SSL is off for a Supabase database: the connection would not be encrypted.');
+    if (DB.sslMode(env) === 'require' && managed) warnings.push('The database connection is encrypted but the server certificate is not checked: set DATABASE_SSL=verify and DATABASE_SSL_CA to the Supabase CA certificate.');
+    if (DB.sslMode(env) === 'verify' && !has(env, 'DATABASE_SSL_CA') && managed) warnings.push('DATABASE_SSL=verify with no DATABASE_SSL_CA: Supabase signs with its own CA, so the connection will be refused until the certificate is set.');
+  }
   if (production && !has(env, 'TRUST_PROXY')) warnings.push('TRUST_PROXY is not set: behind a load balancer every visitor shares one rate limit.');
 
   // Outside production the same findings are advice, not a reason to stop (a developer machine has no payment keys).

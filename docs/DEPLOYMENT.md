@@ -14,6 +14,7 @@ The image (`Dockerfile`) holds `backend/` and `tools/`, runs as the unprivileged
 
 - Pull and run `ghcr.io/<owner>/shelterkart-be:<tag>` with enough memory for Chromium (start with 2 GB and measure).
 - A PostgreSQL 16 database, with `DATABASE_URL` set.
+  A managed Postgres such as Supabase works the same way: see `docs/SUPABASE.md` and `docker-compose.baas.yml`.
 - The variables in `backend/.env.example`. In production the server refuses to start until the required ones are set and long enough (`engine/configCheck.js`; it prints which, never the values), so a mistyped secret cannot silently switch the paywall off. `.env.example` marks `ALLOWED_ORIGINS` and `DATABASE_URL` as required in production, and the CI production-mode run also sets `ACCESS_TOKEN_SECRET`, `QUOTE_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` and the webhook secrets. Keep every value in the host's secret store, never in the repository.
 - One instance only until saved investigations move off local files (`LIVE_JOBS_DIR`); mount a persistent volume there.
 - On every release, before starting the new version: `node tools/migrate.js` (idempotent; applies only new migrations). The first time only: `node tools/seed_pricing.js`.
