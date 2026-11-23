@@ -19,7 +19,7 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const DIR = path.join(__dirname, '..', 'backend');
 const MIGRATIONS = ['schema.sql', 'schema_evidence.sql', 'razorpay_orders.sql', 'idempotent_checkout.sql', 'research_persistence.sql',
-  'source_health.sql', 'analytics.sql', 'translations.sql', 'pricing_v2.sql', 'responses.sql', 'social.sql', 'purchase_attribution.sql', 'accounts.sql', 'error_log.sql', 'health_history.sql', 'engine_usage.sql', 'backups.sql', 'fk_indexes.sql', 'bulk_registers.sql', 'accounts_password.sql', 'auth_codes_password.sql'];
+  'source_health.sql', 'analytics.sql', 'translations.sql', 'pricing_v2.sql', 'responses.sql', 'social.sql', 'purchase_attribution.sql', 'accounts.sql', 'error_log.sql', 'health_history.sql', 'engine_usage.sql', 'backups.sql', 'fk_indexes.sql', 'bulk_registers.sql', 'accounts_password.sql', 'auth_codes_password.sql', 'auth_attempts.sql'];
 const NO_TRANSACTION = /^--\s*migrate:\s*no-transaction\b/;
 const sha = t => crypto.createHash('sha256').update(t).digest('hex');
 
