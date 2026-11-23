@@ -14,7 +14,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { stripPII } = require('../lib/pii');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, SEARCH, checkoutResearchLimiter, documentLimiter, gateBrief, localize, pool, registryHttp, researchLimiter, track, trackLimiter } = c;
+  const { ACCOUNTS, SEARCH, reportReadLimiter, checkoutResearchLimiter, documentLimiter, gateBrief, localize, pool, registryHttp, researchLimiter, track, trackLimiter } = c;
 
   /* The buyer's own document, checked against the research. Never stored,
      never logged, never cached: it exists only for this request. */
@@ -53,7 +53,7 @@ module.exports = function register(app, c) {
     res.set('Cache-Control', 'public, max-age=3600');
     res.json({ ok: true, languages: languageList(), markets: Object.fromEntries(Object.keys(MARKETS).map(m => [m, languagesForMarket(m)])) });
   });
-  app.get('/api/research/by-ref/:ref', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
+  app.get('/api/research/by-ref/:ref', ACCOUNTS.guard, reportReadLimiter, ah(async (req, res) => {
     const ref = req.params.ref;
     if (!REF_RE.test(String(ref || ''))) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
     const brief = await getByRefAsync(ref);   // memory first, then storage
