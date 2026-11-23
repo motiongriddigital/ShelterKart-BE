@@ -3,7 +3,7 @@ const express = require('express');
 const { respond } = require('../middleware/respond');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, checkoutResearchLimiter, researchLimiter, webhookForgeryLimiter } = c;
+  const { ACCOUNTS, checkoutResearchLimiter, quoteLimiter, webhookForgeryLimiter } = c;
   const checkout = require('../payments/handlers/checkout')(c);
   const quote = require('../payments/handlers/quote')(c);
   const access = require('../payments/handlers/access')(c);
@@ -20,7 +20,7 @@ module.exports = function register(app, c) {
 
   /* Issue a signed quote for this report and buyer, locked for 30 minutes. Any earlier open quote for the same
      report and session is superseded, so a buyer who changes country is never left holding two live prices. */
-  app.post('/api/research/quote', ACCOUNTS.guard, researchLimiter, respond(quote.issue));
+  app.post('/api/research/quote', ACCOUNTS.guard, quoteLimiter, respond(quote.issue));
 
   /* The checkout's success handler. Instant unlock: the signature is
      checked against the order id stored on OUR server for this purchase,

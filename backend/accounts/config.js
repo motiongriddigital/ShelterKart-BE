@@ -18,6 +18,7 @@ function settings(env = process.env) {
     sessionMaxDays: num(env.SESSION_MAX_DAYS, 90, 1, 730),
     codeMinutes: num(env.AUTH_CODE_MINUTES, 10, 1, 60),
     codeAttempts: num(env.AUTH_CODE_ATTEMPTS, 5, 1, 20),
+    codesPerAddressHour: num(env.AUTH_CODES_PER_ADDRESS_HOUR, 8, 3, 100),
     addressAttemptsPerHour: num(env.AUTH_ADDRESS_ATTEMPTS_PER_HOUR, 15, 3, 200),
     csrf: ['off', 'report', 'on'].includes(String(env.ACCOUNTS_CSRF || '').toLowerCase()) ? String(env.ACCOUNTS_CSRF).toLowerCase() : 'report',
     searchGate: String(env.ACCOUNTS_SEARCH_GATE || 'view').toLowerCase() === 'start' ? 'start' : 'view',

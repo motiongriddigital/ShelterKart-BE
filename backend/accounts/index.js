@@ -139,8 +139,8 @@ function createAccounts(deps = {}) {
 
   function mount(app) {
     if (!enabled) return;
-    const tooMany = where => (req, res) => { ev('ip_rate_limited', { req, detail: where }); res.status(429).json({ ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' }); };
-    const limCode = rateLimit({ windowMs: 3600e3, max: 20, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' }, handler: tooMany('request-code') });
+    const tooMany = where => (req, res) => { ev('ip_rate_limited', { req, detail: where }); const wait = Number(res.getHeader && res.getHeader('Retry-After')); res.status(429).json({ ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.', ...(wait > 0 ? { retryAfter: wait } : {}) }); };
+    const limCode = rateLimit({ windowMs: 3600e3, max: 20, skipFailedRequests: true, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' }, handler: tooMany('request-code') });
     const limVerify = rateLimit({ windowMs: 3600e3, max: 30, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' }, handler: tooMany('verify-code') });
     const limMe = rateLimit({ windowMs: 3600e3, max: 120, message: { ok: false, code: 'rate_limited', error: 'Too many requests. Please try again later.' } });
 
@@ -164,9 +164,9 @@ function createAccounts(deps = {}) {
       const state = await store.lastCodeState(email, at());
       const quiet = { ok: true, cooldownSeconds: 60, codeLength: 6 };
       if (state && state.open && t - state.createdAt.getTime() < 60000) { await ev('code_request_absorbed', { email, req, detail: 'recent_code' }); return res.status(202).json(quiet); }
-      if (state && state.open && await store.countCodesSince(email, hourAgo) >= 20) {
+      if (state && state.open && await store.countCodesSince(email, hourAgo) >= cfg.codesPerAddressHour) {
         await ev('code_request_absorbed', { email, req, detail: 'bulk' });
-        if (!bulkAlerted.has(email) || t - bulkAlerted.get(email) > 3600e3) { bulkAlerted.set(email, t); alert('bulk sign-in code requests', `More than 20 codes were requested for one address within an hour (${email}). Further requests are answered without sending while its last code is still open.`).catch(() => {}); }
+        if (!bulkAlerted.has(email) || t - bulkAlerted.get(email) > 3600e3) { bulkAlerted.set(email, t); alert('bulk sign-in code requests', `More than ${cfg.codesPerAddressHour} codes were requested for one address within an hour (${email}). Further requests are answered without sending while its last code is still open.`).catch(() => {}); }
         return res.status(202).json(quiet);
       }
       const code = S.newCode();
