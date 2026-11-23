@@ -12,12 +12,22 @@ module.exports = function setup(c) {
      real people at once during a spike. The limit is looser, and searches
      that can be answered from memory are exempt -- they cost nothing. The
      real cost ceiling is RESEARCH_DAILY_CAP, enforced in the engine. */
-  const researchLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: Number(process.env.RESEARCH_HOURLY_PER_IP) || 10,
+  /* A signed-in request is counted for its account, everything else for the address it comes from. Behind the website's own server (and with
+     TRUST_PROXY unset) every visitor arrives from one address, so a per-address count alone would lock everyone out together. */
+  const keyOfUserOrIp = req => (req.accountUser && req.accountUser.id ? 'u:' + req.accountUser.id : String(req.ip));
+  const researchLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: Number(process.env.RESEARCH_HOURLY_PER_IP) || 10, keyGenerator: keyOfUserOrIp,
     standardHeaders: true, legacyHeaders: false,
     skip: req => { try { const b = req.body || {};
       if (BOT.enabled(process.env) && req.path === '/api/research' && !(b.pow && b.pow.token)) return true;   // refused before any cost; counting it would charge twice
       return isAnswerable({ query: stripPII(b.query), location: stripPII(b.location), market: b.market }); } catch { return false; } },
     message: { ok: false, error: 'Too many new searches from this connection. Please try again in an hour.' } });
+
+  /* Looking at a report, or polling it while it is made, costs nothing: it must not use up the budget for starting new searches. */
+  const reportReadLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: Number(process.env.REPORT_READS_HOURLY) || 900, keyGenerator: keyOfUserOrIp, standardHeaders: true, legacyHeaders: false,
+    message: { ok: false, error: 'Too many requests for reports from this account or connection. Please try again later.' } });
+  /* A price quote has its own count, apart from the start of a search. */
+  const quoteLimiter = rateLimit({ windowMs: 60 * 60 * 1000, max: Number(process.env.QUOTES_HOURLY) || 30, keyGenerator: keyOfUserOrIp, standardHeaders: true, legacyHeaders: false,
+    message: { ok: false, error: 'Too many price quotes from this account or connection. Please try again later.' } });
 
   /* Every /api/admin route sits behind this limiter, registered BEFORE any of
      them: Express applies middleware in registration order, and this used
@@ -27,7 +37,8 @@ module.exports = function setup(c) {
   const adminLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 20,
-    skipSuccessfulRequests: true,   // only refused requests count: guessing the password is capped, while a signed-in console (3 calls per screen) is not locked out
+    skipSuccessfulRequests: true,   // only refused sign-ins count: guessing the password is capped, while a signed-in console is not locked out
+    requestWasSuccessful: (req, res) => res.statusCode !== 401 && res.statusCode !== 403,   // a panel that answers 404, 429 or 503 is the console's problem, not a guess
     standardHeaders: true,
     legacyHeaders: false,
     message: { ok: false, error: 'Too many attempts. Try again later.' },
@@ -61,5 +72,5 @@ module.exports = function setup(c) {
   /* The legacy payment webhook refuses an unsigned request with a 401. Only refusals count against an address (skipSuccessfulRequests), so a flood of
      forged requests is cut off while the provider's own signed deliveries are never limited. */
   const webhookForgeryLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, skipSuccessfulRequests: true, standardHeaders: true, legacyHeaders: false, message: { ok: false, error: 'Too many invalid requests.' } });
-  Object.assign(c, { adminLimiter, checkoutResearchLimiter, disputeLimiter, documentLimiter, replyLimiter, webhookForgeryLimiter, researchLimiter, respondLimiter, respondReadLimiter, trackLimiter });
+  Object.assign(c, { reportReadLimiter, quoteLimiter, adminLimiter, checkoutResearchLimiter, disputeLimiter, documentLimiter, replyLimiter, webhookForgeryLimiter, researchLimiter, respondLimiter, respondReadLimiter, trackLimiter });
 };

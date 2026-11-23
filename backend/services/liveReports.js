@@ -252,18 +252,21 @@ module.exports = function setup(c) {
 
   /* At start: reload saved investigations. Finished previews stay reusable for 30 days; a paid report that was still
      running resumes on its own from its saved state. */
+  let settled = 0;
   for (const rec of JOBS.all()) {
     if (jobIsStale(rec)) { JOBS.remove(rec.ref); continue; }
     const job = { ...rec, listeners: new Set(), events: [], inv: null, completing: false };
     if (rec.status === 'sweeping' && !(rec.saved && rec.saved.swept)) job.status = 'interrupted';
     if (rec.status === 'completing') job.status = 'preview';
     liveJobs.set(rec.ref, job);
+    if (job.status === 'interrupted' && !job.paid) { job.status = 'failed'; job.failReason = 'restarted'; job.previewFailedAt = Date.now(); settled++; try { FP.failed(); } catch { /* counters are optional */ } persistJob(job); }
     if (rec.key && rec.saved && rec.saved.swept && Date.now() - (rec.createdAt || 0) < 30 * 24 * 3600 * 1000) liveIndex.set(rec.key, { ref: rec.ref, at: rec.createdAt });
     if (rec.status === 'done' && rec.saved && rec.saved.dossier && Date.now() - (rec.updatedAt || 0) < 30 * 24 * 3600 * 1000) for (const id of regIdsOf(rec.saved.dossier)) regIndex.set(id, { ref: rec.ref, at: rec.updatedAt });
     if (rec.status !== 'failed' && rec.saved && rec.saved.swept && rec.saved.dossier && Date.now() - (rec.updatedAt || 0) < 30 * 24 * 3600 * 1000) indexPreview(rec, rec.saved.dossier, rec.updatedAt);
     // Without a database the report store is in memory: put each saved report back, so buyers' links work after a restart.
     if (!process.env.DATABASE_URL && rec.saved && rec.saved.dossier) { try { saveLiveDossier(job, JSON.parse(JSON.stringify(rec.saved.dossier))); } catch (e) { console.error('[investigate] could not restore report ' + rec.ref + ':', e && e.message); } }
   }
+  if (settled) console.log('[jobs] ' + settled + ' free search' + (settled === 1 ? '' : 'es') + ' running when the server stopped ' + (settled === 1 ? 'was' : 'were') + ' marked failed (reason restarted), so the buyer sees it and can search again');
   setInterval(() => { try { const n = pruneLiveJobs(); if (n) console.log('[jobs] removed ' + n + ' saved investigation' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[jobs] retention sweep failed:', e && e.message); } }, 6 * 3600 * 1000).unref();
   const pdfCleanup = () => { try { const n = PDFS.prune({ previewMs: num('PDF_PREVIEW_DAYS', 7) * 24 * 3600 * 1000, keep: ref => liveJobs.has(ref) }); if (n) console.log('[pdf] removed ' + n + ' stored PDF' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[pdf] clean-up failed:', e && e.message); } };
   setInterval(pdfCleanup, 24 * 3600 * 1000).unref();

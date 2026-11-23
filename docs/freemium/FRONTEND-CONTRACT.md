@@ -26,6 +26,8 @@ The start call answered 202 with a `ref`. If the research then fails, the report
 - still working: `202 { ok: true, ready: false, state: "working", ref, phase }` (as before, plus `state`)
 - failed: `200 { ok: true, ready: false, state: "unavailable", ref, phase: "failed", reason: "engines_unavailable", error, retryAt }`
 
+A search that was still running when the server restarted (every deploy does this) is settled the same way, with `reason: "restarted"`: "The server was restarted while this search was running. Nothing was charged. Please search again." `retryAt` is now, so "Search again" can be offered at once. The progress stream sends one `error` event with that reason and ends.
+
 On `state: "unavailable"`: stop polling, say "We could not run this search just now. Nothing was charged. Try again in a few minutes." and offer "Search again" (a new start call works; it starts a fresh attempt). The progress stream's `error` event carries the same `reason` and `retryAt`.
 
 ## 3. Pages the back end serves

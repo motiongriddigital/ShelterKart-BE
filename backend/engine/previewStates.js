@@ -7,6 +7,7 @@ const inMinutes = n => now => new Date(now + n * 60000).toISOString();
 
 const REASONS = {
   engines_unavailable: { status: 503, code: 'engines_unavailable', error: 'We could not run this search just now. Nothing was charged. Please try again in a few minutes.', retryAt: inMinutes(5) },
+  restarted: { status: 503, code: 'restarted', error: 'The server was restarted while this search was running. Nothing was charged. Please search again.', retryAt: now => new Date(now).toISOString() },
   daily_budget: { status: 503, code: 'paused', error: PAUSED_TODAY, retryAt: utcMidnight },
   daily_cap: { status: 503, code: 'paused', error: PAUSED_TODAY, retryAt: utcMidnight },
   market_cap: { status: 503, code: 'paused', error: 'New investigations in this market are paused for today. Projects already investigated are still available.', retryAt: utcMidnight },
