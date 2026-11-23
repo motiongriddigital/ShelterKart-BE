@@ -49,6 +49,8 @@ jobs:
         run: node tools/migrate.js | tee /tmp/second.txt && grep -qE "^0 applied, [0-9]+ already applied" /tmp/second.txt
       - name: Every foreign key is indexed or allow-listed
         run: node tools/check_fk_indexes.js
+      - name: The Postgres job store holds up with two instances
+        run: node tools/check_job_store.js
       - name: Seed the pricing reference tables
         run: node tools/seed_pricing.js
       - name: Start the real server

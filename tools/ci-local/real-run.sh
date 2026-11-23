@@ -39,6 +39,9 @@ grep -q "$MIGRATIONS_LINE" /tmp/second.txt
 step "Every foreign key is indexed or allow-listed"
 node tools/check_fk_indexes.js
 
+step "The Postgres job store holds up with two instances"
+node tools/check_job_store.js
+
 step "Seed the pricing reference tables"
 node tools/seed_pricing.js
 
