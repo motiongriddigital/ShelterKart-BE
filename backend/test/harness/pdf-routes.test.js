@@ -104,6 +104,28 @@ const rawOf = r => (Buffer.isBuffer(r.body) ? r.body : Buffer.from(String(r.body
   const prev2 = await send('/r/:ref/preview.pdf', hA, { ref });
   ok('the paid buyer can still download the free preview PDF', prev2.code === 200);
 
+  console.log('checking a copy against the report on file');
+  {
+    const R = require('../../engine/research'), DOSSIER = require('../../engine/dossier');
+    const brief = await R.getByRefAsync(ref), fp = DOSSIER.fingerprint(brief.dossier);
+    const verify = (code, headers = {}, r = ref) => send('/r/:ref/verify/:code', headers, { ref: r, code });
+    const good = await verify(fp);
+    ok('the printed fingerprint matches the report on file: 200, header says match, no sign-in needed', good.code === 200 && good.headers['X-Verify-Result'] === 'match' && /matches the report on file/.test(String(good.body)));
+    ok('the answer is private and not indexed', /no-store/.test(good.headers['Cache-Control']) && /noindex/.test(good.headers['X-Robots-Tag']));
+    const upper = await verify(fp.toUpperCase());
+    ok('the fingerprint may be typed in capitals', upper.headers['X-Verify-Result'] === 'match');
+    const wrong = await verify('0'.repeat(16));
+    ok('a different fingerprint is a mismatch, still 200, and the page shows nothing from the report', wrong.code === 200 && wrong.headers['X-Verify-Result'] === 'mismatch' && !/Hubtown/.test(String(wrong.body)));
+    ok('a malformed code or reference is 400', (await verify('zz')).code === 400 && (await verify(fp, {}, 'nope')).code === 400);
+    ok('an unknown reference is 404', (await verify(fp, {}, 'SK-FFFFFFFFFFFF')).code === 404);
+    const changed = JSON.parse(JSON.stringify(brief.dossier)); changed.questions = (changed.questions || []).slice(1);
+    ok('a changed report gives a different fingerprint, so an old copy no longer matches', DOSSIER.fingerprint(changed) !== fp && DOSSIER.fingerprint(JSON.parse(JSON.stringify(brief.dossier))) === fp);
+    REVIEW.isHeld = () => true; const heldV = await verify(fp); REVIEW.isHeld = realHeld;
+    ok('a held report is not checked: 423', heldV.code === 423 && heldV.headers['X-Verify-Result'] === 'held');
+    const full = printed.map(x => x.html).find(h => /Every question, by stage/.test(h));
+    ok('the full PDF that was printed carries this very fingerprint and the check address', Boolean(full) && full.includes(fp.replace(/(.{4})(?=.)/g, '$1 ')) && full.includes(`https://shelterkart.test/r/${ref}/verify/${fp}`));
+  }
+
   console.log('files on disk, and removal with the report');
   const onDisk = () => { try { return fs.readdirSync(nodePath.join(process.env.PDF_DIR, ref)); } catch { return []; } };
   ok('one preview file and one full file are kept for the report, named by content key', onDisk().length === 2 && onDisk().some(n => /^preview-[a-f0-9]{16}\.pdf$/.test(n)) && onDisk().some(n => /^full-[a-f0-9]{16}\.pdf$/.test(n)));

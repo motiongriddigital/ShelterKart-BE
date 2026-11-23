@@ -6,7 +6,9 @@ const BOT = require('../engine/botguard');             // proof-of-work before N
 const { paywallActive, REF_RE } = require('../engine/access');
 const PRICING = require('../pricing');
 const INVESTIGATOR = require('../engine/investigator');
-const { renderDossier } = require('../engine/dossierHtml');
+const { renderDossier, head: pageHead, esc: escHtml } = require('../engine/dossierHtml');
+const DOSSIER = require('../engine/dossier');
+const { rateLimit } = require('../middleware/rateLimit');
 const DOSSIER_BRIEF = require('../engine/dossierBrief');
 const { reportView } = require('../engine/reportView');
 const PAGES = require('../engine/reportPages');
@@ -225,6 +227,25 @@ module.exports = function register(app, c) {
     try { await pdfOnce(res, brief, { kind: 'preview', ctx: pdfCtx(ref), held: REVIEW.isHeld(brief) }); }
     catch (e) { if (!pdfProblem(res, e)) throw e; }
   }));
+  /* Check a copy of a report: the stamp printed in the full PDF is a short fingerprint of the report's content. Anyone holding the
+     document (a lawyer, a bank) can open its address and see whether it matches the report on file. It answers match or no match and
+     shows nothing else from the report, so it needs no sign-in. Held reports are not checked. */
+  const verifyLimiter = rateLimit({ windowMs: 3600e3, max: 60, message: 'Too many checks from this connection. Please try again later.' });
+  app.get('/r/:ref/verify/:code', verifyLimiter, ah(async (req, res) => {
+    const ref = String(req.params.ref || ''), code = String(req.params.code || '').toLowerCase();
+    const send = (status, result, title, text) => res.status(status).set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'X-Verify-Result': result, 'Content-Type': 'text/html; charset=utf-8' })
+      .send(pageHead('Check a report copy') + `<h1 style="margin-top:2rem">${escHtml(title)}</h1><p>${escHtml(text)}</p><p class="small">Reference ${escHtml(REF_RE.test(ref) ? ref : '(not valid)')}. Research, not advice.</p></main></body></html>`);
+    if (!REF_RE.test(ref) || !DOSSIER.FINGERPRINT_RE.test(code)) return send(400, 'invalid', 'That address is not valid', 'Open the check address exactly as it is printed in the report, under "This copy\'s stamp".');
+    const brief = await getByRefAsync(ref);
+    if (!brief || brief.kind !== 'dossier' || !brief.dossier) return send(404, 'unknown', 'No report on file with that reference', 'We hold no report under this reference, so this copy cannot be checked.');
+    if (REVIEW.isHeld(brief)) return send(423, 'held', 'This report is being checked', 'A person is checking this report before it can be released. Try again later.');
+    const want = Buffer.from(DOSSIER.fingerprint(brief.dossier)), got = Buffer.from(code);
+    const match = want.length === got.length && require('crypto').timingSafeEqual(want, got);
+    return match
+      ? send(200, 'match', 'This copy matches the report on file', `The fingerprint is the same as the report we hold, researched to ${brief.dossier.asOf || 'the date shown in the report'}. Its content has not been changed. A match is not an endorsement.`)
+      : send(200, 'mismatch', 'This copy does not match the report on file', 'Either the document was edited, or the report has been corrected or updated since this copy was made. Ask the person who gave it to you for the current version.');
+  }));
+
   app.get('/r/:ref/pdf', ACCOUNTS.guard, ah(async (req, res) => {
     const ref = String(req.params.ref || ''); const t = String((req.query && req.query.t) || '');
     if (!REF_RE.test(ref)) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
