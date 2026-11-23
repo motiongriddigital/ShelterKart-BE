@@ -94,6 +94,7 @@
 {"method":"post","path":"/api/investigate","handlers":3},
 {"method":"get","path":"/api/investigate/:ref/events","handlers":2},
 {"method":"post","path":"/api/investigate/:ref/contact","handlers":3},
+{"method":"get","path":"/api/investigate/:ref/price","handlers":2},
 {"method":"get","path":"/r/:ref","handlers":2},
 {"method":"get","path":"/api/report/:ref","handlers":3},
 {"method":"get","path":"/r/:ref/preview.pdf","handlers":1},

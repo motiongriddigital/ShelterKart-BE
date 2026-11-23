@@ -54,6 +54,11 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
   const preview = await until(async () => { const p = await call(page, { params: { ref } }); return /Free preview/.test(p.text) ? p : null; });
   ok('the free preview appears when the first sweep finishes', Boolean(preview));
   ok('the preview shows who really sells it, with the gold-standard price from the price book', /Registered to Nayan Real Estate Private Limited/.test(preview.text) && /₹[\d,]+/.test(preview.text) && /id="sk-unlock"/.test(preview.text));
+  ok('the price on the preview page can be found by the page script', (preview.text.match(/class="price sk-price"/g) || []).length >= 1);
+  const priceRoute = find('get', '/api/investigate/:ref/price');
+  const pIN = await call(priceRoute, { params: { ref }, query: { country: 'IN' } }), pGB = await call(priceRoute, { params: { ref }, query: { country: 'gb' } });
+  ok('the price route gives the price for the country asked: rupees for India, another currency for the United Kingdom', pIN.code === 200 && /^₹[\d,]+$/.test(pIN.body.price) && pGB.code === 200 && pGB.body.country === 'GB' && !/₹/.test(pGB.body.price) && /^[A-Z]{3} [\d.,]+$/.test(pGB.body.price), JSON.stringify([pIN.body, pGB.body]));
+  ok('the price route refuses an unknown country (400), a bad reference (400) and an unknown report (404)', (await call(priceRoute, { params: { ref }, query: { country: 'ZZ' } })).code === 400 && (await call(priceRoute, { params: { ref: 'nope' }, query: { country: 'IN' } })).code === 400 && (await call(priceRoute, { params: { ref: 'SK-000000000000' }, query: { country: 'IN' } })).code === 404);
   ok('the preview shows three questions and keeps the rest locked', /Question number 3/.test(preview.text) && !/Question number 4/.test(preview.text) && /more questions are in the full report/.test(preview.text));
   const ev = await call(find('get', '/api/investigate/:ref/events'), { params: { ref } });
   ok('the public event stream closes once the preview is ready and carries no paid content', /event: update/.test(ev.text) && !/Following|dossier/.test(ev.text));

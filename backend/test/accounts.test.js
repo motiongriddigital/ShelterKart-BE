@@ -322,6 +322,16 @@ function harness(over = {}, envOver = {}) {
     assert(lines.every(l => !/\d{6}/.test(l) && !/sk_session/.test(l)), lines.join('|'));
   });
 
+  await t('a display name is kept as one line of plain text: markup is removed (B8)', async () => {
+    const h = harness(); const { cookie } = await h.signIn('a@example.com'); const hd = { cookie };
+    const p = await h.call('patch', '/api/me', { headers: hd, body: { displayName: 'QA <img src=x onerror=alert(1)>Asha\nRao' } });
+    assert.strictEqual(p.code, 200); assert.strictEqual(p.body.user.displayName, 'QA Asha Rao');
+    const only = await h.call('patch', '/api/me', { headers: hd, body: { displayName: '<script>alert(1)</script>' } });
+    assert.strictEqual(only.body.user.displayName, 'alert(1)');
+    const empty = await h.call('patch', '/api/me', { headers: hd, body: { displayName: '<b></b>' } });
+    assert.strictEqual(empty.body.user.displayName, null);
+  });
+
   console.log('sign-in hardening: one address, many addresses of the attacker');
   await t('a code that is used in parallel signs in once; every other copy is refused', async () => {
     const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'race@example.com' } }); const code = h.codeOf();

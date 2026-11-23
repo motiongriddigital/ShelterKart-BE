@@ -12,6 +12,7 @@ const { csrfGuard } = require('./csrf');
 
 const DAY = 24 * 3600 * 1000;
 const LANG_RE = /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/;
+const { oneLine } = require('../lib/plainText');
 const clip = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, n);
 
 const publicUser = u => (u ? {
@@ -268,7 +269,7 @@ function createAccounts(deps = {}) {
 
     app.patch('/api/me', limMe, guard, wrap(async (req, res) => {
       const u = await user(req), b = req.body || {}, patch = {};
-      if ('displayName' in b) patch.displayName = clip(b.displayName, 80) || null;
+      if ('displayName' in b) patch.displayName = clip(oneLine(b.displayName), 80) || null;
       if ('country' in b) {
         const c = String(b.country || '').trim().toUpperCase();
         if (c && !/^[A-Z]{2}$/.test(c)) return fail(res, 400, 'invalid_country', 'Use a two-letter country code.');

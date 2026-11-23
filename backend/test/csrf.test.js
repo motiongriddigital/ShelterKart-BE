@@ -85,7 +85,9 @@ const d = o => csrfDecision({ ...base, ...o });
   });
 
   console.log('the setting');
-  await t('ACCOUNTS_CSRF defaults to report, accepts off and on, and ignores anything else', () => {
+  await t('ACCOUNTS_CSRF defaults to report on a developer machine and to on in production, accepts off and on, and ignores anything else', () => {
+    assert.strictEqual(settings({ NODE_ENV: 'production' }).csrf, 'on'); assert.strictEqual(settings({ NODE_ENV: 'production', ACCOUNTS_CSRF: 'yes' }).csrf, 'on');
+    assert.strictEqual(settings({ NODE_ENV: 'production', ACCOUNTS_CSRF: 'report' }).csrf, 'report'); assert.strictEqual(settings({ NODE_ENV: 'production', ACCOUNTS_CSRF: 'off' }).csrf, 'off');
     assert.strictEqual(settings({}).csrf, 'report'); assert.strictEqual(settings({ ACCOUNTS_CSRF: 'on' }).csrf, 'on'); assert.strictEqual(settings({ ACCOUNTS_CSRF: 'OFF' }).csrf, 'off');
     assert.strictEqual(settings({ ACCOUNTS_CSRF: 'yes' }).csrf, 'report'); assert.strictEqual(settings({ ACCOUNTS_CSRF: '' }).csrf, 'report');
   });
