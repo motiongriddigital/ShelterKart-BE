@@ -20,7 +20,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { stripPII } = require('../lib/pii');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, reportReadLimiter, FP, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
+  const { ACCOUNTS, watchRemote, briefFor, reportReadLimiter, FP, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
 
   const startsByUser = new Map(), userDailyCap = () => { const v = process.env.INVESTIGATE_PER_USER_DAILY; return v === undefined || v === '' ? 5 : Math.max(0, Math.floor(Number(v)) || 0); };
   const userStartsToday = id => { const today = new Date().toISOString().slice(0, 10), e = startsByUser.get(id); return e && e.day === today ? e.n : 0; };
@@ -144,6 +144,7 @@ module.exports = function register(app, c) {
     if (job && (job.listeners.size >= streamCap('EVENT_STREAMS_PER_JOB', 25) || mine >= streamCap('EVENT_STREAMS_PER_IP', 6))) return res.status(429).json({ ok: false, error: 'Too many progress streams are open. Close one and try again.' });
     res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     if (res.flushHeaders) res.flushHeaders();
+    if (!job && await watchRemote(ref, res)) return;
     if (job && job.status === 'failed' && !job.paid && !job.events.length && job.previewFailedAt) { const note = PS.failureNote(job.failReason || 'engines_unavailable', { now: job.previewFailedAt }); res.write(`event: error\ndata: ${JSON.stringify({ type: 'error', message: note.error, reason: note.reason, ...(note.retryAt ? { retryAt: note.retryAt } : {}) })}\n\n`); }
     for (const e of (job ? job.events : [])) res.write(`event: ${e.type}\ndata: ${JSON.stringify(full ? e : publicEvent(e))}\n\n`);
     const open = job && (job.status === 'sweeping' || (full && job.status === 'completing'));
@@ -178,7 +179,7 @@ module.exports = function register(app, c) {
   app.get('/r/:ref', ACCOUNTS.guardPage, ah(async (req, res) => {
     const ref = String(req.params.ref || '');
     res.set({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
-    const brief = REF_RE.test(ref) ? await getByRefAsync(ref) : null;
+    const brief = REF_RE.test(ref) ? await briefFor(ref) : null;
     if (!brief || brief.kind !== 'dossier') return res.status(404).send(PAGES.startPage({ botGuard: BOT.enabled(process.env) }).replace('Know who you are paying, before you pay.', 'That report was not found. Start a new one.'));
     if (!brief.dossier) return res.send(PAGES.workingPage({ ref, query: brief.project.name }));
     ACCOUNTS.touch(req, ref);
@@ -197,7 +198,7 @@ module.exports = function register(app, c) {
   app.get('/api/report/:ref', ACCOUNTS.guard, reportReadLimiter, ah(async (req, res) => {
     const ref = String(req.params.ref || '');
     if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
-    const brief = await getByRefAsync(ref);
+    const brief = await briefFor(ref);
     const failedJob = liveJobs.get(ref);
     if ((!brief || brief.kind !== 'dossier') && !(failedJob && failedJob.status === 'failed' && !failedJob.paid && failedJob.previewFailedAt)) return res.status(404).json({ ok: false, error: 'That report was not found.' });
     res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
@@ -234,7 +235,7 @@ module.exports = function register(app, c) {
   };
   app.get('/r/:ref/preview.pdf', ah(async (req, res) => {
     const ref = String(req.params.ref || '');
-    const brief = REF_RE.test(ref) ? await getByRefAsync(ref) : null;
+    const brief = REF_RE.test(ref) ? await briefFor(ref) : null;
     if (!brief || brief.kind !== 'dossier' || !brief.dossier) return res.status(404).json({ ok: false, error: 'That report was not found.' });
     ACCOUNTS.touch(req, ref);
     try { await pdfOnce(res, brief, { kind: 'preview', ctx: pdfCtx(ref), held: REVIEW.isHeld(brief) }); }
@@ -249,7 +250,7 @@ module.exports = function register(app, c) {
     const send = (status, result, title, text) => res.status(status).set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'X-Verify-Result': result, 'Content-Type': 'text/html; charset=utf-8' })
       .send(pageHead('Check a report copy') + `<h1 style="margin-top:2rem">${escHtml(title)}</h1><p>${escHtml(text)}</p><p class="small">Reference ${escHtml(REF_RE.test(ref) ? ref : '(not valid)')}. Research, not advice.</p></main></body></html>`);
     if (!REF_RE.test(ref) || !DOSSIER.FINGERPRINT_RE.test(code)) return send(400, 'invalid', 'That address is not valid', 'Open the check address exactly as it is printed in the report, under "This copy\'s stamp".');
-    const brief = await getByRefAsync(ref);
+    const brief = await briefFor(ref);
     if (!brief || brief.kind !== 'dossier' || !brief.dossier) return send(404, 'unknown', 'No report on file with that reference', 'We hold no report under this reference, so this copy cannot be checked.');
     if (REVIEW.isHeld(brief)) return send(423, 'held', 'This report is being checked', 'A person is checking this report before it can be released. Try again later.');
     const want = Buffer.from(DOSSIER.fingerprint(brief.dossier)), got = Buffer.from(code);
@@ -266,7 +267,7 @@ module.exports = function register(app, c) {
       if (t) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
       return res.status(403).json({ ok: false, code: 'payment_required', error: 'Unlock the full report to download this PDF. The free preview PDF is available.', previewPdf: `/r/${ref}/preview.pdf` });
     }
-    const brief = await getByRefAsync(ref); if (!brief || !brief.dossier) return res.status(404).json({ ok: false, error: 'No report yet.' });
+    const brief = await briefFor(ref); if (!brief || !brief.dossier) return res.status(404).json({ ok: false, error: 'No report yet.' });
     try { await pdfOnce(res, brief, { kind: 'full', held: REVIEW.isHeld(brief) }, out => (out.stored ? {} : { 'X-Report-Phase': String(brief.dossier.phase || 'working') })); }
     catch (e) { if (!pdfProblem(res, e)) throw e; }
   }));

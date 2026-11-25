@@ -200,6 +200,16 @@ async function setReview(ref, review) {
   if (store) bg('saveBrief', () => store.saveBrief(k, brief));
   return brief;
 }
+/** Read one report from storage again, whatever this process remembers: another instance may have moved it on since. */
+async function refreshByRef(ref) {
+  if (!store) return getByRef(ref);
+  let row;
+  try { row = await store.getBrief(ref); } catch (e) { console.error('[persistence] getBrief failed:', e && e.message); return getByRef(ref); }
+  if (!row || Date.now() - row.createdAt.getTime() > REF_TTL_MS) return getByRef(ref);
+  refStore.set(ref, { at: row.createdAt.getTime(), brief: row.brief });
+  return row.brief;
+}
+
 async function getByRefAsync(ref) {
   const hit = getByRef(ref);
   if (hit || !store) return hit;
@@ -482,6 +492,6 @@ function capNotes(notes) {
   return [...sorted.slice(0, 4), `And ${notes.length - 4} more note(s) omitted for length.`];
 }
 
-module.exports = { runResearch, validateInput, purgeByUrl, purgeByHost, purgeDurably, isAnswerable, getByRef, getByRefAsync, listRecentReports, setReview, capOf, pausedReason, registerBrief,
+module.exports = { runResearch, validateInput, purgeByUrl, purgeByHost, purgeDurably, isAnswerable, getByRef, getByRefAsync, refreshByRef, listRecentReports, setReview, capOf, pausedReason, registerBrief,
   attachStore, hydrate,
   _daily: daily, _underDailyCap: underDailyCap, _cache: cache, _refStore: refStore, _entities: entities, _withDeadline: withDeadline, Timeout };

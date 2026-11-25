@@ -6,7 +6,7 @@ const INVESTIGATOR = require('../engine/investigator');
 const DOSSIER_BRIEF = require('../engine/dossierBrief');
 const { alertOperator, pdfAttachment } = require('../engine/delivery');
 const { reportLink } = require('../engine/delivery');
-const { registerBrief, getByRef } = require('../engine/research');
+const { registerBrief, getByRef, getByRefAsync, refreshByRef } = require('../engine/research');
 const { createPdfDocs } = require('../engine/pdfDocs');
 const PREVIEW_STATES = require('../engine/previewStates');
 const REVIEW = require('../engine/review');
@@ -74,7 +74,7 @@ module.exports = function setup(c) {
     }
     return null;
   }
-  const JOBS = require('../engine/jobStore').createJobStore({ dir: process.env.LIVE_JOBS_DIR || require('path').join(ROOT, 'data', 'live-jobs') });
+  const JOBS = process.env.JOB_STORE === 'postgres' && pool ? require('../engine/pgJobStore').createPgJobStore({ pool, leaseMs: (Number(process.env.JOB_LEASE_SECONDS) || 60) * 1000 }) : require('../engine/jobStore').createJobStore({ dir: process.env.LIVE_JOBS_DIR || require('path').join(ROOT, 'data', 'live-jobs') });
   const dayOf = () => new Date().toISOString().slice(0, 10);
   const num = (k, d) => { const v = process.env[k]; return v === undefined || v === '' ? d : Number(v); };
   const previewBudget = () => ({ searches: num('PREVIEW_SEARCHES', 6), fetches: num('PREVIEW_FETCHES', 2) });
@@ -239,7 +239,8 @@ module.exports = function setup(c) {
     return { ok: true };
   }
   /** Called whenever a purchase is settled (the browser's verification or Razorpay's webhook). A no-op for other reports. */
-  function onReportPaid(ref, payerEmail, purchaseId) {
+  function onReportPaid(ref, payerEmail, purchaseId, handedOver = false) {
+    if (JOBS.kind === 'postgres' && !handedOver) { handOffPayment(ref, payerEmail, purchaseId); return; }
     const brief = getByRef(ref);
     if (!brief || brief.kind !== 'dossier') return;
     let job = liveJobs.get(ref);
@@ -253,8 +254,8 @@ module.exports = function setup(c) {
   /* At start: reload saved investigations. Finished previews stay reusable for 30 days; a paid report that was still
      running resumes on its own from its saved state. */
   let settled = 0;
-  for (const rec of JOBS.all()) {
-    if (jobIsStale(rec)) { JOBS.remove(rec.ref); continue; }
+  function restore(rec) {
+    if (jobIsStale(rec)) { JOBS.remove(rec.ref); return; }
     const job = { ...rec, listeners: new Set(), events: [], inv: null, completing: false };
     if (rec.status === 'sweeping' && !(rec.saved && rec.saved.swept)) job.status = 'interrupted';
     if (rec.status === 'completing') job.status = 'preview';
@@ -266,11 +267,74 @@ module.exports = function setup(c) {
     // Without a database the report store is in memory: put each saved report back, so buyers' links work after a restart.
     if (!process.env.DATABASE_URL && rec.saved && rec.saved.dossier) { try { saveLiveDossier(job, JSON.parse(JSON.stringify(rec.saved.dossier))); } catch (e) { console.error('[investigate] could not restore report ' + rec.ref + ':', e && e.message); } }
   }
-  if (settled) console.log('[jobs] ' + settled + ' free search' + (settled === 1 ? '' : 'es') + ' running when the server stopped ' + (settled === 1 ? 'was' : 'were') + ' marked failed (reason restarted), so the buyer sees it and can search again');
-  setInterval(() => { try { const n = pruneLiveJobs(); if (n) console.log('[jobs] removed ' + n + ' saved investigation' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[jobs] retention sweep failed:', e && e.message); } }, 6 * 3600 * 1000).unref();
-  const pdfCleanup = () => { try { const n = PDFS.prune({ previewMs: num('PDF_PREVIEW_DAYS', 7) * 24 * 3600 * 1000, keep: ref => liveJobs.has(ref) }); if (n) console.log('[pdf] removed ' + n + ' stored PDF' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[pdf] clean-up failed:', e && e.message); } };
-  setInterval(pdfCleanup, 24 * 3600 * 1000).unref();
-  setImmediate(pdfCleanup);
-  setImmediate(() => { for (const job of liveJobs.values()) if (job.paid && job.status !== 'done' && job.status !== 'failed' && !job.completing) { try { completeLive(job); } catch (e) { console.error('[investigate] could not resume ' + job.ref + ':', e && e.message); } } });
-  Object.assign(c, { DELIVERY, FP, PDFS, makePreviewPdf, pdfCtx, indexPreview, previewTwin, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
+  function afterRestore() {
+    if (settled) console.log('[jobs] ' + settled + ' free search' + (settled === 1 ? '' : 'es') + ' running when the server stopped ' + (settled === 1 ? 'was' : 'were') + ' marked failed (reason restarted), so the buyer sees it and can search again');
+    setInterval(() => { try { const n = pruneLiveJobs(); if (n) console.log('[jobs] removed ' + n + ' saved investigation' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[jobs] retention sweep failed:', e && e.message); } }, 6 * 3600 * 1000).unref();
+    const pdfCleanup = () => { try { const n = PDFS.prune({ previewMs: num('PDF_PREVIEW_DAYS', 7) * 24 * 3600 * 1000, keep: ref => liveJobs.has(ref) }); if (n) console.log('[pdf] removed ' + n + ' stored PDF' + (n === 1 ? '' : 's') + ' past retention'); } catch (e) { console.error('[pdf] clean-up failed:', e && e.message); } };
+    setInterval(pdfCleanup, 24 * 3600 * 1000).unref();
+    setImmediate(pdfCleanup);
+    setImmediate(() => { for (const job of liveJobs.values()) if (job.paid && job.status !== 'done' && job.status !== 'failed' && !job.completing) { try { completeLive(job); } catch (e) { console.error('[investigate] could not resume ' + job.ref + ':', e && e.message); } } });
+  }
+  const isHeld = job => job.status === 'sweeping' || job.status === 'completing' || (job.paid && job.status !== 'done' && job.status !== 'failed');
+  /* With JOB_STORE=postgres the saved investigations are in the database and each working one belongs to one instance (a lease it renews): this instance
+     loads the ones nobody holds, leaves the ones another instance holds alone, and picks up payments that arrived on another instance for jobs it holds. */
+  let jobsReady = Promise.resolve();
+  if (JOBS.kind === 'postgres') {
+    jobsReady = JOBS.loadAll().then(({ mine, idle, elsewhere }) => {
+      for (const rec of idle.concat(mine)) restore(rec);
+      if (elsewhere) console.log('[jobs] ' + elsewhere + ' working investigation' + (elsewhere === 1 ? ' is' : 's are') + ' held by another instance and left alone');
+      afterRestore();
+      const beat = async () => {
+        try {
+          for (const ref of await JOBS.heartbeat([...liveJobs.values()].filter(isHeld).map(j => j.ref))) console.error('[jobs] the lease on ' + ref + ' was taken over by another instance');
+          for (const rec of await JOBS.claimExpired()) {
+            if (liveJobs.has(rec.ref)) continue;
+            restore(rec);
+            const job = liveJobs.get(rec.ref);
+            console.log('[jobs] took over ' + rec.ref + ' from an instance that stopped');
+            if (job && job.paid && job.status !== 'done' && job.status !== 'failed' && !job.completing) { try { completeLive(job); } catch (e) { console.error('[investigate] could not resume ' + job.ref + ':', e && e.message); } }
+          }
+          for (const n of await JOBS.remotePaid()) { onReportPaid(n.ref, n.email, n.purchaseId, true); await JOBS.flush(); await JOBS.ackPaid(n.ref); }
+        } catch (e) { console.error('[jobs] lease renewal failed:', e && e.message); }
+      };
+      setInterval(beat, Math.max(2000, JOBS.leaseMs / 4)).unref();
+    }).catch(e => { console.error('[jobs] could not load the saved investigations:', e && e.message); afterRestore(); });
+  } else {
+    for (const rec of JOBS.all()) restore(rec);
+    afterRestore();
+  }
+  /** A report for a page or a PDF. A report this instance is not working on may have moved on in the database since it was last read (another instance works on it), so it is read again. */
+  const briefFor = async ref => { if (JOBS.kind === 'postgres' && !liveJobs.get(ref)) await refreshByRef(ref); return getByRefAsync(ref); };
+  /** A payment arrived. The paid work runs on one instance only: the one that holds the job's lease. If another instance holds it, the payment is written down for that
+      instance to pick up; otherwise this instance takes the lease and goes on, with the saved job if it did not have it or has an older copy of it. */
+  async function handOffPayment(ref, payerEmail, purchaseId) {
+    try {
+      const row = await JOBS.peek(ref);
+      if (row) {
+        const rec = await JOBS.claim(ref);
+        if (!rec) { await JOBS.markPaid(ref, { purchaseId, email: payerEmail }); console.log('[jobs] payment for ' + ref + ' written down for the instance that holds the job'); return; }
+        console.log('[jobs] payment for ' + ref + ': this instance holds the job now');
+        const mine = liveJobs.get(ref);
+        if (!mine || (!mine.completing && mine.status !== 'sweeping' && mine.status !== 'completing' && (rec.updatedAt || 0) > (mine.updatedAt || 0))) { liveJobs.delete(ref); await getByRefAsync(ref); restore(rec); }
+      }
+      await getByRefAsync(ref);
+      onReportPaid(ref, payerEmail, purchaseId, true);
+    } catch (e) { console.error('[jobs] could not hand over the payment for ' + ref + ':', e && e.message); }
+  }
+  /** Progress of a job another instance is working on, read from the saved record, for the browser that is connected to this one. */
+  async function watchRemote(ref, res) {
+    if (JOBS.kind !== 'postgres') return false;
+    const row = await JOBS.peek(ref); if (!row || !row.held || row.heldByMe) return false;
+    const stateOf = r => { const d = r.payload && r.payload.saved && r.payload.saved.dossier; return { phase: d ? d.phase : null, counts: d ? d.counts : null }; };
+    let last = stateOf(row).phase, closed = false, timer = null;
+    const end = () => { if (closed) return; closed = true; clearInterval(timer); try { res.end(); } catch { /* gone */ } };
+    const send = (type, r) => { try { res.write('event: ' + type + '\ndata: ' + JSON.stringify({ type, ...stateOf(r) }) + '\n\n'); } catch { /* gone */ } };
+    timer = setInterval(async () => {
+      try { const r = await JOBS.peek(ref); if (!r) return end(); const st = stateOf(r); if (st.phase !== last) { last = st.phase; send('update', r); } if (!r.held) { send('done', r); end(); } }
+      catch { end(); }
+    }, 3000);
+    res.on('close', end); setTimeout(end, 15 * 60 * 1000).unref();
+    return true;
+  }
+  Object.assign(c, { jobsReady, watchRemote, briefFor, DELIVERY, FP, PDFS, makePreviewPdf, pdfCtx, indexPreview, previewTwin, purgeLiveJobs, pruneLiveJobs, addSpend, completeLive, dayOf, fullAccess, grantOf, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, num, onReportPaid, overDailyMax, ownsPurchase, persistJob, previewBudget, previewPanel, publicEvent, retryFailedReport, spend });
 };

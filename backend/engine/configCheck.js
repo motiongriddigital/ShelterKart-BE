@@ -39,6 +39,8 @@ function check(env = process.env) {
     warnings.push('ACCOUNTS_CSRF is "off": the cross-site request guard is switched off. Remove the setting (production then refuses) or set it to "on".');
   if (production && ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'XAI_API_KEY', 'DEEPSEEK_API_KEY'].some(k => has(env, k)) && !(Number(env.AI_DAILY_MAX_USD) > 0))
     warnings.push('AI_DAILY_MAX_USD is not set: nothing but INVESTIGATE_DAILY_CAP limits what free previews spend on AI in a day. Set a dollar ceiling (new previews pause when it is passed) and AI_DAILY_ALERT_USD.');
+  if (production && has(env, 'DATABASE_URL') && String(env.JOB_STORE || '').toLowerCase() !== 'postgres')
+    warnings.push('JOB_STORE is not "postgres": running and saved investigations are kept as files in LIVE_JOBS_DIR. On a host whose disk is thrown away at each deploy a paid report that is still being researched is lost, and two instances would each run the same job. Set JOB_STORE=postgres (docs/JOB-STORE.md).');
   if (production && has(env, 'DATABASE_URL')) {
     const DB = require('../lib/dbConfig');
     const managed = DB.MANAGED_HOST.test((() => { try { return new URL(env.DATABASE_URL).hostname; } catch (e) { return ''; } })());
