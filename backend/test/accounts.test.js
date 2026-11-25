@@ -8,7 +8,7 @@ const { makeAccountStore } = require('../accounts/store');
 let passed = 0, failed = 0;
 async function t(name, fn) { try { await fn(); passed++; console.log('  ok   ' + name); } catch (e) { failed++; console.log('  FAIL ' + name + '\n       ' + e.message); } }
 
-const PEPPER = 'p'.repeat(40), DAY = 86400000, PW = 'a safe default password 1';
+const PEPPER = 'p'.repeat(40), DAY = 86400000;
 function harness(over = {}, envOver = {}) {
   const env = { ACCOUNTS_ENABLED: 'on', AUTH_PEPPER: PEPPER, ACCOUNTS_ALLOW_MEMORY: 'true', NODE_ENV: 'test', ...envOver };
   const clock = { t: Date.parse('2026-11-03T10:00:00Z') }, mails = [], alerts = [], routes = [], bought = [];
@@ -21,9 +21,9 @@ function harness(over = {}, envOver = {}) {
   A.mount(app);
   const find = (m, p) => routes.find(r => r.method === m && r.path === p);
   async function call(m, p, { body, headers = {}, ip = '1.1.1.1' } = {}) {
-    // request-code now needs a password (and, for a new address, consent); default both so tests about other things
-    // (rate limits, proof of work, mail delivery...) don't each have to supply them.
-    if (m === 'post' && p === '/api/auth/request-code' && body) body = { password: PW, termsAccepted: true, ...body };
+    // request-code needs consent for a new address; default it so tests about other things
+    // (rate limits, proof of work, mail delivery...) don't each have to supply it.
+    if (m === 'post' && p === '/api/auth/request-code' && body) body = { termsAccepted: true, ...body };
     const route = find(m, p); assert(route, 'no route ' + m + ' ' + p);
     const h = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
     return new Promise(resolve => {
