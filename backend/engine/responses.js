@@ -22,12 +22,13 @@ const MIN_BODY = 15, MAX_BODY = 2000, MAX_EVIDENCE = 3, MAX_NOTE = 600, PER_EMAI
 const KIND_TEXT = { reply: 'reply to a finding', supply: 'add a document or fact', error: 'report an error', missing: 'add missing information', grade: 'dispute how a finding is graded',
   outdated: 'report that something is out of date', privacy: 'ask for personal data to be removed', legal: 'send a legal notice' };
 
+const { stripMarkup, oneLine } = require('../lib/plainText');
 const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex');
 const rand = n => crypto.randomBytes(n).toString('hex');
 const ALPHA = 'ABCDEFGHJKMNPQRSTVWXYZ23456789';
 const newPublicRef = () => 'SKR-' + [...crypto.randomBytes(8)].map(b => ALPHA[b % ALPHA.length]).join('');
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const clean = s => String(s == null ? '' : s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').replace(/\n{3,}/g, '\n\n').trim();
+const clean = s => stripMarkup(String(s == null ? '' : s).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')).replace(/\n{3,}/g, '\n\n').trim();
 const norm = s => String(s || '').toLowerCase().replace(/[^a-z0-9\u0900-\u097f\u0600-\u06ff\u4e00-\u9fff]+/g, ' ').trim();
 
 /** The findings of a report, from a live brief or a reference report (they are shaped differently). */
@@ -66,7 +67,7 @@ function validate(input, refOk = () => true) {
     catch { errors.push('An evidence link is not a valid web address.'); }
   }
   if (NEEDS_EVIDENCE.has(kind) && !urls.length && !errors.length) errors.push('Add a link to the source that supports this: a change needs evidence.');
-  const senderName = clean(i.senderName).slice(0, 120);
+  const senderName = oneLine(i.senderName).slice(0, 120);
   return { ok: !errors.length, errors, value: { reportRef: String(i.reportRef || ''), role, kind, body, email, findingId, findingText, evidenceUrls: urls, senderName } };
 }
 

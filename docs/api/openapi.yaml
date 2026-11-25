@@ -787,6 +787,41 @@ paths:
                   ok: {type: boolean, const: false}
         '403': {$ref: '#/components/responses/OriginNotAllowed'}
         '429': {$ref: '#/components/responses/RateLimitedJson'}
+  /api/investigate/{ref}/price:
+    get:
+      operationId: getInvestigationPrice
+      tags: [Investigate]
+      summary: The price shown on the report page, for one billing country
+      description: |
+        The same price the report page shows, worked out for the billing country the buyer picks, so the page can update what it shows when the country changes.
+        It is the price of the free preview's offer, not a quote: the amount to pay is fixed by `POST /api/research/quote` and confirmed before payment.
+      security:
+        - {}
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {name: country, in: query, required: true, description: 'Billing country, a two-letter code from the page''s list.', schema: {type: string, minLength: 2, maxLength: 2}}
+      responses:
+        '200':
+          description: 'The price, ready to show.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, country, price]
+                properties:
+                  ok: {type: boolean, const: true}
+                  country: {type: string}
+                  price: {type: string, description: 'For example "₹4,400" or "GBP 36".'}
+        '400':
+          description: 'The reference is malformed or the country is not on the list.'
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '404':
+          description: 'There is no such report, or it is not ready.'
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503':
+          description: 'The price could not be worked out just now.'
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
   /api/investigate/{ref}/contact:
     post:
       operationId: setInvestigationContact

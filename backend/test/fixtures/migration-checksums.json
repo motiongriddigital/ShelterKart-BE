@@ -20,5 +20,6 @@
  "bulk_registers.sql": "bd076798976be4d2d42b285dd887d8dcd91a66de446d750f155bdaef1567192a",
  "accounts_password.sql": "789ff0b0aa14ec9ce1c377d598096b4a13d761a5b4c9b5f59f21f7f8bd54bf71",
  "auth_codes_password.sql": "4bf8f602f48513e81351595756a3367a1d400840e4c1b61b1bd7dcb9471a5762",
+ "auth_attempts.sql": "0a154adc92ca345e761f41664b6a30ce42af3bcbb5811abf19d769b8b5eb174b",
  "live_jobs.sql": "690d189c88eab695ec0d972a256ae00e1772b65eb19dcacfbcaa696633279c6b"
 }

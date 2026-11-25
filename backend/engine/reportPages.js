@@ -122,23 +122,40 @@ const SCRIPT = `(function () {
   });
   function loadRzp() { return new Promise(function (ok, no) { if (window.Razorpay) return ok(); var s = document.createElement('script'); s.src = 'https://checkout.razorpay.com/v1/checkout.js'; s.onload = ok; s.onerror = function () { no(new Error('The payment window could not load. Please try again.')); }; document.head.appendChild(s); }); }
   var uf = $('sk-unlock');
-  if (uf) uf.addEventListener('submit', function (e) {
-    e.preventDefault(); var msg = $('sk-unlock-msg'), btn = uf.querySelector('button'); btn.disabled = true; msg.textContent = 'Checking the price';
-    var fail = function (m) { msg.textContent = m || 'Something went wrong. Please try again.'; btn.disabled = false; };
-    var quote, co, key = ('k' + Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).slice(0, 40);
-    post('/api/investigate/' + encodeURIComponent(ref) + '/contact', { email: uf.email.value, phone: uf.phone.value })
-      .then(function (c) { if (!c.ok) throw new Error(c.error); return post('/api/research/quote', { ref: ref, billingCountry: uf.country.value }); })
-      .then(function (q) { if (!q.ok) throw new Error(q.error); quote = q.quote; msg.textContent = 'Price: ' + quote.currency + ' ' + quote.gross + '. Opening the payment window';
-        return post('/api/research/checkout', { ref: ref, idempotencyKey: key, quoteId: quote.id, billingCountry: uf.country.value, returnTo: '/r/' + ref }); })
-      .then(function (c) { if (!c.ok) throw new Error(c.error); co = c; return c.mor && c.mor.checkoutUrl ? 'mor' : loadRzp(); })
-      .then(function (via) { if (via === 'mor') { msg.textContent = 'Opening the secure checkout'; location.href = co.mor.checkoutUrl; return; } new window.Razorpay({ key: co.razorpay.keyId, order_id: co.razorpay.orderId, amount: co.razorpay.amountSubunits, currency: co.currency, name: 'ShelterKart',
-        description: 'Due-diligence report ' + ref, prefill: { email: uf.email.value, contact: uf.phone.value },
-        handler: function (resp) { msg.textContent = 'Confirming your payment';
-          post('/api/research/razorpay/verify', { ref: ref, purchaseId: co.purchaseId, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature })
-            .then(function (v) { if (v.ok && (v.token || v.entitled)) location.href = '/r/' + encodeURIComponent(ref) + (v.token ? '?t=' + encodeURIComponent(v.token) : ''); else fail(v.error || 'We could not confirm the payment. If you were charged, write to us with your receipt.'); }); },
-        modal: { ondismiss: function () { fail('Payment cancelled. You have not been charged.'); } } }).open(); })
-      .catch(function (err) { fail(err && err.message); });
-  });
+  if (uf) {
+    var ub = uf.querySelector('button'), label = ub.textContent, ready = null, shown = document.querySelectorAll('.sk-price');
+    var cname = function () { var o = uf.country.options[uf.country.selectedIndex]; return o ? o.textContent : uf.country.value; };
+    var reset = function () { ready = null; ub.textContent = label; };
+    var show = function (t) { for (var i = 0; i < shown.length; i++) shown[i].textContent = t; };
+    uf.country.addEventListener('change', function () {
+      reset(); $('sk-unlock-msg').textContent = ''; var c = uf.country.value;
+      fetch('/api/investigate/' + encodeURIComponent(ref) + '/price?country=' + encodeURIComponent(c)).then(function (r) { return r.json(); })
+        .then(function (j) { if (j && j.ok && uf.country.value === c) { show(j.price); $('sk-unlock-msg').textContent = 'Price for ' + cname() + ': ' + j.price; } })
+        .catch(function () {});
+    });
+    uf.addEventListener('submit', function (e) {
+      e.preventDefault(); var msg = $('sk-unlock-msg'), btn = ub; btn.disabled = true;
+      var fail = function (m) { reset(); msg.textContent = m || 'Something went wrong. Please try again.'; btn.disabled = false; };
+      var co, key = ('k' + Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).slice(0, 40);
+      var pay = function (quote) { msg.textContent = 'Opening the payment window';
+        return post('/api/research/checkout', { ref: ref, idempotencyKey: key, quoteId: quote.id, billingCountry: uf.country.value, returnTo: '/r/' + ref })
+          .then(function (c) { if (!c.ok) throw new Error(c.error); co = c; return c.mor && c.mor.checkoutUrl ? 'mor' : loadRzp(); })
+          .then(function (via) { if (via === 'mor') { msg.textContent = 'Opening the secure checkout'; location.href = co.mor.checkoutUrl; return; } new window.Razorpay({ key: co.razorpay.keyId, order_id: co.razorpay.orderId, amount: co.razorpay.amountSubunits, currency: co.currency, name: 'ShelterKart',
+            description: 'Due-diligence report ' + ref, prefill: { email: uf.email.value, contact: uf.phone.value },
+            handler: function (resp) { msg.textContent = 'Confirming your payment';
+              post('/api/research/razorpay/verify', { ref: ref, purchaseId: co.purchaseId, razorpay_payment_id: resp.razorpay_payment_id, razorpay_signature: resp.razorpay_signature })
+                .then(function (v) { if (v.ok && (v.token || v.entitled)) location.href = '/r/' + encodeURIComponent(ref) + (v.token ? '?t=' + encodeURIComponent(v.token) : ''); else fail(v.error || 'We could not confirm the payment. If you were charged, write to us with your receipt.'); }); },
+            modal: { ondismiss: function () { fail('Payment cancelled. You have not been charged.'); } } }).open(); }); };
+      if (ready && ready.country === uf.country.value) { pay(ready.quote).catch(function (err) { fail(err && err.message); }); return; }
+      msg.textContent = 'Checking the price';
+      post('/api/investigate/' + encodeURIComponent(ref) + '/contact', { email: uf.email.value, phone: uf.phone.value })
+        .then(function (c) { if (!c.ok) throw new Error(c.error); return post('/api/research/quote', { ref: ref, billingCountry: uf.country.value }); })
+        .then(function (q) { if (!q.ok) throw new Error(q.error); var amount = q.quote.currency + ' ' + q.quote.gross;
+          ready = { country: uf.country.value, quote: q.quote }; ub.textContent = 'Pay ' + amount; show(amount);
+          msg.textContent = 'Price for ' + cname() + ': ' + amount + '. Press the button again to pay.'; btn.disabled = false; })
+        .catch(function (err) { fail(err && err.message); });
+    });
+  }
 })();`;
 
 module.exports = { startPage, workingPage, previewPage, fullPage, samplePage, SCRIPT, COUNTRIES };
