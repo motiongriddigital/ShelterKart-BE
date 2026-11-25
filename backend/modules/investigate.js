@@ -162,6 +162,19 @@ module.exports = function register(app, c) {
     registerBrief({ ...brief, contact: c.contact });
     res.json({ ok: true });
   }));
+  const priceView = (brief, buyer) => { const f = PRICING.previewFee(pricingData, brief, buyer); return { display: f.currency === 'INR' ? '₹' + Number(f.price).toLocaleString('en-IN') : `${f.currency} ${f.price}`, line: 'Set by the property\'s value and the depth of the research. The amount you pay is confirmed before payment.' }; };
+  const COUNTRY_CODES = new Set(PAGES.COUNTRIES.map(c => c[0]));
+  app.get('/api/investigate/:ref/price', reportReadLimiter, ah(async (req, res) => {
+    const ref = String(req.params.ref || ''), country = String((req.query && req.query.country) || '').toUpperCase();
+    res.set('Cache-Control', 'no-store');
+    if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
+    if (!COUNTRY_CODES.has(country)) return res.status(400).json({ ok: false, error: 'Choose one of the listed countries.' });
+    const brief = await getByRefAsync(ref);
+    if (!brief || brief.kind !== 'dossier' || !brief.dossier) return res.status(404).json({ ok: false, error: 'That report was not found.' });
+    let price;
+    try { price = priceView(brief, await buyerOf({ ...req, body: {}, query: { country } })); } catch { return res.status(503).json({ ok: false, error: 'The price could not be worked out just now.' }); }
+    res.json({ ok: true, country, price: price.display });
+  }));
   app.get('/r/:ref', ACCOUNTS.guardPage, ah(async (req, res) => {
     const ref = String(req.params.ref || '');
     res.set({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
@@ -178,7 +191,7 @@ module.exports = function register(app, c) {
     let buyer = await buyerOf(req);
     if (buyer.source === 'default' && brief.market) buyer = await buyerOf({ ...req, body: {}, query: { country: brief.market.toUpperCase() } });
     let price = null;
-    try { const f = PRICING.previewFee(pricingData, brief, buyer); price = { display: f.currency === 'INR' ? '₹' + Number(f.price).toLocaleString('en-IN') : `${f.currency} ${f.price}`, line: 'Set by the property\'s value and the depth of the research. The amount you pay is confirmed before payment.' }; } catch { price = null; }
+    try { price = priceView(brief, buyer); } catch { price = null; }
     res.send(PAGES.previewPage(brief.dossier, { ref, price, country: buyer.country, held: REVIEW.isHeld(brief), payments: paywallActive(process.env), pdf: PDF.available() }));
   }));
   app.get('/api/report/:ref', ACCOUNTS.guard, reportReadLimiter, ah(async (req, res) => {

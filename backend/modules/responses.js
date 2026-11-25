@@ -4,6 +4,7 @@ const { senderCheck } = require('../engine/reviews');
 const { REF_RE } = require('../engine/access');
 const { ah } = require('../middleware/asyncHandler');
 const { adminAuth } = require('../middleware/adminAuth');
+const { stripMarkup, oneLine } = require('../lib/plainText');
 
 module.exports = function register(app, c) {
   const { RESPONSES, REVIEWS, disputeLimiter, replyLimiter, respondLimiter, respondReadLimiter, track } = c;
@@ -42,7 +43,9 @@ module.exports = function register(app, c) {
     const { contact, note, reportRef } = req.body || {};
     if (!note || typeof note !== 'string') return res.status(400).json({ ok: false, error: 'Please describe what is wrong.' });
     if (note.length > 4000) return res.status(400).json({ ok: false, error: 'Please keep the description under 4,000 characters.' });
-    try { await REVIEWS.addDispute({ contact: contact ? String(contact).slice(0, 200) : null, note, reportRef: REF_RE.test(String(reportRef || '')) ? reportRef : null }); res.json({ ok: true }); }
+    const text = stripMarkup(note).trim();
+    if (!text) return res.status(400).json({ ok: false, error: 'Please describe what is wrong.' });
+    try { await REVIEWS.addDispute({ contact: contact ? oneLine(contact).slice(0, 200) : null, note: text, reportRef: REF_RE.test(String(reportRef || '')) ? reportRef : null }); res.json({ ok: true }); }
     catch (e) { console.error('[dispute] could not be saved:', e && e.message); res.status(500).json({ ok: false, error: 'Your report of an inaccuracy could not be saved. Please try again, or write to us.' }); }
   }));
   app.post('/api/developer-response', replyLimiter, ah(async (req, res) => {
@@ -58,7 +61,9 @@ module.exports = function register(app, c) {
     const brief = await getByRefAsync(reportRef).catch(() => null);
     if (!brief) return res.status(404).json({ ok: false, error: 'No report with that reference is available. Please check the reference on the report.' });
     try {
-      await REVIEWS.addReply({ reportRef, findingText: String(findingText), responseText: String(responseText), contactEmail: String(contactEmail).toLowerCase() });
+      const finding = stripMarkup(findingText).trim(), reply = stripMarkup(responseText).trim();
+      if (!finding || !reply) return res.status(400).json({ ok: false, error: 'reportRef, findingText, responseText, and contactEmail are required.' });
+      await REVIEWS.addReply({ reportRef, findingText: finding, responseText: reply, contactEmail: String(contactEmail).toLowerCase() });
       res.json({ ok: true, message: 'Submitted for review. Approved responses are published within 48 hours.' });
     } catch (e) {
       console.error('[developer-response] could not be saved:', e && e.message);

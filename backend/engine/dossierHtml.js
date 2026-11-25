@@ -376,7 +376,7 @@ ${rest.length ? `<div class="lock"><h3>${rest.length} more questions are in the 
 <li>A one-page tracker for answers and documents, and what to request where records are not online</li>
 <li>A PDF to keep, and a live page that is refreshed if we find something new</li></ul></div>
 <div class="unlock" id="unlock"><h3>Unlock the full report</h3>
-${price ? `<p class="price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
+${price ? `<p class="price sk-price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
 <p>One payment. No subscription. We e-mail the PDF and a link as soon as it is ready, and you can read it on this page while it completes.</p>
 <a class="btn" href="${esc(unlockUrl)}">Unlock the full report</a></div>
 ${guideBox()}
@@ -426,7 +426,7 @@ ${rest.length ? `<div class="lock"><h3>${rest.length} more questions are in the 
 <li>A one-page tracker for answers and documents, and what to request where records are not online</li>
 <li>A PDF to keep, and a live page that is refreshed if we find something new</li></ul></div>
 <div class="pv-end"><div class="pv-open"><h3 style="margin:0">Unlock the full report</h3>
-${price ? `<p class="price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
+${price ? `<p class="price sk-price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
 <p>One payment. No subscription. Open the report page to unlock it and receive the full PDF:</p>
 <p class="url">${esc(link || ('/r/' + (d.ref || '')))}</p></div>
 <p class="notice">Research, not advice. This document states what public sources show and what to ask. It does not tell you whether to buy. ShelterKart is paid only by buyers; no developer can influence it.</p></div>

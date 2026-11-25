@@ -22,7 +22,7 @@ function settings(env = process.env) {
     sourceAttemptsPerHour: num(env.AUTH_SOURCE_ATTEMPTS_PER_HOUR, 8, 3, 100),
     addressAttemptsPerHour: num(env.AUTH_ADDRESS_ATTEMPTS_PER_HOUR, 24, 3, 200),
     addressHardAttemptsPerHour: num(env.AUTH_ADDRESS_HARD_ATTEMPTS_PER_HOUR, 40, 5, 100),
-    csrf: ['off', 'report', 'on'].includes(String(env.ACCOUNTS_CSRF || '').toLowerCase()) ? String(env.ACCOUNTS_CSRF).toLowerCase() : 'report',
+    csrf: ['off', 'report', 'on'].includes(String(env.ACCOUNTS_CSRF || '').toLowerCase()) ? String(env.ACCOUNTS_CSRF).toLowerCase() : (production ? 'on' : 'report'),
     searchGate: String(env.ACCOUNTS_SEARCH_GATE || 'view').toLowerCase() === 'start' ? 'start' : 'view',
     termsVersion: String(env.TERMS_VERSION || '2026-11'),
     privacyVersion: String(env.PRIVACY_VERSION || '2026-11'),
