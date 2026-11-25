@@ -51,6 +51,7 @@ function createAccounts(deps = {}) {
     .catch(e => console.error('[accounts] event not recorded:', e && e.message));
 
   const bulkAlerted = new Map();
+  const lockAlerted = new Map();
   let banCache = { at: 0, list: [] };
   const activeBans = async () => {
     const t = now();
@@ -190,26 +191,35 @@ function createAccounts(deps = {}) {
       if (!email || !/^\d{6}$/.test(code)) return fail(res, 400, 'invalid_code', 'That code is not right. Check the latest e-mail and try again.');
       if (await ipBanned(req)) { await ev('login_blocked_ip', { email, req, detail: 'verify-code' }); return fail(res, 403, 'ip_banned', 'This address is blocked.'); }
       if (await accountBanned(email)) { await ev('login_blocked_account', { email, req, detail: 'verify-code' }); return fail(res, 403, 'account_banned', 'This account is disabled. Write to us if you think that is a mistake.'); }
-      if (await store.attemptsSince(email, new Date(now() - 3600e3)) >= cfg.addressAttemptsPerHour) {
-        await ev('address_locked', { email, req });
-        return fail(res, 429, 'too_many_attempts', 'Too many attempts for this address. Please try again in an hour.', { retryAfter: 3600 });
-      }
       const open = await store.latestOpenCode(email, at());
       if (!open) { await ev('code_expired', { email, req }); return fail(res, 400, 'invalid_code', 'That code is not right or has expired. Ask for a new one.'); }
-      const tries = await store.bumpAttempts(open.id);
-      if (tries > cfg.codeAttempts) {
-        await ev('code_locked', { email, req });
-        await store.consumeCode(open.id);
-        await audit('anonymous', 'auth.login_failed', null, 'too many wrong codes');
-        return fail(res, 429, 'too_many_attempts', 'Too many wrong codes. Ask for a new one.');
+      const ipHash = S.hashIp(cfg.pepper, req.ip), isRequester = Boolean(open.ipHash) && open.ipHash === ipHash;
+      const limits = { source: cfg.sourceAttemptsPerHour, foreign: cfg.addressAttemptsPerHour, hard: cfg.addressHardAttemptsPerHour };
+      const { refusal, counts } = await store.reserveAttempt({ emailLower: email, ipHash, isRequester, now: at(), limits });
+      if (refusal) {
+        await ev(refusal === 'source' ? 'source_locked' : 'address_locked', { email, req, detail: refusal });
+        if (refusal === 'hard' && (!lockAlerted.has(email) || now() - lockAlerted.get(email) > 3600e3)) { lockAlerted.set(email, now()); alert('sign-in attempts hit the address ceiling', `${limits.hard} sign-in code attempts were made for one address within an hour (${email}); every connection is refused until they age out.`).catch(() => {}); }
+        return fail(res, 429, 'too_many_attempts', refusal === 'hard' ? 'Too many attempts for this address. Please try again in an hour.' : 'Too many attempts. Please try again in an hour.', { retryAfter: 3600 });
+      }
+      let tries = 0;
+      if (isRequester) {
+        tries = await store.bumpAttempts(open.id);
+        if (tries > cfg.codeAttempts) {
+          await ev('code_locked', { email, req });
+          await store.consumeCode(open.id);
+          await audit('anonymous', 'auth.login_failed', null, 'too many wrong codes');
+          return fail(res, 429, 'too_many_attempts', 'Too many wrong codes. Ask for a new one.');
+        }
       }
       if (!S.sameHash(open.codeHash, S.hashCode(cfg.pepper, email, code))) {
-        await ev('code_wrong', { email, req, detail: String(tries) });
-        return fail(res, 400, 'invalid_code', 'That code is not right. Check the latest e-mail and try again.', { attemptsLeft: Math.max(0, cfg.codeAttempts - tries) });
+        await ev('code_wrong', { email, req, detail: String(counts.source) });
+        const left = Math.min(isRequester ? cfg.codeAttempts - tries : Infinity, limits.source - counts.source, isRequester ? Infinity : limits.foreign - counts.foreign, limits.hard - counts.total);
+        return fail(res, 400, 'invalid_code', 'That code is not right. Check the latest e-mail and try again.', { attemptsLeft: Math.max(0, left) });
       }
       let u = await store.findUserByEmail(email), isNewUser = false;
       if (u && u.disabledAt) { await ev('login_blocked_disabled', { email, userId: u.id, req }); return fail(res, 403, 'account_disabled', 'This account is disabled. Write to us if you think that is a mistake.'); }
       if (!await store.consumeCode(open.id)) return fail(res, 400, 'invalid_code', 'That code is not right or has expired. Ask for a new one.');
+      await store.clearAttempts(email);
       if (!u) {
         try {
           u = await store.createUser({ email, language: LANG_RE.test(String(b.language || '')) ? String(b.language) : null, country: countryFromRequest(req, cfg.edgeCountryHeader), termsVersion: cfg.termsVersion, privacyVersion: cfg.privacyVersion, now: at() });
