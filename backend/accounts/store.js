@@ -22,6 +22,13 @@ const USER_COLS = 'id, email, email_verified_at, display_name, country, language
 const userColsOf = alias => USER_COLS.split(', ').map(c => (c.startsWith('(') ? c.replace('password_hash', alias + '.password_hash') : alias + '.' + c)).join(', ');
 const PATCH_COLS = { displayName: 'display_name', country: 'country', language: 'language', phone: 'phone', phoneConsentAt: 'phone_consent_at' };
 
+function attemptRefusal(counts, isRequester, limits) {
+  if (counts.total >= limits.hard) return 'hard';
+  if (counts.source >= limits.source) return 'source';
+  if (!isRequester && counts.foreign >= limits.foreign) return 'foreign';
+  return null;
+}
+
 function makePgStore(pool) {
   const one = r => r.rows[0] || null;
   return {
@@ -43,18 +50,39 @@ function makePgStore(pool) {
       return r ? Number(r.n) : 0;
     },
     async latestOpenCode(emailLower, now) {
-      const r = one(await pool.query(`SELECT id, code_hash, attempts, password_hash FROM auth_codes WHERE email_lower=$1 AND consumed_at IS NULL AND expires_at > $2 ORDER BY created_at DESC LIMIT 1`, [emailLower, iso(now)]));
-      return r ? { id: r.id, codeHash: r.code_hash, attempts: Number(r.attempts), passwordHash: r.password_hash } : null;
+      const r = one(await pool.query(`SELECT id, code_hash, attempts, password_hash, ip_hash FROM auth_codes WHERE email_lower=$1 AND consumed_at IS NULL AND expires_at > $2 ORDER BY created_at DESC LIMIT 1`, [emailLower, iso(now)]));
+      return r ? { id: r.id, codeHash: r.code_hash, attempts: Number(r.attempts), passwordHash: r.password_hash, ipHash: r.ip_hash } : null;
     },
     async bumpAttempts(id) {
       const r = one(await pool.query(`UPDATE auth_codes SET attempts=attempts+1 WHERE id=$1 RETURNING attempts`, [id]));
       return r ? Number(r.attempts) : 0;
     },
     async consumeCode(id) { const r = await pool.query(`UPDATE auth_codes SET consumed_at=now() WHERE id=$1 AND consumed_at IS NULL`, [id]); return (r && r.rowCount) > 0; },
-    async attemptsSince(emailLower, since) {
-      const r = one(await pool.query(`SELECT COALESCE(SUM(attempts),0)::int AS n FROM auth_codes WHERE email_lower=$1 AND created_at >= $2`, [emailLower, iso(since)]));
-      return r ? Number(r.n) : 0;
+    async reserveAttempt({ emailLower, ipHash, isRequester, now, limits }) {
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query(`SELECT pg_advisory_xact_lock(hashtext($1))`, ['auth_attempts:' + emailLower]);
+        const since = new Date(iso(now).getTime() - 3600e3);
+        const r = one(await client.query(
+          `SELECT COUNT(*) FILTER (WHERE ip_hash IS NOT DISTINCT FROM $3)::int AS source, COUNT(*) FILTER (WHERE NOT is_requester)::int AS foreign_n, COUNT(*)::int AS total
+             FROM auth_attempts WHERE email_lower=$1 AND created_at >= $2`, [emailLower, since, ipHash || null]));
+        const counts = { source: Number(r.source), foreign: Number(r.foreign_n), total: Number(r.total) };
+        const refusal = attemptRefusal(counts, isRequester, limits);
+        if (!refusal) {
+          await client.query(`INSERT INTO auth_attempts (email_lower, ip_hash, is_requester, created_at) VALUES ($1,$2,$3,$4)`, [emailLower, ipHash || null, Boolean(isRequester), iso(now)]);
+          counts.source++; counts.total++; if (!isRequester) counts.foreign++;
+        }
+        await client.query('COMMIT');
+        return { refusal, counts };
+      } catch (e) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw e;
+      } finally {
+        client.release();
+      }
     },
+    async clearAttempts(emailLower) { await pool.query(`DELETE FROM auth_attempts WHERE email_lower=$1`, [emailLower]); },
     async findUserByEmail(emailLower) {
       return userFromRow(one(await pool.query(`SELECT ${USER_COLS} FROM users WHERE lower(email)=$1 AND deleted_at IS NULL`, [emailLower])));
     },
@@ -106,6 +134,7 @@ function makePgStore(pool) {
       await pool.query(`DELETE FROM sessions WHERE user_id=$1`, [userId]);
       await pool.query(`DELETE FROM user_reports WHERE user_id=$1`, [userId]);
       if (u) await pool.query(`DELETE FROM auth_codes WHERE email_lower=$1`, [u.e]);
+      if (u) await pool.query(`DELETE FROM auth_attempts WHERE email_lower=$1`, [u.e]);
       if (u) await pool.query(`DELETE FROM auth_events WHERE email_lower=$1 OR user_id=$2`, [u.e, userId]); else await pool.query(`DELETE FROM auth_events WHERE user_id=$1`, [userId]);
       await pool.query(
         `UPDATE users SET email='deleted-'||id::text||'@deleted.invalid', display_name=NULL, country=NULL, language=NULL, phone=NULL, phone_consent_at=NULL,
@@ -113,6 +142,7 @@ function makePgStore(pool) {
     },
     async purge(now) {
       const a = await pool.query(`DELETE FROM auth_codes WHERE created_at < $1`, [new Date(iso(now).getTime() - 24 * 3600 * 1000)]);
+      await pool.query(`DELETE FROM auth_attempts WHERE created_at < $1`, [new Date(iso(now).getTime() - 24 * 3600 * 1000)]);
       const s = await pool.query(`DELETE FROM sessions WHERE expires_at < $1 OR revoked_at < $2`, [iso(now), new Date(iso(now).getTime() - 7 * 24 * 3600 * 1000)]);
       const e = await pool.query(`DELETE FROM auth_events WHERE at < $1`, [new Date(iso(now).getTime() - 90 * 24 * 3600 * 1000)]);
       return { codes: a.rowCount || 0, sessions: s.rowCount || 0, events: e.rowCount || 0 };
@@ -181,12 +211,12 @@ function makePgStore(pool) {
 }
 
 function makeMemoryStore() {
-  const users = new Map(), passwords = new Map(), codes = [], sessions = new Map(), opened = new Map(), auditLog = [], events = [], bans = [];
+  const users = new Map(), passwords = new Map(), codes = [], attempts = [], sessions = new Map(), opened = new Map(), auditLog = [], events = [], bans = [];
   const live = () => [...users.values()].filter(u => !u.deletedAt);
   const copy = u => (u ? { ...u } : null);
   return {
     kind: 'memory',
-    _users: users, _codes: codes, _sessions: sessions, _audit: auditLog, _events: events, _bans: bans,
+    _users: users, _codes: codes, _attempts: attempts, _sessions: sessions, _audit: auditLog, _events: events, _bans: bans,
     async createCode({ emailLower, codeHash, expiresAt, ipHash, passwordHash, now = new Date() }) {
       for (const c of codes) if (c.emailLower === emailLower && !c.consumedAt) c.consumedAt = now;
       codes.push({ id: crypto.randomUUID(), emailLower, codeHash, attempts: 0, expiresAt: iso(expiresAt), consumedAt: null, ipHash: ipHash || null, passwordHash: passwordHash || null, createdAt: now });
@@ -199,11 +229,18 @@ function makeMemoryStore() {
     async countCodesSince(emailLower, since, ipHash) { return codes.filter(c => c.emailLower === emailLower && c.createdAt >= iso(since) && (!ipHash || c.ipHash === ipHash)).length; },
     async latestOpenCode(emailLower, now) {
       const l = codes.filter(c => c.emailLower === emailLower && !c.consumedAt && c.expiresAt > iso(now)).sort((a, b) => b.createdAt - a.createdAt)[0];
-      return l ? { id: l.id, codeHash: l.codeHash, attempts: l.attempts, passwordHash: l.passwordHash } : null;
+      return l ? { id: l.id, codeHash: l.codeHash, attempts: l.attempts, passwordHash: l.passwordHash, ipHash: l.ipHash } : null;
     },
     async bumpAttempts(id) { const c = codes.find(x => x.id === id); if (!c) return 0; c.attempts++; return c.attempts; },
     async consumeCode(id) { const c = codes.find(x => x.id === id); if (!c || c.consumedAt) return false; c.consumedAt = new Date(); return true; },
-    async attemptsSince(emailLower, since) { return codes.filter(c => c.emailLower === emailLower && c.createdAt >= iso(since)).reduce((n, c) => n + c.attempts, 0); },
+    async reserveAttempt({ emailLower, ipHash, isRequester, now, limits }) {
+      const since = iso(now).getTime() - 3600e3, rows = attempts.filter(a => a.emailLower === emailLower && a.at >= since);
+      const counts = { source: rows.filter(a => a.ipHash === (ipHash || null)).length, foreign: rows.filter(a => !a.isRequester).length, total: rows.length };
+      const refusal = attemptRefusal(counts, isRequester, limits);
+      if (!refusal) { attempts.push({ emailLower, ipHash: ipHash || null, isRequester: Boolean(isRequester), at: iso(now).getTime() }); counts.source++; counts.total++; if (!isRequester) counts.foreign++; }
+      return { refusal, counts };
+    },
+    async clearAttempts(emailLower) { for (let i = attempts.length - 1; i >= 0; i--) if (attempts[i].emailLower === emailLower) attempts.splice(i, 1); },
     async findUserByEmail(emailLower) { return copy(live().find(u => u.email.toLowerCase() === emailLower)); },
     async userById(id) { const u = users.get(id); return u && !u.deletedAt ? copy(u) : null; },
     async createUser({ email, language, country, termsVersion, privacyVersion, now }) {
@@ -247,12 +284,14 @@ function makeMemoryStore() {
       for (const [h, s] of sessions) if (s.userId === userId) sessions.delete(h);
       for (const k of [...opened.keys()]) if (k.startsWith(userId + '|')) opened.delete(k);
       for (let i = codes.length - 1; i >= 0; i--) if (codes[i].emailLower === u.email.toLowerCase()) codes.splice(i, 1);
+      for (let i = attempts.length - 1; i >= 0; i--) if (attempts[i].emailLower === u.email.toLowerCase()) attempts.splice(i, 1);
       for (let i = events.length - 1; i >= 0; i--) if (events[i].userId === userId || events[i].emailLower === u.email.toLowerCase()) events.splice(i, 1);
       Object.assign(u, { email: `deleted-${u.id}@deleted.invalid`, displayName: null, country: null, language: null, phone: null, phoneConsentAt: null, termsVersion: null, privacyVersion: null, termsAcceptedAt: null, hasPassword: false, deletedAt: iso(now) }); passwords.delete(userId);
     },
     async purge(now) {
       const n = iso(now).getTime(); let c = 0, s = 0;
       for (let i = codes.length - 1; i >= 0; i--) if (codes[i].createdAt.getTime() < n - 24 * 3600 * 1000) { codes.splice(i, 1); c++; }
+      for (let i = attempts.length - 1; i >= 0; i--) if (attempts[i].at < n - 24 * 3600 * 1000) attempts.splice(i, 1);
       for (const [h, x] of sessions) if (x.expiresAt.getTime() < n || (x.revokedAt && x.revokedAt.getTime() < n - 7 * 24 * 3600 * 1000)) { sessions.delete(h); s++; }
       let ev = 0;
       for (let i = events.length - 1; i >= 0; i--) if (events[i].at.getTime() < n - 90 * 24 * 3600 * 1000) { events.splice(i, 1); ev++; }

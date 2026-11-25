@@ -346,7 +346,7 @@ function harness(over = {}, envOver = {}) {
       }
     }
     assert(locked, 'never locked');
-    assert(guesses <= 20, 'too many guesses before the lock: ' + guesses);
+    assert(guesses <= 25, 'too many guesses before the lock: ' + guesses);
     const real = (h.mails[h.mails.length - 1].text.match(/code is (\d{6})/) || [])[1];
     const r = await h.call('post', '/api/auth/verify-code', { body: { email: 'victim@example.com', code: real, termsAccepted: true }, ip: '5.5.5.5' });
     assert.strictEqual(r.code, 429);
@@ -354,6 +354,74 @@ function harness(over = {}, envOver = {}) {
     await h.call('post', '/api/auth/request-code', { body: { email: 'victim@example.com' } });
     const ok = await h.call('post', '/api/auth/verify-code', { body: { email: 'victim@example.com', code: h.codeOf(), termsAccepted: true } });
     assert.strictEqual(ok.code, 200);
+  });
+  console.log('sign-in lock-out: a stranger cannot lock the owner out (B3)');
+  const wrongOf = right => (right === '000000' ? '111111' : '000000');
+  const verify = (h, email, code, ip) => h.call('post', '/api/auth/verify-code', { body: { email, code, termsAccepted: true }, ip });
+  await t('one stranger guessing wrong codes is stopped at the per-connection cap and the owner still signs in', async () => {
+    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'owner@example.com' }, ip: '1.1.1.1' }); const right = h.codeOf(), wrong = wrongOf(right);
+    const seen = []; for (let i = 0; i < 12; i++) seen.push((await verify(h, 'owner@example.com', wrong, '6.6.6.6')).code);
+    assert.deepStrictEqual(seen, [400, 400, 400, 400, 400, 400, 400, 400, 429, 429, 429, 429], seen.join(','));
+    const owner = await verify(h, 'owner@example.com', right, '1.1.1.1'); assert.strictEqual(owner.code, 200, JSON.stringify(owner.body));
+  });
+  await t('a stranger cannot use up the code: wrong guesses from another connection never consume it', async () => {
+    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'owner@example.com' }, ip: '1.1.1.1' }); const right = h.codeOf(), wrong = wrongOf(right);
+    for (let i = 0; i < 8; i++) assert.strictEqual((await verify(h, 'owner@example.com', wrong, '6.6.6.6')).body.code, 'invalid_code');
+    assert.strictEqual(h.A.store._codes.filter(c => !c.consumedAt).length, 1);
+    assert.strictEqual((await verify(h, 'owner@example.com', right, '1.1.1.1')).code, 200);
+  });
+  await t('several strangers together use up the shared pool for other connections, but the connection that asked for the code still gets in', async () => {
+    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'owner@example.com' }, ip: '1.1.1.1' }); const right = h.codeOf(), wrong = wrongOf(right);
+    let refused = 0;
+    for (let ip = 0; ip < 5; ip++) for (let i = 0; i < 8; i++) { const r = await verify(h, 'owner@example.com', wrong, '6.6.6.' + ip); if (r.code === 429) refused++; }
+    assert.strictEqual(h.A.store._attempts.filter(a => !a.isRequester).length, 24);
+    assert.strictEqual(refused, 16);
+    assert.strictEqual((await verify(h, 'owner@example.com', right, '7.7.7.7')).code, 429);
+    assert.strictEqual((await verify(h, 'owner@example.com', right, '1.1.1.1')).code, 200);
+  });
+  await t('the owner mistyping a few times from the connection that asked is not slowed down by strangers', async () => {
+    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'owner@example.com' }, ip: '1.1.1.1' }); const right = h.codeOf(), wrong = wrongOf(right);
+    for (let ip = 0; ip < 5; ip++) for (let i = 0; i < 8; i++) await verify(h, 'owner@example.com', wrong, '6.6.6.' + ip);
+    for (let i = 1; i <= 3; i++) { const r = await verify(h, 'owner@example.com', wrong, '1.1.1.1'); assert.strictEqual(r.body.code, 'invalid_code'); assert.strictEqual(r.body.attemptsLeft, 5 - i); }
+    assert.strictEqual((await verify(h, 'owner@example.com', right, '1.1.1.1')).code, 200);
+  });
+  await t('the ceiling for the whole address still holds when strangers ask for codes themselves: nobody is let in past it, the operator is told once', async () => {
+    const h = harness({}, { AUTH_ADDRESS_HARD_ATTEMPTS_PER_HOUR: '10' }); const email = 'owner@example.com'; let guesses = 0;
+    for (const [ip, n] of [['2.2.2.1', 4], ['2.2.2.2', 4], ['2.2.2.3', 2]]) {
+      await h.call('post', '/api/auth/request-code', { body: { email }, ip }); h.clock.t += 61000;
+      for (let i = 0; i < n; i++) { assert.strictEqual((await verify(h, email, wrongOf(h.codeOf()), ip)).body.code, 'invalid_code'); guesses++; }
+    }
+    assert.strictEqual(guesses, 10);
+    const refused = await verify(h, email, wrongOf(h.codeOf()), '2.2.2.4'); assert.strictEqual(refused.code, 429); assert.strictEqual(refused.body.retryAfter, 3600);
+    assert.strictEqual((await verify(h, email, h.codeOf(), '2.2.2.3')).code, 429);
+    assert.strictEqual(h.alerts.filter(a => /ceiling/.test(a.s)).length, 1);
+    h.clock.t += 3601000;
+    await h.call('post', '/api/auth/request-code', { body: { email }, ip: '2.2.2.9' });
+    assert.strictEqual((await verify(h, email, h.codeOf(), '2.2.2.9')).code, 200);
+  });
+  await t('fifty guesses sent at once from one connection let only the per-connection cap through', async () => {
+    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'owner@example.com' }, ip: '1.1.1.1' }); const wrong = wrongOf(h.codeOf());
+    const rs = await Promise.all(Array.from({ length: 50 }, () => verify(h, 'owner@example.com', wrong, '6.6.6.6')));
+    assert.strictEqual(rs.filter(r => r.code === 400).length, 8, JSON.stringify(rs.map(r => r.code)));
+    assert.strictEqual(rs.filter(r => r.code === 429).length, 42);
+  });
+  await t('a successful sign-in clears the counters of the address', async () => {
+    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'owner@example.com' }, ip: '1.1.1.1' }); const right = h.codeOf();
+    for (let i = 0; i < 3; i++) await verify(h, 'owner@example.com', wrongOf(right), '1.1.1.1');
+    await verify(h, 'owner@example.com', wrongOf(right), '6.6.6.6');
+    assert.strictEqual(h.A.store._attempts.length, 4);
+    assert.strictEqual((await verify(h, 'owner@example.com', right, '1.1.1.1')).code, 200);
+    assert.strictEqual(h.A.store._attempts.length, 0);
+  });
+  await t('attempts older than an hour stop counting, and a purge drops what is a day old', async () => {
+    const h = harness(); await h.call('post', '/api/auth/request-code', { body: { email: 'owner@example.com' }, ip: '1.1.1.1' }); const wrong = wrongOf(h.codeOf());
+    for (let i = 0; i < 8; i++) await verify(h, 'owner@example.com', wrong, '6.6.6.6');
+    assert.strictEqual((await verify(h, 'owner@example.com', wrong, '6.6.6.6')).code, 429);
+    h.clock.t += 3601000;
+    await h.call('post', '/api/auth/request-code', { body: { email: 'owner@example.com' }, ip: '1.1.1.1' });
+    assert.strictEqual((await verify(h, 'owner@example.com', wrongOf(h.codeOf()), '6.6.6.6')).code, 400);
+    h.clock.t += 25 * 3600000; await h.A.store.purge(new Date(h.clock.t));
+    assert.strictEqual(h.A.store._attempts.length, 0);
   });
   await t('a normal user is not slowed: three sign-ins in an hour all work', async () => {
     const h = harness();
