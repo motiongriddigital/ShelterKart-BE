@@ -17,8 +17,7 @@ async function call(method, path, body) {
   ok('the search may start without a session (the wall is on the results)', (await call('POST', '/api/investigate', { query: 'xx' })).status !== 401);
   ok('a public route works with no session', (await call('GET', '/api/markets')).status === 200);
   ok('a bad e-mail address is refused', (await call('POST', '/api/auth/request-code', { email: 'nope', password: pw0, termsAccepted: true })).json.code === 'invalid_email');
-  ok('a missing password is refused before any code is sent', ['weak_password', 'invalid_request'].includes((await call('POST', '/api/auth/request-code', { email, termsAccepted: true })).json.code));
-  const noConsent = await call('POST', '/api/auth/request-code', { email, password: pw0 });
+  const noConsent = await call('POST', '/api/auth/request-code', { email });
   ok('a new address must accept the terms before any code is sent', noConsent.json.code === 'consent_required');
   const rc = await call('POST', '/api/auth/request-code', { email, password: pw0, termsAccepted: true });
   ok('a code is requested (202) and the dev echo returns it', rc.status === 202 && /^\d{6}$/.test(String(rc.json.devCode)));
@@ -50,12 +49,10 @@ async function call(method, path, body) {
   ok('the session endpoint then answers anonymous, still 200', (await call('GET', '/api/auth/session')).json.authenticated === false);
   const email2 = 'smoke-pw-' + Date.now() + '@example.com', pw = 'smoke test password 1';
   jar.cookie = '';
-  const rcWeak = await call('POST', '/api/auth/request-code', { email: email2, password: 'short', termsAccepted: true });
-  ok('a weak password is refused at request-code, before any code is sent', rcWeak.json.code === 'weak_password');
   const rcPw = await call('POST', '/api/auth/request-code', { email: email2, password: pw, termsAccepted: true });
   const vcPw = await call('POST', '/api/auth/verify-code', { email: email2, code: rcPw.json.devCode });
-  ok('a new account made with a code whose request carried a password is signed in and says so', vcPw.status === 200 && vcPw.json.isNewUser === true && vcPw.json.passwordSet === true && vcPw.json.user.hasPassword === true);
-  ok('the stored account reports hasPassword and never the hash', await (async () => { const m = await call('GET', '/api/me'); return m.status === 200 && m.json.user.hasPassword === true && !JSON.stringify(m.json).includes('scrypt'); })());
+  ok('a new account is signed in by the code alone, and a password sent with the request is ignored', vcPw.status === 200 && vcPw.json.isNewUser === true && vcPw.json.passwordSet === false && vcPw.json.user.hasPassword === false);
+  ok('the stored account never reports a password or a hash', await (async () => { const m = await call('GET', '/api/me'); return m.status === 200 && m.json.user.hasPassword === false && !JSON.stringify(m.json).includes('scrypt'); })());
   const rc2 = await (async () => { const g = await fetch(base + '/api/health'); return g.status; })();
   ok('the server is still healthy', rc2 === 200);
   console.log(failed ? '\n' + failed + ' FAILED' : '\nall passing against ' + base);

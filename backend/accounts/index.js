@@ -32,7 +32,6 @@ function createAccounts(deps = {}) {
   const entitledFn = deps.entitled || (async () => false);
   const briefInfo = deps.briefInfo || (async () => null);
   const track = (event, req, body) => { try { if (deps.track) deps.track(event, req, body || {}); } catch (e) { console.error('[accounts] track failed:', e && e.message); } };
-  const passwordParams = deps.passwordParams || undefined;
   const rateLimit = deps.rateLimit || (() => (req, res, next) => next());
   const problems = validate(env, { hasDatabase: store.kind === 'postgres', mailConfigured: Boolean(deps.mailConfigured) });
 
@@ -149,8 +148,6 @@ function createAccounts(deps = {}) {
     app.post('/api/auth/request-code', limCode, wrap(async (req, res) => {
       const b = req.body || {}, email = S.normEmail(b.email);
       if (!email) return fail(res, 400, 'invalid_email', 'Enter a valid e-mail address.');
-      const passwordWhy = S.passwordProblem(b.password, email);
-      if (passwordWhy) return fail(res, 400, 'weak_password', passwordWhy);
       const existing = await store.findUserByEmail(email);
       if (!existing && b.termsAccepted !== true) { await ev('consent_required', { email, req }); return fail(res, 400, 'consent_required', 'Please accept the terms and the privacy notice to create your account.'); }
       if (await ipBanned(req)) { await ev('login_blocked_ip', { email, req, detail: 'request-code' }); return fail(res, 403, 'ip_banned', 'This address is blocked.'); }
@@ -172,10 +169,7 @@ function createAccounts(deps = {}) {
         return res.status(202).json(quiet);
       }
       const code = S.newCode();
-      const currentHash = existing ? await store.passwordHashOf(existing.id) : null;
-      const unchanged = currentHash ? await S.verifyPassword(cfg.pepper, b.password, currentHash) : false;
-      const passwordHash = unchanged ? null : await S.hashPassword(cfg.pepper, b.password, passwordParams);
-      await store.createCode({ emailLower: email, codeHash: S.hashCode(cfg.pepper, email, code), expiresAt: new Date(t + cfg.codeMinutes * 60000), ipHash, passwordHash, now: at() });
+      await store.createCode({ emailLower: email, codeHash: S.hashCode(cfg.pepper, email, code), expiresAt: new Date(t + cfg.codeMinutes * 60000), ipHash, now: at() });
       const sent = await mail({ to: email, subject: 'Your ShelterKart sign-in code',
         text: `Your ShelterKart sign-in code is ${code}\n\nIt works for ${cfg.codeMinutes} minutes. If you did not ask for it, ignore this e-mail: nobody can sign in without the code.` }).catch(() => false);
       if (!sent) { console.error('[accounts] the sign-in code could not be sent'); alert('sign-in codes are not being sent', 'The e-mail provider refused or is not configured.').catch(() => {}); }
@@ -230,15 +224,6 @@ function createAccounts(deps = {}) {
         }
         isNewUser = true;
       }
-      let passwordSet = false;
-      if (open.passwordHash) {
-        const had = u.hasPassword;
-        await store.setPassword(u.id, open.passwordHash, at());
-        if (had) await store.revokeAllFor(u.id);
-        passwordSet = true; u = { ...u, hasPassword: true };
-        await audit('user:' + u.id, had ? 'auth.password_reset' : 'auth.password_set', u.id, 'with a sign-in code');
-        await ev(had ? 'password_reset' : 'password_set', { email, userId: u.id, req });
-      }
       await store.markLogin(u.id, at());
       const token = S.newToken(), t = now();
       await store.createSession({ tokenHash: S.hashToken(token), userId: u.id, expiresAt: new Date(t + cfg.sessionDays * DAY), ipHash: S.hashIp(cfg.pepper, req.ip), userAgent: clip(req.get && req.get('user-agent'), 200), now: at() });
@@ -246,7 +231,7 @@ function createAccounts(deps = {}) {
       await audit('user:' + u.id, 'auth.login', u.id, isNewUser ? 'new account' : null);
       track('signin_verified', req, { detail: isNewUser ? 'new' : 'returning' });
       await ev('login_ok', { email, userId: u.id, req, detail: isNewUser ? 'new' : 'returning' });
-      res.json({ ok: true, isNewUser, passwordSet, user: publicUser({ ...u, emailVerifiedAt: u.emailVerifiedAt || at(), lastLoginAt: at() }) });
+      res.json({ ok: true, isNewUser, passwordSet: false, user: publicUser({ ...u, emailVerifiedAt: u.emailVerifiedAt || at(), lastLoginAt: at() }) });
     }));
 
     app.post('/api/auth/logout', limMe, guard, wrap(async (req, res) => {
