@@ -18,17 +18,17 @@ function fakeClient({ failOn = null } = {}) {
 }
 
 (async () => {
-  await t('migrations: exactly the twenty-one, in the documented order, each present on disk', async () => {
-    assert.deepStrictEqual(MIGRATIONS, ['schema.sql', 'schema_evidence.sql', 'razorpay_orders.sql', 'idempotent_checkout.sql', 'research_persistence.sql', 'source_health.sql', 'analytics.sql', 'translations.sql', 'pricing_v2.sql', 'responses.sql', 'social.sql', 'purchase_attribution.sql', 'accounts.sql', 'error_log.sql', 'health_history.sql', 'engine_usage.sql', 'backups.sql', 'fk_indexes.sql', 'bulk_registers.sql', 'accounts_password.sql', 'auth_codes_password.sql']);
-    assert.strictEqual(plan().length, 21);
+  await t('migrations: exactly the twenty-three, in the documented order, each present on disk', async () => {
+    assert.deepStrictEqual(MIGRATIONS, ['schema.sql', 'schema_evidence.sql', 'razorpay_orders.sql', 'idempotent_checkout.sql', 'research_persistence.sql', 'source_health.sql', 'analytics.sql', 'translations.sql', 'pricing_v2.sql', 'responses.sql', 'social.sql', 'purchase_attribution.sql', 'accounts.sql', 'error_log.sql', 'health_history.sql', 'engine_usage.sql', 'backups.sql', 'fk_indexes.sql', 'bulk_registers.sql', 'accounts_password.sql', 'auth_codes_password.sql', 'auth_attempts.sql', 'live_jobs.sql']);
+    assert.strictEqual(plan().length, 23);
   });
   await t('migrations: each runs once, in its own transaction, and a second run applies nothing', async () => {
     const c = fakeClient();
     const first = await migrate(c);
-    assert.deepStrictEqual([first.applied.length, first.skipped.length], [21, 0]);
-    assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 21); assert.strictEqual(c.log.filter(x => x === 'COMMIT').length, 21);
+    assert.deepStrictEqual([first.applied.length, first.skipped.length], [23, 0]);
+    assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 23); assert.strictEqual(c.log.filter(x => x === 'COMMIT').length, 23);
     const second = await migrate(c);
-    assert.deepStrictEqual([second.applied.length, second.skipped.length], [0, 21]);
+    assert.deepStrictEqual([second.applied.length, second.skipped.length], [0, 23]);
   });
   await t('migrations: a file edited after it was applied stops the run, and a failing file is rolled back and named', async () => {
     const c = fakeClient(); await migrate(c);
@@ -40,13 +40,13 @@ function fakeClient({ failOn = null } = {}) {
   });
   await t('migrations: a dry run touches nothing', async () => {
     const c = fakeClient(); const r = await migrate(c, { dryRun: true });
-    assert.strictEqual(r.pending.length, 21); assert(!c.log.includes('BEGIN'));
+    assert.strictEqual(r.pending.length, 23); assert(!c.log.includes('BEGIN'));
   });
   await t('migrations: a no-transaction file runs statement by statement without BEGIN, and an invalid index stops the run', async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mig-'));
     for (const n of MIGRATIONS) fs.writeFileSync(path.join(dir, n), n === 'fk_indexes.sql' ? '-- migrate: no-transaction\n-- big table\nCREATE INDEX CONCURRENTLY IF NOT EXISTS a ON t (x);\nCREATE INDEX CONCURRENTLY IF NOT EXISTS b ON t (y);\n' : 'SELECT 1;');
     const c = fakeClient(); const r = await migrate(c, { dir });
-    assert.strictEqual(r.applied.length, 21); assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 20);
+    assert.strictEqual(r.applied.length, 23); assert.strictEqual(c.log.filter(x => x === 'BEGIN').length, 22);
     assert.strictEqual(c.log.filter(x => x === 'CREATE INDEX CONCURRENTLY').length, 2);
     assert.strictEqual(c.applied.has('fk_indexes.sql'), true);
     const bad = fakeClient(); const q = bad.query.bind(bad);

@@ -78,12 +78,21 @@ const ms = fn => { const t0 = process.hrtime.bigint(); fn(); return Number(proce
     assert.strictEqual((await call('/api/admin/sales/orders', { country: 'us' })).code, 200);
   });
 
-  await t('production start-up warns when accounts run without ACCOUNTS_CSRF=on', async () => {
+  await t('production start-up warns when ACCOUNTS_CSRF is switched to report or off', async () => {
     const { check } = require('../engine/configCheck');
     const base = { NODE_ENV: 'production', ACCOUNTS_ENABLED: 'on', ADMIN_USERNAME: 'a', ADMIN_PASSWORD: 'x'.repeat(20), ACCESS_TOKEN_SECRET: 'a'.repeat(40), QUOTE_SECRET: 'b'.repeat(40), DATABASE_URL: 'postgres://x', ALLOWED_ORIGINS: 'https://x', TRUST_PROXY: '1' };
-    assert.ok(check(base).warnings.some(w => w.includes('ACCOUNTS_CSRF')));
+    assert.ok(!check(base).warnings.some(w => w.includes('ACCOUNTS_CSRF')), 'unset is on in production');
+    assert.ok(check({ ...base, ACCOUNTS_CSRF: 'report' }).warnings.some(w => w.includes('ACCOUNTS_CSRF')));
+    assert.ok(check({ ...base, ACCOUNTS_CSRF: 'off' }).warnings.some(w => w.includes('ACCOUNTS_CSRF')));
     assert.ok(!check({ ...base, ACCOUNTS_CSRF: 'on' }).warnings.some(w => w.includes('ACCOUNTS_CSRF')));
     assert.ok(!check({ ...base, ACCOUNTS_ENABLED: '' }).warnings.some(w => w.includes('ACCOUNTS_CSRF')));
+  });
+  await t('production start-up warns when a database is there but investigations are still kept as files', async () => {
+    const { check } = require('../engine/configCheck');
+    const base = { NODE_ENV: 'production', ADMIN_USERNAME: 'a', ADMIN_PASSWORD: 'x'.repeat(20), ACCESS_TOKEN_SECRET: 'a'.repeat(40), QUOTE_SECRET: 'b'.repeat(40), DATABASE_URL: 'postgres://x', ALLOWED_ORIGINS: 'https://x', TRUST_PROXY: '1' };
+    assert.ok(check(base).warnings.some(w => w.includes('JOB_STORE')));
+    assert.ok(!check({ ...base, JOB_STORE: 'postgres' }).warnings.some(w => w.includes('JOB_STORE')));
+    assert.ok(!check({ ...base, DATABASE_URL: '' }).warnings.some(w => w.includes('JOB_STORE')));
   });
   console.log(`\n${passed} passed, ${failed} failed`); process.exitCode = failed ? 1 : 0;
 })();

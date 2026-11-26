@@ -59,6 +59,12 @@ process.on('exit', () => { console.log(failures ? '\n' + failures + ' FAILED' : 
   const rs = await call(research, { body: { query: 'Hubtown Celeste', market: 'in', country: 'IN' } });
   ok('a reply does not change the findings', JSON.stringify(rs.body.brief.findings) === JSON.stringify(r2.body.brief.findings));
 
+  // Markup from a stranger is removed before it is stored (B8)
+  const htmlReply = await call(post, { body: { reportRef: ref, findingText: '<img src=x onerror=alert(1)>The developer was named in a case.', responseText: '<script>alert(1)</script>The case was withdrawn in 2024.', contactEmail: 'legal2@example.com' } });
+  const pendHtml = (await call(find('get', '/api/admin/responses'), { headers: { authorization: AUTH } })).body.find(x => /withdrawn in 2024/.test(x.response_text));
+  ok('a reply with markup is accepted and stored as plain text', htmlReply.code === 200 && pendHtml && !/<[a-zA-Z/!?]/.test(pendHtml.response_text + pendHtml.finding_text), JSON.stringify(pendHtml));
+  ok('a reply that is nothing but markup is refused', (await call(post, { body: { reportRef: ref, findingText: '<b></b>', responseText: '<i></i>', contactEmail: 'legal3@example.com' } })).code === 400);
+
   // Disputes without a database, no raw error text
   const d = await call(find('post', '/api/dispute'), { body: { note: 'The possession date is wrong.', reportRef: ref, contact: 'buyer@example.com' } });
   const open = await call(find('get', '/api/admin/disputes'), { headers: { authorization: AUTH } });

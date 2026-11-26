@@ -76,6 +76,7 @@ if (require.main === module) {
     BACKUPS.startSchedule();
     setInterval(() => ERRORLOG.purge().catch(e => console.error('[errorlog] clean-up failed:', e && e.message)), 24 * 3600 * 1000).unref();
     if (ACCOUNTS.enabled) setInterval(() => ACCOUNTS.cleanup().catch(e => console.error('[accounts] clean-up failed:', e && e.message)), 6 * 3600 * 1000).unref();
+    await c.jobsReady;                                               // saved investigations are loaded (from the database, with JOB_STORE=postgres) before the first request
     app.listen(PORT, () => console.log(`ShelterKart API listening on port ${PORT}`));
   })();
 }

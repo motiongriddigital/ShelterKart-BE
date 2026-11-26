@@ -787,6 +787,41 @@ paths:
                   ok: {type: boolean, const: false}
         '403': {$ref: '#/components/responses/OriginNotAllowed'}
         '429': {$ref: '#/components/responses/RateLimitedJson'}
+  /api/investigate/{ref}/price:
+    get:
+      operationId: getInvestigationPrice
+      tags: [Investigate]
+      summary: The price shown on the report page, for one billing country
+      description: |
+        The same price the report page shows, worked out for the billing country the buyer picks, so the page can update what it shows when the country changes.
+        It is the price of the free preview's offer, not a quote: the amount to pay is fixed by `POST /api/research/quote` and confirmed before payment.
+      security:
+        - {}
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {name: country, in: query, required: true, description: 'Billing country, a two-letter code from the page''s list.', schema: {type: string, minLength: 2, maxLength: 2}}
+      responses:
+        '200':
+          description: 'The price, ready to show.'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, country, price]
+                properties:
+                  ok: {type: boolean, const: true}
+                  country: {type: string}
+                  price: {type: string, description: 'For example "₹4,400" or "GBP 36".'}
+        '400':
+          description: 'The reference is malformed or the country is not on the list.'
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '404':
+          description: 'There is no such report, or it is not ready.'
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
+        '429': {$ref: '#/components/responses/RateLimitedJson'}
+        '503':
+          description: 'The price could not be worked out just now.'
+          content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}
   /api/investigate/{ref}/contact:
     post:
       operationId: setInvestigationContact
@@ -954,6 +989,43 @@ paths:
           content:
             text/html:
               schema: {type: string}
+  /r/{ref}/verify/{code}:
+    get:
+      operationId: verifyReportCopy
+      tags: [Pages]
+      summary: Check a copy of the full report against the report on file
+      description: |
+        The full report PDF carries a stamp: the reference, the research date and a 16-character fingerprint worked out from the whole content of the report. Opening this address answers one thing, whether the fingerprint matches the report we hold. It shows nothing else from the report, so it needs no sign-in: it is for a lawyer or a bank holding a copy. A copy that was edited, or a report corrected after the copy was made, answers `mismatch` (a normal answer, status 200). The page is HTML, `noindex`, `Cache-Control no-store`, and carries the result in the `X-Verify-Result` header: `match`, `mismatch`, `unknown` (no such report), `invalid` (bad reference or code) or `held` (a person is checking the report). Limited to 60 checks an hour per address.
+      security: []
+      x-source: backend/modules/investigate.js:verify
+      parameters:
+        - {$ref: '#/components/parameters/RefPath'}
+        - {name: code, in: path, required: true, description: 'The fingerprint printed in the stamp, 16 hexadecimal characters.', schema: {type: string, pattern: '^[0-9a-fA-F]{16}$'}}
+      responses:
+        '200':
+          description: The result page (match or mismatch).
+          headers:
+            X-Verify-Result: {schema: {type: string, enum: [match, mismatch]}}
+          content:
+            text/html:
+              schema: {type: string}
+        '400':
+          description: The reference or the code is not valid.
+          content:
+            text/html:
+              schema: {type: string}
+        '404':
+          description: No report is held under that reference.
+          content:
+            text/html:
+              schema: {type: string}
+        '423':
+          description: The report is held for a person to check.
+          content:
+            text/html:
+              schema: {type: string}
+        '429':
+          description: Too many checks from this address.
   /r/{ref}/preview.pdf:
     get:
       operationId: getReportPreviewPdf
@@ -4275,11 +4347,7 @@ paths:
         20 requests an hour per IP address. When the proof-of-work guard is on, the body must carry `pow`. A new code replaces the previous one.
         With `ACCOUNTS_DEV_ECHO=on` outside production the reply also carries `devCode`.
 
-        `password` is required on every call, including a plain returning sign-in: a returning person sends the password already on the account. It is checked and
-        hashed before any code is created or sent; one that breaks the rules answers 400 `weak_password`. If it matches the account's current password, nothing is
-        held against this code and `POST /api/auth/verify-code` changes nothing and ends no session - re-sending the same password is a no-op, not a reset. Anything
-        else (no account yet, no password yet, or a genuinely different one) is held against the code and applied on verify: set on a new account, or replaced,
-        ending every other session, on an existing one.
+        Sign-in is by this code alone. `password` is no longer needed: a value sent is ignored and never stored (B5, see `docs/accounts/PASSWORD.md`).
 
         A new address (no existing account) also needs `termsAccepted: true`; without it the answer is 400 `consent_required` and no code is sent. An existing address
         does not need it.
@@ -4290,11 +4358,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [email, password]
+              required: [email]
               additionalProperties: false
               properties:
                 email: {type: string, description: 'Checked by the route: an invalid or over-long address answers 400 `invalid_email`.'}
-                password: {type: string, description: '12 to 128 characters, not one repeated character, not a very common password, not the e-mail address.'}
+                password: {type: string, deprecated: true, description: 'Ignored. Stop sending it.'}
                 termsAccepted: {type: boolean, description: 'Required (must be true) when the address has no existing account.'}
                 language: {type: string, description: 'Optional, for later use.'}
                 pow: {type: object, description: 'The solved proof of work, as for POST /api/investigate.'}
@@ -4310,7 +4378,7 @@ paths:
                   cooldownSeconds: {type: integer, example: 60}
                   codeLength: {type: integer, example: 6}
                   devCode: {type: string, description: 'Only with ACCOUNTS_DEV_ECHO outside production.'}
-        '400': {description: 'code `invalid_email`, `weak_password` or `consent_required`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+        '400': {description: 'code `invalid_email` or `consent_required`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
         '428': {description: 'code `challenge`: complete the proof of work and repeat.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
         '429': {description: 'code `cooldown` or `rate_limited`, with `retryAfter` seconds.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
   /api/auth/verify-code:
@@ -4321,9 +4389,6 @@ paths:
       description: |
         A right code starts a session and sets the session cookie. A new address is created at the first success (consent for this was already checked by
         `POST /api/auth/request-code`). A code allows five wrong tries.
-
-        The password sent with the matching `POST /api/auth/request-code` call is applied here: set on a new account, or replaced (ending every other session)
-        on an existing one. The reply carries `passwordSet: true` when that happened.
       security: []
       requestBody:
         required: true
@@ -4349,7 +4414,7 @@ paths:
                 properties:
                   ok: {type: boolean}
                   isNewUser: {type: boolean}
-                  passwordSet: {type: boolean, description: 'True when this call set or replaced the password.'}
+                  passwordSet: {type: boolean, deprecated: true, description: 'Always false. Kept so a client that reads it keeps working.'}
                   user: {$ref: '#/components/schemas/User'}
         '400': {description: 'code `invalid_code`, with `attemptsLeft` when known.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
         '403': {description: 'code `account_disabled`.', content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
@@ -4675,7 +4740,7 @@ components:
         country: {type: [string, 'null']}
         language: {type: [string, 'null']}
         emailVerified: {type: boolean}
-        hasPassword: {type: boolean, description: 'True when the account has set a password, so the page can offer the password form.'}
+        hasPassword: {type: boolean, deprecated: true, description: 'True only for an account that still holds a password from before sign-in became code-only. Nothing uses it.'}
         phone: {type: [string, 'null']}
         createdAt: {type: [string, 'null'], format: date-time}
     Error:

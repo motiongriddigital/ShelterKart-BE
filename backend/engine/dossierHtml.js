@@ -146,6 +146,15 @@ table.tk{font-size:.82rem}table.tk td.n{white-space:nowrap}table.tk .bx{white-sp
 .unlock .price{font-family:'Fraunces',Georgia,serif;font-size:2.1rem;color:#F2DCA8;margin:.4rem 0}
 .unlock .btn{display:inline-block;background:#F2DCA8;color:var(--ink);font-weight:600;padding:.6rem 1.2rem;margin-top:.5rem;text-decoration:none}
 .notice{margin-top:2.4rem;font-size:.85rem;color:var(--ink-3)}
+.steps{background:var(--gold-wash);border-left:3px solid var(--gold);padding:1rem 1.2rem;margin:1.4rem 0 0;font-size:.95rem}
+.steps .steps-h{margin:0 0 .4rem;font-weight:600;font-family:'Fraunces',Georgia,'Liberation Serif',serif;font-size:1.05rem}
+.steps ol{margin:.3rem 0 0;padding-left:1.2rem}.steps li{margin:.3rem 0}
+.steps .first3{margin-top:.8rem;padding-top:.6rem;border-top:1px solid var(--rule)}.steps .first3 p{margin:.25rem 0}
+.letter{font-size:.98rem}.letter .l-tag{color:var(--ink-3);font-size:.82rem;text-transform:uppercase;letter-spacing:.06em;margin:0 0 .8rem}
+.letter .l-subject{border-bottom:1px solid var(--rule);padding-bottom:.6rem}
+.letter ol{padding-left:1.3rem}.letter li{margin:.55rem 0;break-inside:avoid}.letter .l-doc{color:var(--ink-2);font-size:.9rem;margin:.15rem 0 0}
+.letter .l-sign{margin-top:1.4rem}.letter .l-sign span{display:inline-block;min-width:22rem;border-bottom:1px solid var(--ink-3);margin:0 0 .3rem}.letter .l-sign small{color:var(--ink-3)}
+.stamp{width:100%;border-collapse:collapse;margin:.4rem 0}.stamp th{width:30%;text-align:left;font-weight:600;color:var(--ink-2);padding:.3rem .6rem .3rem 0;vertical-align:top}.stamp td{padding:.3rem 0}.stamp .fp{font-family:ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;letter-spacing:.08em;font-weight:600}
 @media print{.guide-box{display:none}
  body{background:#fff;font-size:10.3pt}main{max-width:none;padding:0}
  h2{break-after:avoid;margin-top:2.2rem}h3{break-after:avoid}a{color:var(--ink)}
@@ -165,6 +174,7 @@ const SECTIONS = [
   ['findings', 'What we found', 'Every finding, with where it appears and its status'],
   ['allq', 'Every question, by stage', 'The full list, to put to each team in writing'],
   ['tracker', 'Your question tracker', 'One page to tick off as answers and documents arrive'],
+  ['letters', 'Send this to the developer', 'One letter per team, ready to copy into an e-mail'],
   ['unreached', 'What we could not reach, and how you can', 'Records that are not online'],
   ['sources', 'Sources', 'Every page we relied on'],
   ['about', 'About this report', 'How to read it, and what it is not'],
@@ -192,6 +202,56 @@ function guideBox() {
 <p><a href="/guide#ch2" data-guide="ch2">Who is actually selling to you</a> &middot; <a href="/guide#ch6" data-guide="ch6">The possession date</a> &middot; <a href="/guide" data-guide="">The whole guide</a> &middot; <a href="/guide/pdf" data-guide-pdf>PDF</a></p></aside>`;
 }
 
+
+const LETTER_MAX = 12;
+const isOwnSide = t => /^your\b/i.test(String(t || ''));
+const FP_GROUPS = fp => String(fp).replace(/(.{4})(?=.)/g, '$1 ');
+
+/** Questions that go to the developer's own teams, grouped by team, in the report's order (stage, then importance). */
+function letterGroups(d) {
+  const by = new Map();
+  for (const q of d.questions || []) { if (isOwnSide(q.to)) continue; if (!by.has(q.to)) by.set(q.to, []); by.get(q.to).push(q); }
+  return [...by.entries()].map(([to, qs]) => ({ to, qs: qs.slice(0, LETTER_MAX), more: Math.max(0, qs.length - LETTER_MAX) }));
+}
+
+function lettersHtml(d, H) {
+  const groups = letterGroups(d);
+  if (!groups.length) return '';
+  const p = d.project || {}, name = p.name || d.query, ids = p.ids && p.ids.length ? ` (registration ${p.ids.join(', ')})` : '';
+  const letter = (g, i) => `<section class="pagebreak letter">${i === 0 ? H('letters', 'Send this to the developer') + `<p class="meta">One letter for each of the developer's teams, with its questions already written. Copy a letter into an e-mail, add your name, and keep the reply. ${groups.length} letter${groups.length === 1 ? '' : 's'} follow${groups.length === 1 ? 's' : ''}.</p>` : ''}
+<p class="l-tag">Letter ${i + 1} of ${groups.length}, to ${esc(who(g.to))}</p>
+<p class="l-subject"><b>Subject:</b> Questions before I go further with ${esc(name)}${esc(ids)}</p>
+<p>Dear ${esc(cap(g.to))},</p>
+<p>I am considering buying a home in ${esc(name)}${esc(ids)}. Before I go further I would like written answers to the ${g.qs.length === 1 ? 'question' : g.qs.length + ' questions'} below, and a copy of each document named. Please reply by e-mail within 15 days. I will keep your answers on file.</p>
+<ol>${g.qs.map(q => `<li><p>${esc(q.question)}</p>${q.good ? `<p class="l-doc">A document that answers it: ${esc(q.good)}</p>` : ''}</li>`).join('')}</ol>
+<p>Thank you. I look forward to your reply.</p>
+<p class="l-sign">Yours sincerely,<br><br><span></span><br><small>Name, phone, e-mail, date sent</small></p>
+${g.more ? `<p class="meta">${g.more} more question${g.more === 1 ? '' : 's'} for this team ${g.more === 1 ? 'is' : 'are'} in "Every question, by stage". Add them if they matter to you.</p>` : ''}
+<p class="small">Questions prepared from ShelterKart report ${esc(d.ref || '')}, research to ${esc(longDate(d.asOf))}.</p></section>`;
+  return groups.map(letter).join('\n');
+}
+
+function firstStepsHtml(d) {
+  const qs = d.questions || [];
+  if (!qs.length) return '';
+  const early = qs.filter(q => q.when === D.WHEN[0]).length;
+  const top = qs.slice(0, 3);
+  return `<div class="steps"><p class="steps-h">Before you pay: three steps</p>
+<ol><li><b>Send the questions.</b> The letters in "Send this to the developer" are ready to copy, one for each team.${early ? ` ${early} question${early === 1 ? ' is' : 's are'} marked "${esc(D.WHEN[0])}".` : ''}</li>
+<li><b>Hold each answer until you have the document.</b> A question is closed only by the document under "A good answer". Tick it off in your tracker.</li>
+<li><b>Give your own lawyer the answers and the documents,</b> with this report, before you sign or make a payment that cannot be undone.</li></ol>
+<div class="first3"><p><b>The three to send first</b></p>${top.map(q => `<p>${ID(q.id)} Ask ${esc(who(q.to))}: ${esc(firstSentence(q.question, 140))}</p>`).join('')}</div></div>`;
+}
+
+function stampHtml(d) {
+  if (!d.ref) return '';
+  const fp = D.fingerprint(d), base = String(process.env.PUBLIC_BASE_URL || process.env.SITE_URL || '').replace(/\/+$/, '');
+  const path = `/r/${d.ref}/verify/${fp}`, where = base ? link(base + path, base + path) : `<span>${esc(path)}</span>`;
+  return `<h3>This copy's stamp</h3>
+<table class="stamp"><tbody><tr><th scope="row">Reference</th><td>${esc(d.ref)}</td></tr><tr><th scope="row">Research to</th><td>${esc(longDate(d.asOf))}</td></tr><tr><th scope="row">Fingerprint</th><td class="fp">${esc(FP_GROUPS(fp))}</td></tr><tr><th scope="row">Check this copy</th><td>${where}</td></tr></tbody></table>
+<p class="small">The fingerprint is worked out from the whole report. Open the address to see whether this copy matches the report we hold. A copy that has been edited, or a report that has been corrected since, will not match. A match shows the content is unchanged; it is not an endorsement.</p>`;
+}
+
 function renderDossier(d, { title = 'ShelterKart due-diligence report', pages = {}, indexable = false } = {}) {
   const p = d.project || {}, name = p.name || d.query, c = d.counts || {};
   const top = d.questions.slice(0, 8);
@@ -211,11 +271,11 @@ function renderDossier(d, { title = 'ShelterKart due-diligence report', pages = 
   ];
   const ledgerHtml = `<section class="ledger" aria-label="The record, counted"><h2 id="sec-ledger" style="margin-top:0">The record, counted</h2>
 <table class="glance"><tbody>${ledgerRows.map(([k, v]) => `<tr><th scope="row">${esc(k)}</th><td>${esc(v)}</td></tr>`).join('')}</tbody></table>
-<p class="small">Counted from the findings below, read on ${esc(longDate(d.asOf))} from ${esc(n(sourcesCount))} sources. A dash means the record does not hold that count. Every finding links to its source.</p></section>`;
+<p class="small">Counted from the findings below, read on ${esc(longDate(d.asOf))} from ${esc(n(sourcesCount))} sources. A dash means the record does not hold that count. Every finding links to its source.</p>${firstStepsHtml(d)}</section>`;
   const byStage = D.WHEN.map(w => ({ w, qs: d.questions.filter(q => q.when === w) })).filter(x => x.qs.length);
   const area = d.checks && d.checks.area, delay = d.checks && d.checks.delay, gaps = (d.checks && d.checks.gaps) || [], prices = (d.checks && d.checks.prices) || [];
   const has = { glance: (d.glance || []).length || (d.promises || []).length, start: top.length, reasoning: d.inferences.length, conflicts: d.conflicts.length,
-    numbers: area || gaps.length || delay || prices.length, findings: d.sections.length, allq: d.questions.length, tracker: d.questions.length,
+    numbers: area || gaps.length || delay || prices.length, findings: d.sections.length, allq: d.questions.length, tracker: d.questions.length, letters: letterGroups(d).length,
     unreached: d.unreachable && d.unreachable.length, sources: d.sources.length, about: true };
   const toc = SECTIONS.filter(([id]) => has[id]);
   const H = (id, t) => `<h2 id="sec-${id}">${esc(t)}</h2>`;
@@ -269,6 +329,8 @@ ${byStage.map(x => `<h3>${esc(cap(x.w))}</h3><ol class="plain">${x.qs.map(q => q
 <div class="wrap"><table class="tk"><thead><tr><th>#</th><th>Question</th><th>Ask</th><th>When</th><th>Closes it</th><th>Status</th></tr></thead><tbody>${d.questions.map(q => `<tr><td class="n">${ID(q.id)}</td><td>${esc(firstSentence(q.question, 150))}</td><td>${esc(q.to)}</td><td>${esc(q.when)}</td><td>${esc(firstSentence(q.good || '', 130))}</td><td class="bx"><span class="box"></span> <span class="box"></span> <span class="box"></span></td></tr>`).join('')}</tbody></table></div>
 <p class="meta">Boxes, left to right: asked, answered, document in hand.</p></section>
 
+${lettersHtml(d, H)}
+
 ${d.unreachable && d.unreachable.length ? `<section>${H('unreached', 'What we could not reach, and how you can')}<div class="wrap"><table><thead><tr><th>What</th><th>Why</th><th>How to get it</th></tr></thead><tbody>${d.unreachable.map(u => `<tr><td>${esc(u.what)}</td><td>${esc(u.why)}</td><td>${esc(u.how_to_get_it || '')}</td></tr>`).join('')}</tbody></table></div></section>` : ''}
 
 <section>${H('sources', 'Sources')}
@@ -280,6 +342,7 @@ ${d.panel && d.panel.engines && d.panel.engines.length ? `<p class="meta">Invest
 <h3>What it is not</h3><p>It is not legal, financial or valuation advice, a title certificate or an engineer's inspection, and it does not tell you whether to buy. Ask your own lawyer to review the agreement and run the title and charge searches.</p>
 <h3>Independence</h3><p>ShelterKart is paid only by buyers. No developer can pay for, influence or remove anything in this report. A developer may send a reply, which we show beside the finding it answers.</p>
 <h3>If something is wrong</h3><p>Tell us what and where, with a document if you have one. We check it and correct the report, and keep a public record of corrections.</p>
+${stampHtml(d)}
 ${guideBox()}
 <p class="notice">${esc(d.notice || '')} Reference ${esc(d.ref || '')}.</p></section>
 </main></body></html>`;
@@ -313,7 +376,7 @@ ${rest.length ? `<div class="lock"><h3>${rest.length} more questions are in the 
 <li>A one-page tracker for answers and documents, and what to request where records are not online</li>
 <li>A PDF to keep, and a live page that is refreshed if we find something new</li></ul></div>
 <div class="unlock" id="unlock"><h3>Unlock the full report</h3>
-${price ? `<p class="price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
+${price ? `<p class="price sk-price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
 <p>One payment. No subscription. We e-mail the PDF and a link as soon as it is ready, and you can read it on this page while it completes.</p>
 <a class="btn" href="${esc(unlockUrl)}">Unlock the full report</a></div>
 ${guideBox()}
@@ -363,7 +426,7 @@ ${rest.length ? `<div class="lock"><h3>${rest.length} more questions are in the 
 <li>A one-page tracker for answers and documents, and what to request where records are not online</li>
 <li>A PDF to keep, and a live page that is refreshed if we find something new</li></ul></div>
 <div class="pv-end"><div class="pv-open"><h3 style="margin:0">Unlock the full report</h3>
-${price ? `<p class="price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
+${price ? `<p class="price sk-price">${esc(price.display)}</p><p>${esc(price.line)}</p>` : ''}
 <p>One payment. No subscription. Open the report page to unlock it and receive the full PDF:</p>
 <p class="url">${esc(link || ('/r/' + (d.ref || '')))}</p></div>
 <p class="notice">Research, not advice. This document states what public sources show and what to ask. It does not tell you whether to buy. ShelterKart is paid only by buyers; no developer can influence it.</p></div>

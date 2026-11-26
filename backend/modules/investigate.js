@@ -6,7 +6,9 @@ const BOT = require('../engine/botguard');             // proof-of-work before N
 const { paywallActive, REF_RE } = require('../engine/access');
 const PRICING = require('../pricing');
 const INVESTIGATOR = require('../engine/investigator');
-const { renderDossier } = require('../engine/dossierHtml');
+const { renderDossier, head: pageHead, esc: escHtml } = require('../engine/dossierHtml');
+const DOSSIER = require('../engine/dossier');
+const { rateLimit } = require('../middleware/rateLimit');
 const DOSSIER_BRIEF = require('../engine/dossierBrief');
 const { reportView } = require('../engine/reportView');
 const PAGES = require('../engine/reportPages');
@@ -18,7 +20,7 @@ const { ah } = require('../middleware/asyncHandler');
 const { stripPII } = require('../lib/pii');
 
 module.exports = function register(app, c) {
-  const { ACCOUNTS, FP, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
+  const { ACCOUNTS, watchRemote, briefFor, reportReadLimiter, FP, PDFS, makePreviewPdf, pdfCtx, SEARCH, buyerOf, checkoutResearchLimiter, completeLive, fullAccess, indexPreview, investigateCap, investigateDaily, liveEmit, liveIndex, liveJobs, marketCap, newLiveJob, notifyOps, onReportPaid, overDailyMax, persistJob, previewPanel, previewTwin, pricingData, publicEvent, researchLimiter } = c;
 
   const startsByUser = new Map(), userDailyCap = () => { const v = process.env.INVESTIGATE_PER_USER_DAILY; return v === undefined || v === '' ? 5 : Math.max(0, Math.floor(Number(v)) || 0); };
   const userStartsToday = id => { const today = new Date().toISOString().slice(0, 10), e = startsByUser.get(id); return e && e.day === today ? e.n : 0; };
@@ -142,6 +144,8 @@ module.exports = function register(app, c) {
     if (job && (job.listeners.size >= streamCap('EVENT_STREAMS_PER_JOB', 25) || mine >= streamCap('EVENT_STREAMS_PER_IP', 6))) return res.status(429).json({ ok: false, error: 'Too many progress streams are open. Close one and try again.' });
     res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     if (res.flushHeaders) res.flushHeaders();
+    if (!job && await watchRemote(ref, res)) return;
+    if (job && job.status === 'failed' && !job.paid && !job.events.length && job.previewFailedAt) { const note = PS.failureNote(job.failReason || 'engines_unavailable', { now: job.previewFailedAt }); res.write(`event: error\ndata: ${JSON.stringify({ type: 'error', message: note.error, reason: note.reason, ...(note.retryAt ? { retryAt: note.retryAt } : {}) })}\n\n`); }
     for (const e of (job ? job.events : [])) res.write(`event: ${e.type}\ndata: ${JSON.stringify(full ? e : publicEvent(e))}\n\n`);
     const open = job && (job.status === 'sweeping' || (full && job.status === 'completing'));
     if (!open) return res.end();
@@ -159,10 +163,23 @@ module.exports = function register(app, c) {
     registerBrief({ ...brief, contact: c.contact });
     res.json({ ok: true });
   }));
+  const priceView = (brief, buyer) => { const f = PRICING.previewFee(pricingData, brief, buyer); return { display: f.currency === 'INR' ? '₹' + Number(f.price).toLocaleString('en-IN') : `${f.currency} ${f.price}`, line: 'Set by the property\'s value and the depth of the research. The amount you pay is confirmed before payment.' }; };
+  const COUNTRY_CODES = new Set(PAGES.COUNTRIES.map(c => c[0]));
+  app.get('/api/investigate/:ref/price', reportReadLimiter, ah(async (req, res) => {
+    const ref = String(req.params.ref || ''), country = String((req.query && req.query.country) || '').toUpperCase();
+    res.set('Cache-Control', 'no-store');
+    if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
+    if (!COUNTRY_CODES.has(country)) return res.status(400).json({ ok: false, error: 'Choose one of the listed countries.' });
+    const brief = await getByRefAsync(ref);
+    if (!brief || brief.kind !== 'dossier' || !brief.dossier) return res.status(404).json({ ok: false, error: 'That report was not found.' });
+    let price;
+    try { price = priceView(brief, await buyerOf({ ...req, body: {}, query: { country } })); } catch { return res.status(503).json({ ok: false, error: 'The price could not be worked out just now.' }); }
+    res.json({ ok: true, country, price: price.display });
+  }));
   app.get('/r/:ref', ACCOUNTS.guardPage, ah(async (req, res) => {
     const ref = String(req.params.ref || '');
     res.set({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' });
-    const brief = REF_RE.test(ref) ? await getByRefAsync(ref) : null;
+    const brief = REF_RE.test(ref) ? await briefFor(ref) : null;
     if (!brief || brief.kind !== 'dossier') return res.status(404).send(PAGES.startPage({ botGuard: BOT.enabled(process.env) }).replace('Know who you are paying, before you pay.', 'That report was not found. Start a new one.'));
     if (!brief.dossier) return res.send(PAGES.workingPage({ ref, query: brief.project.name }));
     ACCOUNTS.touch(req, ref);
@@ -175,17 +192,17 @@ module.exports = function register(app, c) {
     let buyer = await buyerOf(req);
     if (buyer.source === 'default' && brief.market) buyer = await buyerOf({ ...req, body: {}, query: { country: brief.market.toUpperCase() } });
     let price = null;
-    try { const f = PRICING.previewFee(pricingData, brief, buyer); price = { display: f.currency === 'INR' ? '₹' + Number(f.price).toLocaleString('en-IN') : `${f.currency} ${f.price}`, line: 'Set by the property\'s value and the depth of the research. The amount you pay is confirmed before payment.' }; } catch { price = null; }
+    try { price = priceView(brief, buyer); } catch { price = null; }
     res.send(PAGES.previewPage(brief.dossier, { ref, price, country: buyer.country, held: REVIEW.isHeld(brief), payments: paywallActive(process.env), pdf: PDF.available() }));
   }));
-  app.get('/api/report/:ref', ACCOUNTS.guard, researchLimiter, ah(async (req, res) => {
+  app.get('/api/report/:ref', ACCOUNTS.guard, reportReadLimiter, ah(async (req, res) => {
     const ref = String(req.params.ref || '');
     if (!REF_RE.test(ref)) return res.status(400).json({ ok: false, error: 'Not a valid report reference.' });
-    const brief = await getByRefAsync(ref);
-    if (!brief || brief.kind !== 'dossier') return res.status(404).json({ ok: false, error: 'That report was not found.' });
-    res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+    const brief = await briefFor(ref);
     const failedJob = liveJobs.get(ref);
-    if (failedJob && failedJob.status === 'failed' && !failedJob.paid && (failedJob.previewFailedAt || !brief.dossier)) {
+    if ((!brief || brief.kind !== 'dossier') && !(failedJob && failedJob.status === 'failed' && !failedJob.paid && failedJob.previewFailedAt)) return res.status(404).json({ ok: false, error: 'That report was not found.' });
+    res.set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' });
+    if (failedJob && failedJob.status === 'failed' && !failedJob.paid && (failedJob.previewFailedAt || !(brief && brief.dossier))) {
       const note = PS.failureNote(failedJob.failReason || 'engines_unavailable', { now: failedJob.previewFailedAt || Date.now() });
       return res.json({ ok: true, ready: false, state: 'unavailable', ref, phase: 'failed', ...note });
     }
@@ -218,12 +235,31 @@ module.exports = function register(app, c) {
   };
   app.get('/r/:ref/preview.pdf', ah(async (req, res) => {
     const ref = String(req.params.ref || '');
-    const brief = REF_RE.test(ref) ? await getByRefAsync(ref) : null;
+    const brief = REF_RE.test(ref) ? await briefFor(ref) : null;
     if (!brief || brief.kind !== 'dossier' || !brief.dossier) return res.status(404).json({ ok: false, error: 'That report was not found.' });
     ACCOUNTS.touch(req, ref);
     try { await pdfOnce(res, brief, { kind: 'preview', ctx: pdfCtx(ref), held: REVIEW.isHeld(brief) }); }
     catch (e) { if (!pdfProblem(res, e)) throw e; }
   }));
+  /* Check a copy of a report: the stamp printed in the full PDF is a short fingerprint of the report's content. Anyone holding the
+     document (a lawyer, a bank) can open its address and see whether it matches the report on file. It answers match or no match and
+     shows nothing else from the report, so it needs no sign-in. Held reports are not checked. */
+  const verifyLimiter = rateLimit({ windowMs: 3600e3, max: 60, message: 'Too many checks from this connection. Please try again later.' });
+  app.get('/r/:ref/verify/:code', verifyLimiter, ah(async (req, res) => {
+    const ref = String(req.params.ref || ''), code = String(req.params.code || '').toLowerCase();
+    const send = (status, result, title, text) => res.status(status).set({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow', 'X-Verify-Result': result, 'Content-Type': 'text/html; charset=utf-8' })
+      .send(pageHead('Check a report copy') + `<h1 style="margin-top:2rem">${escHtml(title)}</h1><p>${escHtml(text)}</p><p class="small">Reference ${escHtml(REF_RE.test(ref) ? ref : '(not valid)')}. Research, not advice.</p></main></body></html>`);
+    if (!REF_RE.test(ref) || !DOSSIER.FINGERPRINT_RE.test(code)) return send(400, 'invalid', 'That address is not valid', 'Open the check address exactly as it is printed in the report, under "This copy\'s stamp".');
+    const brief = await briefFor(ref);
+    if (!brief || brief.kind !== 'dossier' || !brief.dossier) return send(404, 'unknown', 'No report on file with that reference', 'We hold no report under this reference, so this copy cannot be checked.');
+    if (REVIEW.isHeld(brief)) return send(423, 'held', 'This report is being checked', 'A person is checking this report before it can be released. Try again later.');
+    const want = Buffer.from(DOSSIER.fingerprint(brief.dossier)), got = Buffer.from(code);
+    const match = want.length === got.length && require('crypto').timingSafeEqual(want, got);
+    return match
+      ? send(200, 'match', 'This copy matches the report on file', `The fingerprint is the same as the report we hold, researched to ${brief.dossier.asOf || 'the date shown in the report'}. Its content has not been changed. A match is not an endorsement.`)
+      : send(200, 'mismatch', 'This copy does not match the report on file', 'Either the document was edited, or the report has been corrected or updated since this copy was made. Ask the person who gave it to you for the current version.');
+  }));
+
   app.get('/r/:ref/pdf', ACCOUNTS.guard, ah(async (req, res) => {
     const ref = String(req.params.ref || ''); const t = String((req.query && req.query.t) || '');
     if (!REF_RE.test(ref)) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
@@ -231,7 +267,7 @@ module.exports = function register(app, c) {
       if (t) return res.status(403).json({ ok: false, error: 'This link has expired or is not valid.' });
       return res.status(403).json({ ok: false, code: 'payment_required', error: 'Unlock the full report to download this PDF. The free preview PDF is available.', previewPdf: `/r/${ref}/preview.pdf` });
     }
-    const brief = await getByRefAsync(ref); if (!brief || !brief.dossier) return res.status(404).json({ ok: false, error: 'No report yet.' });
+    const brief = await briefFor(ref); if (!brief || !brief.dossier) return res.status(404).json({ ok: false, error: 'No report yet.' });
     try { await pdfOnce(res, brief, { kind: 'full', held: REVIEW.isHeld(brief) }, out => (out.stored ? {} : { 'X-Report-Phase': String(brief.dossier.phase || 'working') })); }
     catch (e) { if (!pdfProblem(res, e)) throw e; }
   }));

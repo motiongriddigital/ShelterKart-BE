@@ -19,6 +19,18 @@ function harness(over = {}) {
 const reply = (o = {}) => ({ reportRef: REF, role: 'developer', kind: 'reply', findingId: 'F1', body: 'The July 2029 date is the regulator\u2019s outer limit. Handover is planned for December 2027 and the filing is being updated.', email: 'pr@exampledev.test', ...o });
 
 (async () => {
+  console.log('plain text only (B8)');
+  await t('markup in a reply, a finding quote and the sender name is removed before it is stored; a sign is kept', async () => {
+    const h = harness();
+    const r = await h.svc.submit(reply({ body: '<b onmouseover=alert(1)>' + reply().body + ' The price is < 5 lakh.', findingText: '<img src=x onerror=alert(1)>Possession is marketed as December 2027.', senderName: 'Ravi <script>x</script>\nKumar' }));
+    assert(r.ok, JSON.stringify(r));
+    const row = await h.store.byPublicRef(r.publicRef);
+    assert(row, 'stored row');
+    assert(!/<[a-zA-Z/!?]/.test(row.body + row.finding_text + row.sender_name), JSON.stringify([row.body, row.finding_text, row.sender_name]));
+    assert(row.body.includes('The price is < 5 lakh.'));
+    assert.strictEqual(row.sender_name, 'Ravi x Kumar');
+  });
+
   console.log('validation');
   await t('who you are decides what you can do: a developer cannot ask for removal of personal data; a reader cannot reply', () => {
     assert.strictEqual(R.validate({ ...reply(), role: 'developer', kind: 'privacy' }).ok, false);

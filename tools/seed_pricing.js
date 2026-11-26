@@ -29,6 +29,6 @@ async function seed(db) {
 module.exports = { seed };
 if (require.main === module) {
   const { Pool } = require(path.join(__dirname, '..', 'backend', 'node_modules', 'pg'));
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool(require('../backend/lib/dbConfig').directOptions(process.env));
   seed(pool).then(n => { console.log('seeded:', JSON.stringify(n)); return pool.end(); }).catch(e => { console.error(e); process.exit(1); });
 }

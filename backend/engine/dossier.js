@@ -323,6 +323,16 @@ function sourceList(facts, developerSite) {
 const VERDICT = /\b(we recommend (buying|purchasing|avoiding)|do not buy|don'?t buy|proceed with conditions|safe to buy|good investment|avoid this project)\b/i;
 const hasVerdict = text => VERDICT.test(String(text || ''));
 
-module.exports = { STATUS, statusOf, isOfficial, host, safeUrl, norm, normUrl, jaccard, sameClaim, leadTargets, parseDate, parseNumber, sameValue, mergeFacts, extractLeads,
+function stable(v) {
+  if (Array.isArray(v)) return '[' + v.map(stable).join(',') + ']';
+  if (v && typeof v === 'object') return '{' + Object.keys(v).sort().filter(k => v[k] !== undefined).map(k => JSON.stringify(k) + ':' + stable(v[k])).join(',') + '}';
+  return JSON.stringify(v === undefined ? null : v);
+}
+
+/** The stamp printed in a report: a short SHA-256 of the report's content, so a copy can be checked against the one on file. */
+const FINGERPRINT_RE = /^[0-9a-f]{16}$/;
+const fingerprint = d => require('crypto').createHash('sha256').update('shelterkart-report|' + stable(d)).digest('hex').slice(0, 16);
+
+module.exports = { stable, fingerprint, FINGERPRINT_RE, STATUS, statusOf, isOfficial, host, safeUrl, norm, normUrl, jaccard, sameClaim, leadTargets, parseDate, parseNumber, sameValue, mergeFacts, extractLeads,
   samePerson, commonControl, areaCheck, dateGaps, delayCost, priceTable, questionsFromReasoning, assembleQuestions, sourceList,
   WHEN, TO, hasVerdict, anchorIn };
