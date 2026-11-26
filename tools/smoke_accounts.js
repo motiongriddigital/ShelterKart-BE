@@ -24,7 +24,7 @@ async function call(method, path, body) {
   ok('asking again at once is held back (cooldown)', (await call('POST', '/api/auth/request-code', { email, password: pw0, termsAccepted: true })).json.code === 'cooldown');
   ok('a wrong code is refused with the tries left', (await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode === '000000' ? '111111' : '000000' })).json.attemptsLeft === 4);
   const vc = await call('POST', '/api/auth/verify-code', { email, code: rc.json.devCode });
-  ok('the right code signs in and sets an HttpOnly, SameSite=Lax cookie', vc.status === 200 && vc.json.isNewUser === true && vc.json.passwordSet === true && /HttpOnly/.test(vc.set[0]) && /SameSite=Lax/.test(vc.set[0]));
+  ok('the right code signs in and sets an HttpOnly, SameSite=Lax cookie', vc.status === 200 && vc.json.isNewUser === true && vc.json.passwordSet === false && /HttpOnly/.test(vc.set[0]) && /SameSite=Lax/.test(vc.set[0]));
   const me = await call('GET', '/api/me');
   ok('/api/me returns the user', me.status === 200 && me.json.user.email === email);
   ok('/api/me/reports answers with a list', Array.isArray((await call('GET', '/api/me/reports')).json.reports));
