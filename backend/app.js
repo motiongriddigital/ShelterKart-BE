@@ -15,7 +15,7 @@ require('./services/search')(c);
 
 // Then the request pipeline, the feature modules, and last the error handler.
 require('./middleware/pipeline').install(app, c);
-for (const name of ['site', 'payments', 'admin', 'investigate', 'search', 'guides', 'research', 'responses']) require('./modules/' + name)(app, c);
+for (const name of ['site', 'payments', 'admin', 'investigate', 'search', 'guides', 'research', 'responses', 'customResearch']) require('./modules/' + name)(app, c);
 require('./middleware/errors').install(app, c);
 
 module.exports = { app, c };
